@@ -89,20 +89,9 @@ async function searchPlacesNew(
   return data.places ?? [];
 }
 
-export async function discoverAttractions(params: {
-  destination: string;
-  interests: string[];
-  limit?: number;
-}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'gemini' | 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
-  const geminiKey =
-    process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'] || process.env['GOOGLE_PLACES_API_KEY'];
-  const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
-  const lovableKey = process.env['LOVABLE_API_KEY'];
-
-  if (geminiKey) {
-    try {
-      const prompt = `Curate ${params.limit ?? 16} of the best, real, non-random tourist attractions (a balanced mix of iconic sights, local culture, food spots, and indoor alternatives for bad weather) in ${params.destination}, India.
-Traveler interests: ${params.interests.length ? params.interests.join(', ') : 'General sightseeing, culture, nature, food'}.
+function buildCurationPrompt(destination: string, interests: string[], limit: number): string {
+  return `Curate ${limit} of the best, real, non-random tourist attractions (a balanced mix of iconic sights, local culture, food spots, and indoor alternatives for bad weather) in ${destination}, India.
+Traveler interests: ${interests.length ? interests.join(', ') : 'General sightseeing, culture, nature, food'}.
 Return ONLY valid JSON matching this exact shape:
 {
   "center": { "lat": 0.0, "lng": 0.0 },
@@ -121,7 +110,42 @@ Return ONLY valid JSON matching this exact shape:
     }
   ]
 }`;
+}
 
+function parseCuratedAttractions(
+  rawText: string,
+): { center: Coordinates; attractions: AttractionCandidate[] } | null {
+  const parsed = JSON.parse(
+    rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim(),
+  ) as { center?: Coordinates; attractions?: AttractionCandidate[] };
+  const valid = (parsed.attractions ?? []).filter(
+    (a) =>
+      a.name &&
+      a.coordinates &&
+      Number.isFinite(a.coordinates.lat) &&
+      Number.isFinite(a.coordinates.lng),
+  );
+  if (valid.length >= 4 && parsed.center) {
+    return { center: parsed.center, attractions: valid };
+  }
+  return null;
+}
+
+export async function discoverAttractions(params: {
+  destination: string;
+  interests: string[];
+  limit?: number;
+}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'gemini' | 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
+  const geminiKey =
+    process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'] || process.env['GOOGLE_PLACES_API_KEY'];
+  const groqKey = process.env['GROQ_API_KEY'];
+  const openrouterKey = process.env['OPENROUTER_API_KEY'];
+  const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+  const lovableKey = process.env['LOVABLE_API_KEY'];
+  const prompt = buildCurationPrompt(params.destination, params.interests, params.limit ?? 16);
+
+  if (geminiKey) {
+    try {
       const gemRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`,
         {
@@ -143,24 +167,64 @@ Return ONLY valid JSON matching this exact shape:
           candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
         };
         const rawText = gemJson.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
-          const parsed = JSON.parse(
-            rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim(),
-          ) as { center?: Coordinates; attractions?: AttractionCandidate[] };
-          const valid = (parsed.attractions ?? []).filter(
-            (a) =>
-              a.name &&
-              a.coordinates &&
-              Number.isFinite(a.coordinates.lat) &&
-              Number.isFinite(a.coordinates.lng),
-          );
-          if (valid.length >= 4 && parsed.center) {
-            return { center: parsed.center, attractions: valid, source: 'gemini' };
-          }
-        }
+        const parsed = rawText ? parseCuratedAttractions(rawText) : null;
+        if (parsed) return { ...parsed, source: 'gemini' };
       }
     } catch {
-      // Fall through to Google Places / AI Gateway / OpenStreetMap fallback
+      // Fall through to Groq / OpenRouter / Google Places / OpenStreetMap
+    }
+  }
+
+  // OpenAI-compatible AI curation (Groq or OpenRouter — works without Google Cloud Console)
+  const openAiProviders = [
+    groqKey
+      ? {
+          url: 'https://api.groq.com/openai/v1/chat/completions',
+          key: groqKey,
+          model: 'llama-3.3-70b-versatile',
+        }
+      : null,
+    openrouterKey
+      ? {
+          url: 'https://openrouter.ai/api/v1/chat/completions',
+          key: openrouterKey,
+          model: 'google/gemini-2.0-flash-exp:free',
+        }
+      : null,
+  ].filter((p): p is { url: string; key: string; model: string } => Boolean(p));
+
+  for (const provider of openAiProviders) {
+    try {
+      const aiRes = await fetch(provider.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${provider.key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          temperature: 0.25,
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an Indian travel data API returning accurate WGS84 coordinates, realistic INR costs, and opening hours in strict JSON.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (aiRes.ok) {
+        const payload = (await aiRes.json()) as { choices?: Array<{ message?: { content?: string } }> };
+        const rawText = payload.choices?.[0]?.message?.content;
+        const parsed = rawText ? parseCuratedAttractions(rawText) : null;
+        if (parsed) return { ...parsed, source: 'ai_gateway' };
+      }
+    } catch {
+      // Try next provider
     }
   }
 
