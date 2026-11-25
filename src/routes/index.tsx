@@ -104,12 +104,30 @@ const QUICK_PROMPTS = [
 ];
 
 const FEATURED_CIRCUITS = [
-  { city: 'Jaipur', title: 'Jaipur, Rajasthan', region: 'RAJASTHAN', days: 4, rating: '4.9' },
-  { city: 'Varanasi', title: 'Varanasi, Uttar Pradesh', region: 'UTTAR PRADESH', days: 3, rating: '4.9' },
-  { city: 'Alleppey', title: 'Alleppey & Munnar, Kerala', region: 'KERALA', days: 5, rating: '4.9' },
-  { city: 'Dehradun', title: 'Dehradun, Uttarakhand', region: 'UTTARAKHAND', days: 3, rating: '4.8' },
-  { city: 'Manali', title: 'Manali, Himachal Pradesh', region: 'HIMACHAL PRADESH', days: 4, rating: '4.8' },
-  { city: 'Goa', title: 'North & South Goa', region: 'GOA', days: 4, rating: '4.9' },
+  {
+    city: 'Jaipur', title: 'Jaipur, Rajasthan', region: 'RAJASTHAN', days: 4, rating: '4.9',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Hawa_Mahal_Jaipur.jpg/640px-Hawa_Mahal_Jaipur.jpg',
+  },
+  {
+    city: 'Varanasi', title: 'Varanasi, Uttar Pradesh', region: 'UTTAR PRADESH', days: 3, rating: '4.9',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Ghats_of_Varanasi_at_sunrise.jpg/640px-Ghats_of_Varanasi_at_sunrise.jpg',
+  },
+  {
+    city: 'Alleppey', title: 'Alleppey & Munnar, Kerala', region: 'KERALA', days: 5, rating: '4.9',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Kerala_backwater.jpg/640px-Kerala_backwater.jpg',
+  },
+  {
+    city: 'Dehradun', title: 'Dehradun, Uttarakhand', region: 'UTTARAKHAND', days: 3, rating: '4.8',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Robbers_cave_Dehradun.jpg/640px-Robbers_cave_Dehradun.jpg',
+  },
+  {
+    city: 'Manali', title: 'Manali, Himachal Pradesh', region: 'HIMACHAL PRADESH', days: 4, rating: '4.8',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Rohtang_Pass.jpg/640px-Rohtang_Pass.jpg',
+  },
+  {
+    city: 'Goa', title: 'North & South Goa', region: 'GOA', days: 4, rating: '4.9',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Baga_Beach%2C_Goa.jpg/640px-Baga_Beach%2C_Goa.jpg',
+  },
 ];
 const FAVOURITES_KEY = 'trippilot:favourites';
 
@@ -145,6 +163,71 @@ export const Route = createFileRoute('/')({
   }),
   component: Index,
 });
+
+// ── AI Planning Screen ──────────────────────────────────────────────────────
+const AI_STEPS = [
+  { icon: '🧠', label: 'Asking Gemini AI to curate the best spots' },
+  { icon: '📍', label: 'Verifying real coordinates & opening hours' },
+  { icon: '🗺️', label: 'Optimising route to minimise travel time' },
+  { icon: '☀️', label: 'Fetching live weather for each day' },
+  { icon: '💰', label: 'Balancing itinerary within your budget' },
+];
+
+function AiPlanningScreen({ destination }: { destination: string }) {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStep((s) => (s + 1) % AI_STEPS.length);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="mx-auto flex max-w-lg flex-col items-center gap-8 px-6 py-24 text-center">
+      {/* Pulsing Gemini logo */}
+      <div className="relative flex size-20 items-center justify-center">
+        <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+        <span className="relative flex size-20 items-center justify-center rounded-full bg-primary/10">
+          <Sparkles className="size-9 text-primary animate-pulse" />
+        </span>
+      </div>
+
+      <div>
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">Gemini AI · Planning</p>
+        <h2 className="mt-2 font-display text-3xl sm:text-4xl">
+          Crafting your {destination} itinerary
+        </h2>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Gemini is selecting the best spots, real hours, and optimal route — hang tight.
+        </p>
+      </div>
+
+      {/* Animated step list */}
+      <div className="w-full space-y-2">
+        {AI_STEPS.map((s, i) => (
+          <div
+            key={s.label}
+            className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-all duration-500 ${
+              i === step
+                ? 'border-primary/40 bg-primary/5 text-foreground'
+                : i < step
+                ? 'border-border/50 bg-muted/40 text-muted-foreground'
+                : 'border-border/30 bg-transparent text-muted-foreground/50'
+            }`}
+          >
+            <span className="text-lg">{s.icon}</span>
+            <span className="flex-1 text-left">{s.label}</span>
+            {i < step && <span className="text-xs text-primary">✓</span>}
+            {i === step && (
+              <LoaderCircle className="size-3.5 animate-spin text-primary" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Index() {
   const { user } = useAccount();
@@ -913,8 +996,11 @@ function Index() {
         </section>
       )}
 
-      {!trip && !loading && (
-        <div id="how-it-works" className="mx-auto max-w-6xl space-y-20 px-6 pt-16">
+      {!trip && loading && (
+        <AiPlanningScreen destination={destination} />
+      )}
+
+      {!trip && !loading && (        <div id="how-it-works" className="mx-auto max-w-6xl space-y-20 px-6 pt-16">
           <section>
             <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
               <div>
@@ -944,10 +1030,12 @@ function Index() {
                   className="group overflow-hidden rounded-xl border border-border bg-card p-3 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10"
                 >
                   <div className="overflow-hidden rounded-lg">
-                    <StopPhoto
-                      name={`${c.city}, India`}
-                      category={c.region}
-                      className="h-52 w-full transition-transform duration-300 group-hover:scale-105"
+                    <img
+                      src={c.image}
+                      alt={c.title}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="h-52 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
                   <div className="px-1 pt-4 pb-2">

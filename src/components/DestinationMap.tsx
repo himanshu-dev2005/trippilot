@@ -327,24 +327,31 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
                 e.stopPropagation();
                 onSelectPlace(place.name);
               }}
-              title={`${index + 1}. ${place.name}`}
               aria-label={`Select stop ${index + 1}: ${place.name}`}
               style={{ left: `${leftPct}%`, top: `${topPct}%` }}
-              className={`group absolute -translate-x-1/2 -translate-y-full transition-transform ${
-                isSelected ? 'z-20 scale-105' : 'z-10 hover:z-20 hover:scale-105'
+              className={`group absolute -translate-x-1/2 -translate-y-full transition-all duration-150 ${
+                isSelected ? 'z-30' : 'z-10 hover:z-30'
               }`}
             >
+              {/* Dot pin — always visible, compact */}
               <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-md ${
+                className={`flex size-6 items-center justify-center rounded-full border-2 border-white font-mono text-[10px] font-bold shadow-lg transition-all ${
                   isSelected
-                    ? 'border-background bg-accent text-accent-foreground'
-                    : 'border-background bg-primary text-primary-foreground'
+                    ? 'bg-accent text-accent-foreground scale-125'
+                    : 'bg-primary text-primary-foreground hover:scale-110'
                 }`}
               >
-                <span className="font-mono font-semibold">{index + 1}</span>
-                <span className={isSelected ? 'max-w-[150px] truncate' : 'max-w-[95px] truncate'}>
-                  {place.name}
-                </span>
+                {index + 1}
+              </span>
+              {/* Tooltip label — only visible on hover or when selected */}
+              <span
+                className={`pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-background/20 bg-background/95 px-2 py-0.5 text-[11px] font-medium text-foreground shadow-lg backdrop-blur-sm transition-all ${
+                  isSelected
+                    ? 'opacity-100 translate-y-0'
+                    : 'opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0'
+                }`}
+              >
+                {place.name}
               </span>
             </button>
           );
