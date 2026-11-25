@@ -112,6 +112,56 @@ Return ONLY valid JSON matching this exact shape:
 }`;
 }
 
+// Batch-enrich AI-curated attractions with real Google Places photoReference values.
+// Without this, StopPhoto falls through to Wikipedia which may return unrelated images.
+async function enrichWithGooglePhotos(
+  attractions: AttractionCandidate[],
+  destination: string,
+  googleKey: string,
+): Promise<AttractionCandidate[]> {
+  const CONCURRENCY = 5;
+  const results: AttractionCandidate[] = [];
+  for (let i = 0; i < attractions.length; i += CONCURRENCY) {
+    const batch = attractions.slice(i, i + CONCURRENCY);
+    const enriched = await Promise.all(
+      batch.map(async (a) => {
+        // Skip if already has a valid photoReference from Google Places
+        if (a.photoReference?.startsWith('places/')) return a;
+        try {
+          const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': googleKey,
+              'X-Goog-FieldMask': 'places.id,places.photos,places.rating',
+            },
+            body: JSON.stringify({
+              textQuery: `${a.name}, ${destination}, India`,
+              maxResultCount: 1,
+            }),
+            signal: AbortSignal.timeout(3500),
+          });
+          if (!res.ok) return a;
+          const json = (await res.json()) as {
+            places?: Array<{ id?: string; photos?: Array<{ name?: string }>; rating?: number }>;
+          };
+          const place = json.places?.[0];
+          if (!place) return a;
+          return {
+            ...a,
+            ...(place.photos?.[0]?.name ? { photoReference: place.photos[0].name } : {}),
+            ...(place.rating && !a.rating ? { rating: place.rating } : {}),
+          };
+        } catch {
+          return a;
+        }
+      }),
+    );
+    results.push(...enriched);
+  }
+  return results;
+}
+
 function parseCuratedAttractions(
   rawText: string,
 ): { center: Coordinates; attractions: AttractionCandidate[] } | null {
@@ -168,7 +218,12 @@ export async function discoverAttractions(params: {
         };
         const rawText = gemJson.candidates?.[0]?.content?.parts?.[0]?.text;
         const parsed = rawText ? parseCuratedAttractions(rawText) : null;
-        if (parsed) return { ...parsed, source: 'gemini' };
+        if (parsed) {
+          const attractions = googleKey
+            ? await enrichWithGooglePhotos(parsed.attractions, params.destination, googleKey)
+            : parsed.attractions;
+          return { center: parsed.center, attractions, source: 'gemini' };
+        }
       }
     } catch {
       // Fall through to Groq / OpenRouter / Google Places / OpenStreetMap
@@ -221,7 +276,12 @@ export async function discoverAttractions(params: {
         const payload = (await aiRes.json()) as { choices?: Array<{ message?: { content?: string } }> };
         const rawText = payload.choices?.[0]?.message?.content;
         const parsed = rawText ? parseCuratedAttractions(rawText) : null;
-        if (parsed) return { ...parsed, source: 'ai_gateway' };
+        if (parsed) {
+          const attractions = googleKey
+            ? await enrichWithGooglePhotos(parsed.attractions, params.destination, googleKey)
+            : parsed.attractions;
+          return { center: parsed.center, attractions, source: 'ai_gateway' };
+        }
       }
     } catch {
       // Try next provider
@@ -319,7 +379,10 @@ Return ONLY valid JSON:
       center: Coordinates;
       attractions: AttractionCandidate[];
     };
-    return { ...parsed, source: 'ai_gateway' };
+    const enrichedAttractions = googleKey
+      ? await enrichWithGooglePhotos(parsed.attractions, params.destination, googleKey)
+      : parsed.attractions;
+    return { center: parsed.center, attractions: enrichedAttractions, source: 'ai_gateway' };
   }
 
   // Zero-key OpenStreetMap (Nominatim + Overpass API) + Wikipedia GeoSearch fallback

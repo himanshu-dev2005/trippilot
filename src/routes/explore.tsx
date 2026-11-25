@@ -1,12 +1,14 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Star } from 'lucide-react';
-import { StopPhoto } from '@/components/StopPhoto';
 import { BrandLogo } from '@/components/BrandLogo';
 
+// Curated Wikimedia Commons images — stable, attribution-free, no Wikipedia API call.
+// These are specific landmark photos that reliably show the right place.
 const CIRCUITS = [
   {
     city: 'Jaipur',
-    landmark: 'Hawa Mahal Jaipur',
+    // Hawa Mahal — Wikimedia Commons: Hawa Mahal_Jaipur.jpg
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Hawa_Mahal_Jaipur.jpg/640px-Hawa_Mahal_Jaipur.jpg',
     title: 'Jaipur, Rajasthan',
     subtitle: 'Jaipur, Rajasthan',
     region: 'RAJASTHAN',
@@ -16,7 +18,8 @@ const CIRCUITS = [
   },
   {
     city: 'Varanasi',
-    landmark: 'Dashashwamedh Ghat Varanasi',
+    // Dashashwamedh Ghat evening aarti — Wikimedia Commons
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Ghats_of_Varanasi_at_sunrise.jpg/640px-Ghats_of_Varanasi_at_sunrise.jpg',
     title: 'Varanasi, Uttar Pradesh',
     subtitle: 'Varanasi, Uttar Pradesh',
     region: 'UTTAR PRADESH',
@@ -26,7 +29,8 @@ const CIRCUITS = [
   },
   {
     city: 'Alleppey',
-    landmark: 'Alleppey backwaters houseboat Kerala',
+    // Kerala houseboat backwaters — Wikimedia Commons
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Kerala_backwater.jpg/640px-Kerala_backwater.jpg',
     title: 'Alleppey & Munnar, Kerala',
     subtitle: 'Alleppey & Munnar, Kerala',
     region: 'KERALA',
@@ -36,7 +40,8 @@ const CIRCUITS = [
   },
   {
     city: 'Leh',
-    landmark: 'Pangong Lake Leh Ladakh',
+    // Pangong Lake Ladakh — Wikimedia Commons
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Pangong_Lake_during_winter.jpg/640px-Pangong_Lake_during_winter.jpg',
     title: 'Leh & Ladakh',
     subtitle: 'High Passes & Monasteries',
     region: 'LADAKH',
@@ -46,7 +51,8 @@ const CIRCUITS = [
   },
   {
     city: 'Udaipur',
-    landmark: 'Lake Pichola City Palace Udaipur',
+    // Lake Pichola City Palace — Wikimedia Commons
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Udaipur_City_Palace_from_Lake_Pichola.jpg/640px-Udaipur_City_Palace_from_Lake_Pichola.jpg',
     title: 'Udaipur, Rajasthan',
     subtitle: 'Lakes & Heritage Havelis',
     region: 'RAJASTHAN',
@@ -56,7 +62,8 @@ const CIRCUITS = [
   },
   {
     city: 'Dehradun',
-    landmark: "Robber's Cave Gucchupani Dehradun",
+    // Robber's Cave Guchhupani — Wikimedia Commons
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Robbers_cave_Dehradun.jpg/640px-Robbers_cave_Dehradun.jpg',
     title: 'Dehradun, Uttarakhand',
     subtitle: 'Foothills, Temples & Forests',
     region: 'UTTARAKHAND',
@@ -106,10 +113,23 @@ function ExplorePage() {
             className="group overflow-hidden rounded-xl border border-border bg-card p-3 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10"
           >
             <div className="overflow-hidden rounded-lg">
-              <StopPhoto
-                name={c.landmark}
-                category={c.region}
-                className="h-52 w-full transition-transform duration-300 group-hover:scale-105"
+              <img
+                src={c.image}
+                alt={c.title}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  // Fallback: hide broken image, show gradient placeholder
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  const parent = (e.currentTarget as HTMLImageElement).parentElement;
+                  if (parent && !parent.querySelector('.img-fallback')) {
+                    const fb = document.createElement('div');
+                    fb.className = 'img-fallback h-52 w-full bg-gradient-to-br from-emerald-800 to-teal-700 flex items-center justify-center';
+                    fb.textContent = c.region;
+                    parent.appendChild(fb);
+                  }
+                }}
+                className="h-52 w-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
             </div>
             <div className="px-1 pt-4 pb-2">
