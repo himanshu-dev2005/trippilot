@@ -178,26 +178,62 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
   .handler(async ({ data }): Promise<{ dataUrl: string | null }> => {
     const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
 
+    async function fetchGoogleMediaUri(photoName: string): Promise<string | null> {
+      if (!googleKey) return null;
+      if (photoName.startsWith('places/')) {
+        const metaUrl = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=600&skipHttpRedirect=true&key=${encodeURIComponent(googleKey)}`;
+        const metaRes = await fetch(metaUrl);
+        if (metaRes.ok) {
+          const payload = (await metaRes.json()) as { photoUri?: string };
+          if (payload.photoUri) return payload.photoUri;
+        }
+      } else {
+        const legacyUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=${encodeURIComponent(photoName)}&key=${encodeURIComponent(googleKey)}`;
+        const res = await fetch(legacyUrl);
+        if (res.ok) {
+          const contentType = res.headers.get('content-type') || 'image/jpeg';
+          const buffer = Buffer.from(await res.arrayBuffer());
+          return `data:${contentType};base64,${buffer.toString('base64')}`;
+        }
+      }
+      return null;
+    }
+
     if (googleKey && data.photoReference) {
       try {
-        if (data.photoReference.startsWith('places/')) {
-          const metaUrl = `https://places.googleapis.com/v1/${data.photoReference}/media?maxWidthPx=600&skipHttpRedirect=true&key=${encodeURIComponent(googleKey)}`;
-          const metaRes = await fetch(metaUrl);
-          if (metaRes.ok) {
-            const payload = (await metaRes.json()) as { photoUri?: string };
-            if (payload.photoUri) return { dataUrl: payload.photoUri };
-          }
-        } else {
-          const legacyUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=${encodeURIComponent(data.photoReference)}&key=${encodeURIComponent(googleKey)}`;
-          const res = await fetch(legacyUrl);
-          if (res.ok) {
-            const contentType = res.headers.get('content-type') || 'image/jpeg';
-            const buffer = Buffer.from(await res.arrayBuffer());
-            return { dataUrl: `data:${contentType};base64,${buffer.toString('base64')}` };
+        const uri = await fetchGoogleMediaUri(data.photoReference);
+        if (uri) return { dataUrl: uri };
+      } catch {
+        // Continue to placeName lookup
+      }
+    }
+
+    if (googleKey && data.placeName) {
+      try {
+        const searchRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': googleKey,
+            'X-Goog-FieldMask': 'places.photos',
+          },
+          body: JSON.stringify({
+            textQuery: data.placeName,
+            maxResultCount: 1,
+          }),
+        });
+        if (searchRes.ok) {
+          const searchJson = (await searchRes.json()) as {
+            places?: Array<{ photos?: Array<{ name?: string }> }>;
+          };
+          const photoName = searchJson.places?.[0]?.photos?.[0]?.name;
+          if (photoName) {
+            const uri = await fetchGoogleMediaUri(photoName);
+            if (uri) return { dataUrl: uri };
           }
         }
       } catch {
-        // Fall through to Wikipedia thumbnail fallback
+        // Fall through to Wikipedia fallback if Google Places lookup fails
       }
     }
 
@@ -210,27 +246,6 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
         if (summaryRes.ok) {
           const summary = (await summaryRes.json()) as { thumbnail?: { source?: string } };
           if (summary.thumbnail?.source) return { dataUrl: summary.thumbnail.source };
-        }
-
-        const searchRes = await fetch(
-          `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(data.placeName)}&format=json&srlimit=1`,
-          { headers: { 'User-Agent': 'TripPilot/1.0' } },
-        );
-        if (searchRes.ok) {
-          const searchJson = (await searchRes.json()) as {
-            query?: { search?: Array<{ title?: string }> };
-          };
-          const bestTitle = searchJson.query?.search?.[0]?.title;
-          if (bestTitle) {
-            const fallbackRes = await fetch(
-              `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestTitle.replace(/\s+/g, '_'))}`,
-              { headers: { 'User-Agent': 'TripPilot/1.0' } },
-            );
-            if (fallbackRes.ok) {
-              const summary = (await fallbackRes.json()) as { thumbnail?: { source?: string } };
-              if (summary.thumbnail?.source) return { dataUrl: summary.thumbnail.source };
-            }
-          }
         }
       } catch {
         // Ignore fallback failure
