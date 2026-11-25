@@ -136,8 +136,7 @@ export async function discoverAttractions(params: {
   interests: string[];
   limit?: number;
 }): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'gemini' | 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
-  const geminiKey =
-    process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'] || process.env['GOOGLE_PLACES_API_KEY'];
+  const geminiKey = process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'];
   const groqKey = process.env['GROQ_API_KEY'];
   const openrouterKey = process.env['OPENROUTER_API_KEY'];
   const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
@@ -156,9 +155,10 @@ export async function discoverAttractions(params: {
             generationConfig: {
               temperature: 0.25,
               responseMimeType: 'application/json',
+              thinkingConfig: { thinkingBudget: 0 },
             },
           }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(12000),
         },
       );
 
@@ -467,9 +467,13 @@ out ${Math.min(35, (params.limit ?? 18) * 2)};`;
 
   // Fallback to Wikipedia GeoSearch if Overpass mirrors are unavailable
   if (attractions.length === 0 && wikiItems.length > 0) {
-    const ignorePattern = /election|constituency|municipal|ward|tehsil|district|school|hospital|university|college|academy/i;
+    const ignorePattern =
+      /election|constituency|municipal|ward|tehsil|district|school|hospital|university|college|academy|institute|office|bhavan|secretariat|commission|board|council|railway station|bus stand/i;
+    const destLower = params.destination.trim().toLowerCase();
 
     for (const item of wikiItems) {
+      const titleLower = item.title.trim().toLowerCase();
+      if (titleLower === destLower || titleLower === 'uttarakhand' || titleLower === 'india') continue;
       if (ignorePattern.test(item.title)) continue;
       const lower = item.title.toLowerCase();
       let category = 'Sightseeing';
