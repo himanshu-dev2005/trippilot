@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   addStopToDay,
   applyWeatherAdjustment,
+  findRouteFoodSuggestions,
   generateIcsCalendar,
+  generateOfflinePocketPassHtml,
   generatePackingChecklist,
+  getDayEnergyScore,
+  getIndiaPracticalAlerts,
+  getStopTimingInsight,
   kMeansCluster,
   moveStopBetweenDays,
   nearestNeighbourOrder,
@@ -263,5 +268,53 @@ describe('Optimization Engine', () => {
     expect(ics).toContain('BEGIN:VCALENDAR');
     expect(ics).toContain('SUMMARY:Spot cafe (Jaipur)');
     expect(ics).toContain('END:VCALENDAR');
+  });
+
+  it('computes daily energy score, timing insights, India practical alerts, route food, and offline pass', () => {
+    const morningTemple = makeSpot('temple', 26.92, 75.82, {
+      name: 'Birla Mandir',
+      category: 'Spiritual',
+      isOutdoor: true,
+      duration: 2,
+    });
+    const afternoonMuseum = makeSpot('museum', 26.93, 75.83, {
+      name: 'Albert Hall Museum',
+      category: 'Museum',
+      isOutdoor: false,
+      duration: 3,
+    });
+    const foodStop = makeSpot('lunch', 26.925, 75.825, {
+      name: 'Lassiwala Cafe',
+      category: 'Food',
+      isOutdoor: false,
+      duration: 1,
+    });
+
+    const plan = optimizeItinerary({
+      destination: 'Jaipur',
+      attractions: [morningTemple, afternoonMuseum],
+      numberOfDays: 1,
+      budget: 3000,
+      startDate: '2026-12-01',
+    });
+
+    const day = plan.itinerary[0]!;
+    expect(getDayEnergyScore(day).level).toBe('Moderate');
+    expect(getStopTimingInsight(day.stops[0]!)).toBe('Golden Hour');
+    expect(getIndiaPracticalAlerts(day.stops[0]!)).toContain('Modest attire · remove footwear');
+    expect(getIndiaPracticalAlerts(day.stops[1]!)).toContain('Verify Monday/holiday closure');
+
+    const foodSuggestions = findRouteFoodSuggestions(day, [morningTemple, afternoonMuseum, foodStop]);
+    expect(foodSuggestions.length).toBeGreaterThan(0);
+    expect(foodSuggestions[0]!.candidate.name).toBe('Lassiwala Cafe');
+
+    const html = generateOfflinePocketPassHtml({
+      destination: 'Jaipur',
+      budget: 3000,
+      itinerary: plan.itinerary,
+    });
+    expect(html).toContain('Jaipur Offline Pocket Pass');
+    expect(html).toContain('112');
+    expect(html).toContain('Birla Mandir');
   });
 });

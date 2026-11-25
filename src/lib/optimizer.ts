@@ -828,3 +828,146 @@ export function generateIcsCalendar(destination: string, itinerary: ItineraryDay
   lines.push('END:VCALENDAR');
   return lines.join('\r\n');
 }
+
+export type DayEnergy = {
+  level: 'Light' | 'Moderate' | 'Intense';
+  score: number;
+  visitHours: number;
+};
+
+/** Compute daily fatigue/energy score from visit duration, outdoor exposure, and transit time. */
+export function getDayEnergyScore(day: ItineraryDay): DayEnergy {
+  const visitHours = Number(day.stops.reduce((s, st) => s + st.duration, 0).toFixed(1));
+  const outdoorHours = day.stops.filter((s) => s.isOutdoor).reduce((s, st) => s + st.duration, 0);
+  const raw = visitHours * 11 + outdoorHours * 5 + day.totalTravelTime * 0.25;
+  const score = Math.min(100, Math.round(raw));
+  const level: DayEnergy['level'] = score >= 75 ? 'Intense' : score >= 45 ? 'Moderate' : 'Light';
+  return { level, score, visitHours };
+}
+
+/** Detect Golden Hour or Midday Heat windows for a scheduled stop. */
+export function getStopTimingInsight(stop: Stop): 'Golden Hour' | 'Midday Heat' | null {
+  const [hhStr = '9', mmStr = '0'] = stop.startTime.split(':');
+  const startDec = Number(hhStr) + Number(mmStr) / 60;
+  if (!stop.isOutdoor) return null;
+  if (startDec <= 9.5 || startDec >= 16.5) return 'Golden Hour';
+  if (startDec >= 12 && startDec <= 15.25) return 'Midday Heat';
+  return null;
+}
+
+/** Return India-specific practical reminders for a stop (dress code, closures, permits). */
+export function getIndiaPracticalAlerts(stop: Stop): string[] {
+  const alerts: string[] = [];
+  const text = `${stop.name} ${stop.category}`.toLowerCase();
+  if (/temple|mandir|gurudwara|mosque|masjid|ghat|spiritual/.test(text)) {
+    alerts.push('Modest attire · remove footwear');
+  }
+  if (/museum|palace|fort/.test(text)) {
+    alerts.push('Verify Monday/holiday closure');
+  }
+  if (/pass|tunnel|falls|trek|wildlife|national park/.test(text)) {
+    alerts.push('Check permit & daylight cutoff');
+  }
+  return alerts;
+}
+
+export type RouteFoodSuggestion = {
+  candidate: AttractionCandidate;
+  afterStopName: string;
+  detourKm: number;
+};
+
+/** Find food/café spots that lie near the existing route between consecutive stops. */
+export function findRouteFoodSuggestions(
+  day: ItineraryDay,
+  allCandidates: AttractionCandidate[],
+  maxDetourKm = 2.5,
+): RouteFoodSuggestion[] {
+  if (day.stops.length === 0) return [];
+  const usedIds = new Set(day.stops.map((s) => s.attractionId));
+  const foodPool = allCandidates.filter(
+    (c) => !usedIds.has(c.attractionId) && /food|caf|restaurant|market|bazaar/i.test(`${c.category} ${c.name}`),
+  );
+  if (foodPool.length === 0) return [];
+
+  const suggestions: RouteFoodSuggestion[] = [];
+  for (const food of foodPool) {
+    let bestDetour = Infinity;
+    let afterStop = day.stops[0]!.name;
+    for (let i = 0; i < day.stops.length; i++) {
+      const a = day.stops[i]!;
+      const b = day.stops[i + 1];
+      if (!b) {
+        const d = haversineKm(a.coordinates.lat, a.coordinates.lng, food.coordinates.lat, food.coordinates.lng);
+        if (d < bestDetour) {
+          bestDetour = d;
+          afterStop = a.name;
+        }
+      } else {
+        const direct = haversineKm(a.coordinates.lat, a.coordinates.lng, b.coordinates.lat, b.coordinates.lng);
+        const viaFood =
+          haversineKm(a.coordinates.lat, a.coordinates.lng, food.coordinates.lat, food.coordinates.lng) +
+          haversineKm(food.coordinates.lat, food.coordinates.lng, b.coordinates.lat, b.coordinates.lng);
+        const detour = Math.max(0, viaFood - direct);
+        if (detour < bestDetour) {
+          bestDetour = detour;
+          afterStop = a.name;
+        }
+      }
+    }
+    if (bestDetour <= maxDetourKm) {
+      suggestions.push({
+        candidate: food,
+        afterStopName: afterStop,
+        detourKm: Number(bestDetour.toFixed(1)),
+      });
+    }
+  }
+
+  return suggestions.sort((a, b) => a.detourKm - b.detourKm).slice(0, 2);
+}
+
+/** Generate a self-contained offline HTML Pocket Pass for low/no-signal areas. */
+export function generateOfflinePocketPassHtml(params: {
+  destination: string;
+  budget: number;
+  itinerary: ItineraryDay[];
+}): string {
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const daysHtml = params.itinerary
+    .map(
+      (day) => `
+    <section style="margin-bottom:24px;border:1px solid #ddd;border-radius:10px;padding:16px;">
+      <h2 style="margin:0 0 6px;">Day ${day.dayNumber} (${esc(day.date)})</h2>
+      <p style="margin:0 0 12px;color:#555;font-size:13px;">Cost: ₹${day.totalCost} · Travel: ${day.totalTravelTime} min · Weather: ${esc(day.weatherSummary)}</p>
+      <ol style="padding-left:18px;margin:0;">
+        ${day.stops
+          .map(
+            (s) => `<li style="margin-bottom:10px;">
+              <strong>${esc(s.startTime)} — ${esc(s.name)}</strong> (${esc(s.category)}, ${s.duration}h, ₹${s.cost})<br/>
+              <small style="color:#666;">Coords: ${s.coordinates.lat.toFixed(4)}, ${s.coordinates.lng.toFixed(4)} · Open ${formatTime24(s.openingHours.open)}–${formatTime24(s.openingHours.close)}</small>
+              ${s.userNote ? `<br/><small style="color:#4c1d95;">Note: ${esc(s.userNote)}</small>` : ''}
+            </li>`,
+          )
+          .join('')}
+      </ol>
+    </section>`,
+    )
+    .join('');
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${esc(params.destination)} — TripPilot Offline Pocket Pass</title>
+</head>
+<body style="font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#111;">
+  <h1 style="margin-bottom:4px;">${esc(params.destination)} Offline Pocket Pass</h1>
+  <p style="margin-top:0;color:#555;font-size:14px;">Budget: ₹${params.budget.toLocaleString('en-IN')} · Emergency (India): <strong>112</strong> · Tourist Helpline: <strong>1363</strong></p>
+  ${daysHtml}
+</body>
+</html>`;
+}

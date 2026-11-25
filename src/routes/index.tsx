@@ -34,6 +34,10 @@ import {
   CalendarPlus,
   Plus,
   Route as RouteIcon,
+  WifiOff,
+  Utensils,
+  AlertTriangle,
+  Zap,
 } from 'lucide-react';
 import {
   adjustTripWeather,
@@ -51,9 +55,14 @@ import {
 import { getMongoProfile, toggleMongoFavourite } from '@/lib/profile';
 import {
   addStopToDay,
+  findRouteFoodSuggestions,
   formatTime24,
   generateIcsCalendar,
+  generateOfflinePocketPassHtml,
   generatePackingChecklist,
+  getDayEnergyScore,
+  getIndiaPracticalAlerts,
+  getStopTimingInsight,
   moveStopBetweenDays,
   removeStopFromDay,
   reorderStopInDay,
@@ -571,6 +580,22 @@ function Index() {
     URL.revokeObjectURL(url);
   }
 
+  function handleExportOfflinePass() {
+    if (!trip) return;
+    const html = generateOfflinePocketPassHtml({
+      destination: trip.destination,
+      budget: trip.budget,
+      itinerary: trip.itinerary,
+    });
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-pocket-pass.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleLoadSavedTrip(saved: TripRecord) {
     const totalCost = saved.itinerary.reduce((s, d) => s + d.totalCost, 0);
     setTrip({
@@ -992,6 +1017,10 @@ function Index() {
                 <CalendarPlus className="size-4" />
                 Calendar (.ics)
               </Button>
+              <Button type="button" variant="outline" onClick={handleExportOfflinePass} className="gap-1.5">
+                <WifiOff className="size-4" />
+                Offline Pass
+              </Button>
               <Button type="button" variant="outline" onClick={() => window.print()} className="gap-1.5">
                 <Download className="size-4" />
                 PDF
@@ -1033,7 +1062,20 @@ function Index() {
               )}
             </div>
 
-            <div className="no-print flex items-center gap-2">
+            <div className="no-print flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[11px] text-muted-foreground">What-if:</span>
+                <input
+                  type="range"
+                  min={500}
+                  max={25000}
+                  step={500}
+                  aria-label="What-if budget slider"
+                  value={Math.min(25000, Math.max(500, Number(budgetDraft) || 5000))}
+                  onChange={(e) => setBudgetDraft(e.target.value)}
+                  className="w-28 accent-primary"
+                />
+              </div>
               <Input
                 type="number"
                 min={0}
@@ -1211,14 +1253,31 @@ function Index() {
 
           <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_400px]">
             <div className="space-y-10">
-              {displayedDays.map((day) => (
+              {displayedDays.map((day) => {
+                const energy = getDayEnergyScore(day);
+                const foodSuggestions = findRouteFoodSuggestions(day, trip.candidates);
+                return (
                 <section key={day.dayNumber} className="rounded-xl border border-border bg-card p-6 sm:p-7">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
                     <div>
-                      <h3 className="font-display text-2xl">
-                        Day {day.dayNumber}{' '}
-                        <span className="font-mono text-xs font-normal text-muted-foreground">({day.date})</span>
-                      </h3>
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <h3 className="font-display text-2xl">
+                          Day {day.dayNumber}{' '}
+                          <span className="font-mono text-xs font-normal text-muted-foreground">({day.date})</span>
+                        </h3>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium ${
+                            energy.level === 'Intense'
+                              ? 'bg-rose-500/15 text-rose-600'
+                              : energy.level === 'Moderate'
+                                ? 'bg-amber-500/15 text-amber-600'
+                                : 'bg-emerald-500/15 text-emerald-600'
+                          }`}
+                        >
+                          <Zap className="size-3" />
+                          {energy.level} ({energy.visitHours}h)
+                        </span>
+                      </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         ₹{day.totalCost.toLocaleString('en-IN')} (Activities ₹{day.activityCost.toLocaleString('en-IN')} + Transit ₹
                         {day.transitCost.toLocaleString('en-IN')}) · {day.totalTravelTime} min travel · Weather: {day.weatherSummary}
@@ -1237,6 +1296,63 @@ function Index() {
                     </Button>
                   </div>
 
+                  {day.stops.length > 0 && (
+                    <div className="mt-4 flex flex-wrap items-center gap-1.5 rounded-lg border border-border/70 bg-background px-3 py-2 text-xs">
+                      {day.stops.map((st, sIdx) => (
+                        <span key={`metro-${st.attractionId}-${sIdx}`} className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPlaceName(st.name)}
+                            className="font-medium text-foreground hover:text-primary"
+                          >
+                            <span className="font-mono text-primary">{st.startTime}</span> {st.name}
+                          </button>
+                          {st.travelToNext && (
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              → {st.travelToNext.minutes}m →
+                            </span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {foodSuggestions.length > 0 && (
+                    <div className="no-print mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs">
+                      <span className="inline-flex items-center gap-1.5 text-foreground">
+                        <Utensils className="size-3.5 text-primary" />
+                        Eat along route near <strong>{foodSuggestions[0]!.afterStopName}</strong>:{' '}
+                        <strong>{foodSuggestions[0]!.candidate.name}</strong> ({foodSuggestions[0]!.detourKm} km detour)
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-primary"
+                        onClick={() => {
+                          const res = addStopToDay({
+                            destination: trip.destination,
+                            currentItinerary: trip.itinerary,
+                            dayNumber: day.dayNumber,
+                            candidate: foodSuggestions[0]!.candidate,
+                            totalBudget: trip.budget,
+                            transportMode: trip.transportMode,
+                            ...(trip.startPoint ? { startPoint: trip.startPoint } : {}),
+                          });
+                          setTrip({
+                            ...trip,
+                            itinerary: res.itinerary,
+                            totalCost: res.totalCost,
+                            remainingBudget: res.remainingBudget,
+                          });
+                          setNotice(`Added ${foodSuggestions[0]!.candidate.name} to Day ${day.dayNumber}.`);
+                        }}
+                      >
+                        + Add food stop
+                      </Button>
+                    </div>
+                  )}
+
                   {day.stops.length === 0 ? (
                     <p className="mt-4 text-sm text-muted-foreground">
                       No stops fit within the remaining budget and opening hours for this day.
@@ -1248,11 +1364,14 @@ function Index() {
                         const isSelected = selectedPlaceName === stop.name;
                         const globalNumber =
                           mapPlaces.findIndex((p) => p.name === stop.name) + 1 || idx + 1;
+                        const timingInsight = getStopTimingInsight(stop);
+                        const practicalAlerts = getIndiaPracticalAlerts(stop);
 
                         return (
                           <li
                             key={`${day.dayNumber}-${stop.attractionId}-${idx}`}
                             onClick={() => setSelectedPlaceName(stop.name)}
+                            onMouseEnter={() => setSelectedPlaceName(stop.name)}
                             className={`relative cursor-pointer rounded-xl border p-4 shadow-xs transition-all ${
                               stop.visited
                                 ? 'border-emerald-500/40 bg-emerald-500/5'
@@ -1284,6 +1403,26 @@ function Index() {
                                       <span className="text-[11px] text-muted-foreground">
                                         {stop.isOutdoor ? 'Outdoor' : 'Indoor'}
                                       </span>
+                                      {timingInsight && (
+                                        <span
+                                          className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${
+                                            timingInsight === 'Golden Hour'
+                                              ? 'bg-amber-500/15 text-amber-600'
+                                              : 'bg-orange-500/15 text-orange-600'
+                                          }`}
+                                        >
+                                          {timingInsight}
+                                        </span>
+                                      )}
+                                      {practicalAlerts.map((alertText) => (
+                                        <span
+                                          key={alertText}
+                                          className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                                        >
+                                          <AlertTriangle className="size-3 text-amber-500" />
+                                          {alertText}
+                                        </span>
+                                      ))}
                                     </div>
                                     <h4 className={`mt-1.5 font-display text-xl ${stop.visited ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                                       {stop.name}
@@ -1430,10 +1569,59 @@ function Index() {
                     </ol>
                   )}
                 </section>
-              ))}
+                );
+              })}
             </div>
 
             <aside className="space-y-6 lg:sticky lg:top-24">
+              {(() => {
+                const totalStops = trip.itinerary.reduce((s, d) => s + d.stops.length, 0);
+                const visitedStops = trip.itinerary.reduce(
+                  (s, d) => s + d.stops.filter((st) => st.visited).length,
+                  0,
+                );
+                const checkedCount = packingChecklist.filter((i) => checkedPacking[i.id]).length;
+                const totalTasks = totalStops + packingChecklist.length;
+                const readinessPct =
+                  totalTasks > 0 ? Math.round(((visitedStops + checkedCount) / totalTasks) * 100) : 0;
+                const dashOffset = 113.1 - (113.1 * readinessPct) / 100;
+                return (
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+                    <div>
+                      <p className="font-mono text-xs uppercase text-primary">Trip Readiness</p>
+                      <p className="mt-1 text-sm font-medium text-foreground">
+                        {visitedStops}/{totalStops} stops · {checkedCount}/{packingChecklist.length} packed
+                      </p>
+                    </div>
+                    <div className="relative flex size-12 items-center justify-center">
+                      <svg className="size-12 -rotate-90" viewBox="0 0 44 44">
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="18"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          className="text-muted"
+                        />
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="18"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          strokeDasharray="113.1"
+                          strokeDashoffset={dashOffset}
+                          strokeLinecap="round"
+                          className="text-primary transition-all"
+                        />
+                      </svg>
+                      <span className="absolute font-mono text-[10px] font-medium">{readinessPct}%</span>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="no-print">
                 <DestinationMap
                   city={trip.destination}
