@@ -70,7 +70,7 @@ function ProfilePage() {
           defaultInterests,
         },
       });
-      setSavedMsg('Preferences saved to MongoDB. They will pre-fill the planner automatically.');
+      setSavedMsg('Saved.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save profile.');
     } finally {
@@ -98,7 +98,7 @@ function ProfilePage() {
       </div>
       <h1 className="mt-2 font-display text-4xl">Traveler Preferences</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Save your default travel settings in MongoDB to speed up planning.
+        Save your default travel settings to speed up planning.
       </p>
 
       {loading ? (
