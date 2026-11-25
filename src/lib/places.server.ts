@@ -206,27 +206,21 @@ Return ONLY valid JSON:
   }
 
   const center: Coordinates = { lat: Number(cityGeo.lat), lng: Number(cityGeo.lon) };
-  const overpassQuery = `[out:json][timeout:12];
+  const overpassQuery = `[out:json][timeout:8];
 (
-  node["tourism"~"attraction|museum|viewpoint"]["name"](around:15000,${center.lat},${center.lng});
-  way["tourism"~"attraction|museum|viewpoint"]["name"](around:15000,${center.lat},${center.lng});
-  node["historic"~"monument|fort|palace|ruins"]["name"](around:15000,${center.lat},${center.lng});
-  node["leisure"~"park|garden"]["name"](around:15000,${center.lat},${center.lng});
-  node["amenity"~"place_of_worship|cafe"]["name"](around:10000,${center.lat},${center.lng});
+  node["tourism"~"attraction|museum|viewpoint"]["name"](around:12000,${center.lat},${center.lng});
+  node["historic"~"monument|fort|palace|ruins"]["name"](around:12000,${center.lat},${center.lng});
+  node["leisure"~"park|garden"]["name"](around:12000,${center.lat},${center.lng});
+  node["amenity"~"place_of_worship|cafe"]["name"](around:8000,${center.lat},${center.lng});
 );
-out center ${Math.min(35, (params.limit ?? 18) * 2)};`;
+out ${Math.min(35, (params.limit ?? 18) * 2)};`;
 
-  const overpassRes = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain', 'User-Agent': 'TripPilot/1.0' },
-    body: overpassQuery,
-  });
+  const overpassMirrors = [
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
+  ];
 
-  if (!overpassRes.ok) {
-    throw new Error(`OpenStreetMap Overpass request failed (${overpassRes.status}).`);
-  }
-
-  const overpassJson = (await overpassRes.json()) as {
+  type OverpassResponse = {
     elements?: Array<{
       type: string;
       id: number;
@@ -236,11 +230,28 @@ out center ${Math.min(35, (params.limit ?? 18) * 2)};`;
       tags?: Record<string, string>;
     }>;
   };
+  let overpassJson: OverpassResponse | null = null;
+
+  for (const endpoint of overpassMirrors) {
+    try {
+      const overpassRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain', 'User-Agent': 'TripPilot/1.0' },
+        body: overpassQuery,
+      });
+      if (overpassRes.ok) {
+        overpassJson = (await overpassRes.json()) as OverpassResponse;
+        if (overpassJson.elements?.length) break;
+      }
+    } catch {
+      // Try next mirror
+    }
+  }
 
   const seen = new Set<string>();
   const attractions: AttractionCandidate[] = [];
 
-  for (const el of overpassJson.elements ?? []) {
+  for (const el of overpassJson?.elements ?? []) {
     const name = el.tags?.['name:en'] || el.tags?.['name'];
     const lat = el.lat ?? el.center?.lat;
     const lng = el.lon ?? el.center?.lon;
@@ -294,6 +305,63 @@ out center ${Math.min(35, (params.limit ?? 18) * 2)};`;
     });
 
     if (attractions.length >= (params.limit ?? 18)) break;
+  }
+
+  // Fallback to Wikipedia GeoSearch if Overpass mirrors are unavailable
+  if (attractions.length === 0) {
+    const wikiRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${center.lat}|${center.lng}&gsradius=10000&gslimit=45&format=json`,
+      { headers: { 'User-Agent': 'TripPilot/1.0' } },
+    );
+    if (wikiRes.ok) {
+      const wikiJson = (await wikiRes.json()) as {
+        query?: { geosearch?: Array<{ pageid: number; title: string; lat: number; lon: number }> };
+      };
+      const ignorePattern = /election|constituency|municipal|ward|tehsil|district|school|hospital|university|college|academy/i;
+
+      for (const item of wikiJson.query?.geosearch ?? []) {
+        if (ignorePattern.test(item.title)) continue;
+        const lower = item.title.toLowerCase();
+        let category = 'Sightseeing';
+        let isOutdoor = true;
+        let cost = 150;
+
+        if (/museum|gallery|planetarium/.test(lower)) {
+          category = 'Museum';
+          isOutdoor = false;
+          cost = 200;
+        } else if (/temple|mandir|church|mosque|masjid|gurudwara|ghat|ashram|monastery/.test(lower)) {
+          category = 'Culture';
+          isOutdoor = false;
+          cost = 0;
+        } else if (/fort|palace|mahal|tomb|memorial|gate|monument/.test(lower)) {
+          category = 'History';
+          isOutdoor = true;
+          cost = 250;
+        } else if (/park|garden|lake|falls|waterfall|hill|peak|beach|forest|zoo/.test(lower)) {
+          category = 'Nature';
+          isOutdoor = true;
+          cost = 100;
+        } else if (/market|bazaar|mall/.test(lower)) {
+          category = 'Shopping';
+          isOutdoor = false;
+          cost = 300;
+        }
+
+        attractions.push({
+          attractionId: `wiki-${item.pageid}`,
+          name: item.title,
+          coordinates: { lat: item.lat, lng: item.lon },
+          category,
+          isOutdoor,
+          rating: 4.3,
+          duration: 2,
+          cost,
+          openingHours: { open: 9, close: 19 },
+        });
+        if (attractions.length >= (params.limit ?? 18)) break;
+      }
+    }
   }
 
   if (attractions.length === 0) {
