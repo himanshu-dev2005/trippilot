@@ -5,11 +5,13 @@ import { fetchPlacePhotoDataUrl } from '@/lib/trips';
 export function StopPhoto({
   name,
   category,
+  destination,
   photoReference,
   className,
 }: {
   name: string;
   category: string;
+  destination?: string;
   photoReference?: string;
   className?: string;
 }) {
@@ -17,9 +19,11 @@ export function StopPhoto({
 
   useEffect(() => {
     let active = true;
+    setDataUrl(null);
     void fetchPlacePhotoDataUrl({
       data: {
         ...(photoReference ? { photoReference } : {}),
+        ...(destination ? { destination } : {}),
         placeName: name,
       },
     })
@@ -30,7 +34,7 @@ export function StopPhoto({
     return () => {
       active = false;
     };
-  }, [photoReference, name]);
+  }, [photoReference, name, destination]);
 
   const sizeClass = className ?? 'h-24 w-24 shrink-0 rounded-md sm:h-28 sm:w-28';
 
@@ -40,6 +44,8 @@ export function StopPhoto({
         src={dataUrl}
         alt={name}
         loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setDataUrl(null)}
         className={`${sizeClass} bg-muted object-cover`}
       />
     );

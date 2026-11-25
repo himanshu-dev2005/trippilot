@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { LocateFixed, Navigation, MapPin, LoaderCircle, Plus, Minus, Clock3, IndianRupee } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { LocateFixed, Navigation, MapPin, LoaderCircle, Plus, Minus, Clock3, IndianRupee, RotateCcw } from 'lucide-react';
 import { haversineKm } from '@/lib/destinations';
 import { Button } from '@/components/ui/button';
 
@@ -36,6 +36,14 @@ function latLngToWorld(lat: number, lng: number, zoom: number) {
   return { x, y };
 }
 
+function worldToLatLng(x: number, y: number, zoom: number) {
+  const scale = TILE_SIZE * 2 ** zoom;
+  const lng = (x / scale) * 360 - 180;
+  const n = Math.PI - (2 * Math.PI * y) / scale;
+  const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+  return { lat, lng };
+}
+
 export function DestinationMap({ city, center, places, selectedPlaceName, onSelectPlace }: Props) {
   const [zoom, setZoom] = useState(12);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -47,10 +55,29 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
     [places, selectedPlaceName],
   );
 
-  const mapCenter = useMemo(() => {
-    if (selectedPlace) return { lat: selectedPlace.lat, lng: selectedPlace.lng };
-    return center;
-  }, [selectedPlace, center]);
+  const [viewCenter, setViewCenter] = useState<{ lat: number; lng: number }>(() =>
+    selectedPlace ? { lat: selectedPlace.lat, lng: selectedPlace.lng } : center,
+  );
+  const mapBoxRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    startWorldX: number;
+    startWorldY: number;
+    moved: boolean;
+  } | null>(null);
+  const pinchDistRef = useRef<number | null>(null);
+  const lastWheelAtRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (selectedPlace) {
+      setViewCenter({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+    } else {
+      setViewCenter(center);
+    }
+  }, [selectedPlace?.lat, selectedPlace?.lng, center.lat, center.lng]);
+
+  const mapCenter = viewCenter;
 
   const centerWorld = useMemo(
     () => latLngToWorld(mapCenter.lat, mapCenter.lng, zoom),
@@ -157,7 +184,101 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
         </p>
       )}
 
-      <div className="relative h-80 w-full overflow-hidden rounded-lg border border-border bg-muted select-none">
+      <div
+        ref={mapBoxRef}
+        onWheel={(e) => {
+          e.preventDefault();
+          const now = Date.now();
+          if (now - lastWheelAtRef.current < 120) return;
+          if (Math.abs(e.deltaY) < 4) return;
+          lastWheelAtRef.current = now;
+          setZoom((z) => (e.deltaY < 0 ? Math.min(17, z + 1) : Math.max(9, z - 1)));
+        }}
+        onMouseDown={(e) => {
+          if (e.button !== 0) return;
+          const world = latLngToWorld(viewCenter.lat, viewCenter.lng, zoom);
+          dragRef.current = {
+            startX: e.clientX,
+            startY: e.clientY,
+            startWorldX: world.x,
+            startWorldY: world.y,
+            moved: false,
+          };
+        }}
+        onMouseMove={(e) => {
+          if (!dragRef.current) return;
+          const dx = e.clientX - dragRef.current.startX;
+          const dy = e.clientY - dragRef.current.startY;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragRef.current.moved = true;
+          const box = mapBoxRef.current;
+          const scaleX = box ? MAP_WIDTH / box.clientWidth : 1;
+          const scaleY = box ? MAP_HEIGHT / box.clientHeight : 1;
+          setViewCenter(
+            worldToLatLng(
+              dragRef.current.startWorldX - dx * scaleX,
+              dragRef.current.startWorldY - dy * scaleY,
+              zoom,
+            ),
+          );
+        }}
+        onMouseUp={() => {
+          dragRef.current = null;
+        }}
+        onMouseLeave={() => {
+          dragRef.current = null;
+        }}
+        onDoubleClick={() => setZoom((z) => Math.min(17, z + 1))}
+        onTouchStart={(e) => {
+          if (e.touches.length === 2) {
+            const dx = e.touches[0]!.clientX - e.touches[1]!.clientX;
+            const dy = e.touches[0]!.clientY - e.touches[1]!.clientY;
+            pinchDistRef.current = Math.hypot(dx, dy);
+            dragRef.current = null;
+          } else if (e.touches.length === 1) {
+            const world = latLngToWorld(viewCenter.lat, viewCenter.lng, zoom);
+            dragRef.current = {
+              startX: e.touches[0]!.clientX,
+              startY: e.touches[0]!.clientY,
+              startWorldX: world.x,
+              startWorldY: world.y,
+              moved: false,
+            };
+          }
+        }}
+        onTouchMove={(e) => {
+          if (e.touches.length === 2 && pinchDistRef.current) {
+            const dx = e.touches[0]!.clientX - e.touches[1]!.clientX;
+            const dy = e.touches[0]!.clientY - e.touches[1]!.clientY;
+            const dist = Math.hypot(dx, dy);
+            const ratio = dist / pinchDistRef.current;
+            if (ratio > 1.22) {
+              setZoom((z) => Math.min(17, z + 1));
+              pinchDistRef.current = dist;
+            } else if (ratio < 0.82) {
+              setZoom((z) => Math.max(9, z - 1));
+              pinchDistRef.current = dist;
+            }
+          } else if (e.touches.length === 1 && dragRef.current) {
+            const dx = e.touches[0]!.clientX - dragRef.current.startX;
+            const dy = e.touches[0]!.clientY - dragRef.current.startY;
+            const box = mapBoxRef.current;
+            const scaleX = box ? MAP_WIDTH / box.clientWidth : 1;
+            const scaleY = box ? MAP_HEIGHT / box.clientHeight : 1;
+            setViewCenter(
+              worldToLatLng(
+                dragRef.current.startWorldX - dx * scaleX,
+                dragRef.current.startWorldY - dy * scaleY,
+                zoom,
+              ),
+            );
+          }
+        }}
+        onTouchEnd={() => {
+          dragRef.current = null;
+          pinchDistRef.current = null;
+        }}
+        className="relative h-80 w-full cursor-grab overflow-hidden rounded-lg border border-border bg-muted select-none touch-none active:cursor-grabbing"
+      >
         {tiles.map((tile) => (
           <img
             key={`${zoom}-${tile.x}-${tile.y}`}
@@ -202,22 +323,28 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
             <button
               key={`${place.name}-${index}`}
               type="button"
-              onClick={() => onSelectPlace(place.name)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectPlace(place.name);
+              }}
               title={`${index + 1}. ${place.name}`}
               aria-label={`Select stop ${index + 1}: ${place.name}`}
               style={{ left: `${leftPct}%`, top: `${topPct}%` }}
-              className={`absolute -translate-x-1/2 -translate-y-full transition-transform ${
-                isSelected ? 'z-20 scale-115' : 'z-10 hover:scale-110'
+              className={`group absolute -translate-x-1/2 -translate-y-full transition-transform ${
+                isSelected ? 'z-20 scale-105' : 'z-10 hover:z-20 hover:scale-105'
               }`}
             >
               <span
-                className={`flex h-7 min-w-7 items-center justify-center rounded-full border-2 px-1.5 font-mono text-xs font-medium shadow-md ${
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-md ${
                   isSelected
                     ? 'border-background bg-accent text-accent-foreground'
                     : 'border-background bg-primary text-primary-foreground'
                 }`}
               >
-                {index + 1}
+                <span className="font-mono font-semibold">{index + 1}</span>
+                <span className={isSelected ? 'max-w-[150px] truncate' : 'max-w-[95px] truncate'}>
+                  {place.name}
+                </span>
               </span>
             </button>
           );
@@ -246,7 +373,7 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
             size="icon"
             className="size-7 shadow"
             aria-label="Zoom in"
-            onClick={() => setZoom((z) => Math.min(16, z + 1))}
+            onClick={() => setZoom((z) => Math.min(17, z + 1))}
           >
             <Plus className="size-3.5" />
           </Button>
@@ -260,8 +387,25 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
           >
             <Minus className="size-3.5" />
           </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="size-7 shadow"
+            aria-label="Re-center map"
+            title="Re-center map"
+            onClick={() => {
+              setZoom(12);
+              setViewCenter(selectedPlace ? { lat: selectedPlace.lat, lng: selectedPlace.lng } : center);
+            }}
+          >
+            <RotateCcw className="size-3.5" />
+          </Button>
         </div>
 
+        <div className="pointer-events-none absolute bottom-1 left-2 z-20 rounded bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          Drag to pan · Scroll or pinch to zoom
+        </div>
         <div className="absolute bottom-1 right-2 z-20 rounded bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">
           © OpenStreetMap
         </div>

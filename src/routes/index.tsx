@@ -71,12 +71,14 @@ import {
   type Coordinates,
   type ItineraryDay,
   type StartPoint,
+  type Stop,
   type TransportMode,
 } from '@/lib/optimizer';
 import { useAccount } from '@/components/AuthProvider';
 import { DestinationMap } from '@/components/DestinationMap';
 import { BudgetBreakdownChart } from '@/components/BudgetBreakdownChart';
 import { StopPhoto } from '@/components/StopPhoto';
+import { PlaceDetailDialog } from '@/components/PlaceDetailDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -168,6 +170,7 @@ function Index() {
   const [activeDayTab, setActiveDayTab] = useState<number | 'all'>('all');
   const [budgetDraft, setBudgetDraft] = useState('5000');
   const [selectedPlaceName, setSelectedPlaceName] = useState<string | null>(null);
+  const [detailStop, setDetailStop] = useState<Stop | null>(null);
   const [checkedPacking, setCheckedPacking] = useState<Record<string, boolean>>({});
   const [customPlaceQuery, setCustomPlaceQuery] = useState('');
   const [customPlaceDay, setCustomPlaceDay] = useState(1);
@@ -1374,7 +1377,10 @@ function Index() {
                         return (
                           <li
                             key={`${day.dayNumber}-${stop.attractionId}-${idx}`}
-                            onClick={() => setSelectedPlaceName(stop.name)}
+                            onClick={() => {
+                              setSelectedPlaceName(stop.name);
+                              setDetailStop(stop);
+                            }}
                             onMouseEnter={() => setSelectedPlaceName(stop.name)}
                             className={`relative cursor-pointer rounded-xl border p-4 shadow-xs transition-all ${
                               stop.visited
@@ -1391,6 +1397,7 @@ function Index() {
                               <StopPhoto
                                 name={stop.name}
                                 category={stop.category}
+                                destination={trip.destination}
                                 {...(stop.photoReference ? { photoReference: stop.photoReference } : {})}
                               />
 
@@ -1670,6 +1677,21 @@ function Index() {
             </aside>
           </div>
         </section>
+      )}
+
+      {trip && (
+        <PlaceDetailDialog
+          stop={detailStop}
+          destination={trip.destination}
+          open={Boolean(detailStop)}
+          onOpenChange={(open) => {
+            if (!open) setDetailStop(null);
+          }}
+          isFavourite={detailStop ? favourites.includes(`${trip.destination}::${detailStop.name}`) : false}
+          onToggleFavourite={() => {
+            if (detailStop) toggleFavourite(trip.destination, detailStop);
+          }}
+        />
       )}
     </main>
   );

@@ -179,7 +179,13 @@ export const adjustTripWeather = createServerFn({ method: 'POST' })
 
 export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
   .inputValidator((raw: unknown) =>
-    z.object({ photoReference: z.string().optional(), placeName: z.string().optional() }).parse(raw),
+    z
+      .object({
+        photoReference: z.string().optional(),
+        placeName: z.string().optional(),
+        destination: z.string().optional(),
+      })
+      .parse(raw),
   )
   .handler(async ({ data }): Promise<{ dataUrl: string | null }> => {
     const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
@@ -188,14 +194,14 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
       if (!googleKey) return null;
       if (photoName.startsWith('places/')) {
         const metaUrl = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=600&skipHttpRedirect=true&key=${encodeURIComponent(googleKey)}`;
-        const metaRes = await fetch(metaUrl);
+        const metaRes = await fetch(metaUrl, { signal: AbortSignal.timeout(4500) });
         if (metaRes.ok) {
           const payload = (await metaRes.json()) as { photoUri?: string };
           if (payload.photoUri) return payload.photoUri;
         }
       } else {
         const legacyUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=${encodeURIComponent(photoName)}&key=${encodeURIComponent(googleKey)}`;
-        const res = await fetch(legacyUrl);
+        const res = await fetch(legacyUrl, { signal: AbortSignal.timeout(4500) });
         if (res.ok) {
           const contentType = res.headers.get('content-type') || 'image/jpeg';
           const buffer = Buffer.from(await res.arrayBuffer());
@@ -214,7 +220,9 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
       }
     }
 
-    if (googleKey && data.placeName) {
+    const searchQuery = [data.placeName, data.destination].filter(Boolean).join(', ');
+
+    if (googleKey && searchQuery) {
       try {
         const searchRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
           method: 'POST',
@@ -224,9 +232,10 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
             'X-Goog-FieldMask': 'places.photos',
           },
           body: JSON.stringify({
-            textQuery: data.placeName,
+            textQuery: searchQuery,
             maxResultCount: 1,
           }),
+          signal: AbortSignal.timeout(4500),
         });
         if (searchRes.ok) {
           const searchJson = (await searchRes.json()) as {
@@ -239,19 +248,53 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
           }
         }
       } catch {
-        // Fall through to Wikipedia fallback if Google Places lookup fails
+        // Fall through to Wikipedia / Wikimedia Commons fallback
       }
     }
 
     if (data.placeName) {
+      // 1) Wikipedia search + pageimages (handles partial/alternate titles)
       try {
-        const title = encodeURIComponent(data.placeName.trim().replace(/\s+/g, '_'));
-        const summaryRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`, {
+        const wikiSearchUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(searchQuery || data.placeName)}&gsrlimit=3&prop=pageimages&pithumbsize=600&format=json`;
+        const wikiRes = await fetch(wikiSearchUrl, {
           headers: { 'User-Agent': 'TripPilot/1.0' },
+          signal: AbortSignal.timeout(4000),
         });
-        if (summaryRes.ok) {
-          const summary = (await summaryRes.json()) as { thumbnail?: { source?: string } };
-          if (summary.thumbnail?.source) return { dataUrl: summary.thumbnail.source };
+        if (wikiRes.ok) {
+          const wikiJson = (await wikiRes.json()) as {
+            query?: { pages?: Record<string, { thumbnail?: { source?: string } }> };
+          };
+          for (const page of Object.values(wikiJson.query?.pages ?? {})) {
+            if (page.thumbnail?.source) return { dataUrl: page.thumbnail.source };
+          }
+        }
+      } catch {
+        // Ignore and try Wikimedia Commons
+      }
+
+      // 2) Wikimedia Commons file search fallback
+      try {
+        const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchQuery || data.placeName)}&gsrlimit=4&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json`;
+        const commonsRes = await fetch(commonsUrl, {
+          headers: { 'User-Agent': 'TripPilot/1.0' },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (commonsRes.ok) {
+          const commonsJson = (await commonsRes.json()) as {
+            query?: {
+              pages?: Record<
+                string,
+                { title?: string; imageinfo?: Array<{ thumburl?: string; url?: string }> }
+              >;
+            };
+          };
+          for (const page of Object.values(commonsJson.query?.pages ?? {})) {
+            const info = page.imageinfo?.[0];
+            const candidateUrl = info?.thumburl || info?.url;
+            if (candidateUrl && /\.(jpe?g|png|webp)(\?|$)/i.test(candidateUrl)) {
+              return { dataUrl: candidateUrl };
+            }
+          }
         }
       } catch {
         // Ignore fallback failure
@@ -259,6 +302,126 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
     }
 
     return { dataUrl: null };
+  });
+
+export type PlaceDetailsPayload = {
+  summary: string | null;
+  address: string | null;
+  rating: number | null;
+  userRatingCount: number | null;
+  websiteUri: string | null;
+  googleMapsUri: string | null;
+  wikipediaUrl: string | null;
+  openingHoursText: string[];
+};
+
+export const fetchPlaceDetails = createServerFn({ method: 'GET' })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({
+        placeName: z.string().min(1),
+        destination: z.string().optional(),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ data }): Promise<PlaceDetailsPayload> => {
+    const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+    const query = [data.placeName, data.destination].filter(Boolean).join(', ');
+
+    let address: string | null = null;
+    let rating: number | null = null;
+    let userRatingCount: number | null = null;
+    let websiteUri: string | null = null;
+    let googleMapsUri: string | null = null;
+    let openingHoursText: string[] = [];
+    let summary: string | null = null;
+    let wikipediaUrl: string | null = null;
+
+    const googlePromise = (async () => {
+      if (!googleKey) return;
+      try {
+        const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': googleKey,
+            'X-Goog-FieldMask':
+              'places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.googleMapsUri,places.editorialSummary,places.regularOpeningHours.weekdayDescriptions',
+          },
+          body: JSON.stringify({ textQuery: query, maxResultCount: 1 }),
+          signal: AbortSignal.timeout(4500),
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          places?: Array<{
+            formattedAddress?: string;
+            rating?: number;
+            userRatingCount?: number;
+            websiteUri?: string;
+            googleMapsUri?: string;
+            editorialSummary?: { text?: string };
+            regularOpeningHours?: { weekdayDescriptions?: string[] };
+          }>;
+        };
+        const place = json.places?.[0];
+        if (!place) return;
+        address = place.formattedAddress ?? null;
+        rating = place.rating ?? null;
+        userRatingCount = place.userRatingCount ?? null;
+        websiteUri = place.websiteUri ?? null;
+        googleMapsUri = place.googleMapsUri ?? null;
+        summary = place.editorialSummary?.text ?? null;
+        openingHoursText = place.regularOpeningHours?.weekdayDescriptions ?? [];
+      } catch {
+        // Fall back to Wikipedia details
+      }
+    })();
+
+    const wikiPromise = (async () => {
+      try {
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=1&format=json`;
+        const searchRes = await fetch(searchUrl, {
+          headers: { 'User-Agent': 'TripPilot/1.0' },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (!searchRes.ok) return;
+        const searchJson = (await searchRes.json()) as {
+          query?: { search?: Array<{ title: string }> };
+        };
+        const title = searchJson.query?.search?.[0]?.title;
+        if (!title) return;
+
+        const sumRes = await fetch(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/\s+/g, '_'))}`,
+          {
+            headers: { 'User-Agent': 'TripPilot/1.0' },
+            signal: AbortSignal.timeout(4000),
+          },
+        );
+        if (!sumRes.ok) return;
+        const sumJson = (await sumRes.json()) as {
+          extract?: string;
+          content_urls?: { desktop?: { page?: string } };
+        };
+        if (!summary && sumJson.extract) summary = sumJson.extract;
+        wikipediaUrl = sumJson.content_urls?.desktop?.page ?? null;
+      } catch {
+        // Ignore Wikipedia detail error
+      }
+    })();
+
+    await Promise.all([googlePromise, wikiPromise]);
+
+    return {
+      summary,
+      address,
+      rating,
+      userRatingCount,
+      websiteUri,
+      googleMapsUri,
+      wikipediaUrl,
+      openingHoursText,
+    };
   });
 
 export const saveTripToMongo = createServerFn({ method: 'POST' })
