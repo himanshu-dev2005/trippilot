@@ -999,6 +999,29 @@ function Index() {
             </div>
           </div>
 
+          {trip.weatherConfigured && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              {trip.itinerary.map((day) => (
+                <div
+                  key={`wx-${day.dayNumber}`}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
+                    day.hasRainAlert
+                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                      : 'border-border bg-card text-muted-foreground'
+                  }`}
+                >
+                  {day.hasRainAlert ? (
+                    <CloudRain className="size-3.5 text-amber-400" />
+                  ) : (
+                    <Compass className="size-3.5 text-primary" />
+                  )}
+                  <span className="font-mono text-foreground">Day {day.dayNumber}:</span>
+                  <span>{day.weatherSummary}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {hasAnyRainAlert && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
               <div className="flex items-center gap-2.5">
