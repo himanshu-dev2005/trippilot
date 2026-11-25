@@ -15,8 +15,13 @@ describe("App routing", () => {
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
 
-  it.each(['/auth', '/signup', '/forgot-password', '/reset-password'])('matches account page %s', (path) => {
+  it.each(['/signup', '/forgot-password', '/reset-password', '/auth/google/callback'])('matches account page %s', (path) => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
     expect(router.matchRoutes(path).at(-1)?.routeId).toBe(path);
+  });
+
+  it('matches /auth to /auth/ index route', () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    expect(router.matchRoutes('/auth').at(-1)?.routeId).toBe('/auth/');
   });
 });

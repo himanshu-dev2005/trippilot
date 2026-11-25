@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as FavouritesRouteImport } from './routes/favourites'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -18,6 +17,7 @@ import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as TripsIndexRouteImport } from './routes/trips.index'
 import { Route as TripsIdRouteImport } from './routes/trips.$id'
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth.google.callback'
@@ -25,11 +25,6 @@ import { Route as AuthGoogleCallbackRouteImport } from './routes/auth.google.cal
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExploreRoute = ExploreRouteImport.update({
@@ -67,6 +62,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/auth/',
+  path: '/auth/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TripsIndexRoute = TripsIndexRouteImport.update({
   id: '/trips/',
   path: '/trips/',
@@ -78,14 +78,13 @@ const TripsIdRoute = TripsIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthGoogleCallbackRoute = AuthGoogleCallbackRouteImport.update({
-  id: '/google/callback',
-  path: '/google/callback',
-  getParentRoute: () => AuthRoute,
+  id: '/auth/google/callback',
+  path: '/auth/google/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
   '/explore': typeof ExploreRoute
   '/favourites': typeof FavouritesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -94,12 +93,12 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/trips/$id': typeof TripsIdRoute
+  '/auth/': typeof AuthIndexRoute
   '/trips/': typeof TripsIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
   '/explore': typeof ExploreRoute
   '/favourites': typeof FavouritesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -108,13 +107,13 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/trips/$id': typeof TripsIdRoute
+  '/auth': typeof AuthIndexRoute
   '/trips': typeof TripsIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRouteWithChildren
   '/explore': typeof ExploreRoute
   '/favourites': typeof FavouritesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -123,6 +122,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/trips/$id': typeof TripsIdRoute
+  '/auth/': typeof AuthIndexRoute
   '/trips/': typeof TripsIndexRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
 }
@@ -130,7 +130,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
     | '/explore'
     | '/favourites'
     | '/forgot-password'
@@ -139,12 +138,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/trips/$id'
+    | '/auth/'
     | '/trips/'
     | '/auth/google/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
     | '/explore'
     | '/favourites'
     | '/forgot-password'
@@ -153,12 +152,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/trips/$id'
+    | '/auth'
     | '/trips'
     | '/auth/google/callback'
   id:
     | '__root__'
     | '/'
-    | '/auth'
     | '/explore'
     | '/favourites'
     | '/forgot-password'
@@ -167,13 +166,13 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/trips/$id'
+    | '/auth/'
     | '/trips/'
     | '/auth/google/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRouteWithChildren
   ExploreRoute: typeof ExploreRoute
   FavouritesRoute: typeof FavouritesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -182,7 +181,9 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   TripsIdRoute: typeof TripsIdRoute
+  AuthIndexRoute: typeof AuthIndexRoute
   TripsIndexRoute: typeof TripsIndexRoute
+  AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,13 +193,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explore': {
@@ -250,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/': {
+      id: '/auth/'
+      path: '/auth'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/trips/': {
       id: '/trips/'
       path: '/trips'
@@ -266,27 +267,16 @@ declare module '@tanstack/react-router' {
     }
     '/auth/google/callback': {
       id: '/auth/google/callback'
-      path: '/google/callback'
+      path: '/auth/google/callback'
       fullPath: '/auth/google/callback'
       preLoaderRoute: typeof AuthGoogleCallbackRouteImport
-      parentRoute: typeof AuthRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AuthRouteChildren {
-  AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRouteWithChildren,
   ExploreRoute: ExploreRoute,
   FavouritesRoute: FavouritesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
@@ -295,7 +285,9 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   TripsIdRoute: TripsIdRoute,
+  AuthIndexRoute: AuthIndexRoute,
   TripsIndexRoute: TripsIndexRoute,
+  AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
