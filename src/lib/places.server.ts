@@ -93,9 +93,76 @@ export async function discoverAttractions(params: {
   destination: string;
   interests: string[];
   limit?: number;
-}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
+}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'gemini' | 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
+  const geminiKey =
+    process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'] || process.env['GOOGLE_PLACES_API_KEY'];
   const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
   const lovableKey = process.env['LOVABLE_API_KEY'];
+
+  if (geminiKey) {
+    try {
+      const prompt = `Curate ${params.limit ?? 16} of the best, real, non-random tourist attractions (a balanced mix of iconic sights, local culture, food spots, and indoor alternatives for bad weather) in ${params.destination}, India.
+Traveler interests: ${params.interests.length ? params.interests.join(', ') : 'General sightseeing, culture, nature, food'}.
+Return ONLY valid JSON matching this exact shape:
+{
+  "center": { "lat": 0.0, "lng": 0.0 },
+  "attractions": [
+    {
+      "attractionId": "slug-id",
+      "name": "Exact Real Place Name",
+      "coordinates": { "lat": 0.0, "lng": 0.0 },
+      "category": "History | Nature | Food | Culture | Museum | Shopping | Adventure | Sightseeing",
+      "isOutdoor": true,
+      "rating": 4.5,
+      "duration": 2,
+      "cost": 300,
+      "openingHours": { "open": 9, "close": 18 },
+      "note": "Concise 1-sentence local tip"
+    }
+  ]
+}`;
+
+      const gemRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.25,
+              responseMimeType: 'application/json',
+            },
+          }),
+          signal: AbortSignal.timeout(8000),
+        },
+      );
+
+      if (gemRes.ok) {
+        const gemJson = (await gemRes.json()) as {
+          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        };
+        const rawText = gemJson.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (rawText) {
+          const parsed = JSON.parse(
+            rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim(),
+          ) as { center?: Coordinates; attractions?: AttractionCandidate[] };
+          const valid = (parsed.attractions ?? []).filter(
+            (a) =>
+              a.name &&
+              a.coordinates &&
+              Number.isFinite(a.coordinates.lat) &&
+              Number.isFinite(a.coordinates.lng),
+          );
+          if (valid.length >= 4 && parsed.center) {
+            return { center: parsed.center, attractions: valid, source: 'gemini' };
+          }
+        }
+      }
+    } catch {
+      // Fall through to Google Places / AI Gateway / OpenStreetMap fallback
+    }
+  }
 
   if (googleKey) {
     try {
