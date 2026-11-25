@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
-import { exchangeGoogleCodeMongo } from '@/lib/auth.server';
+import { exchangeGoogleCodeMongo } from '@/lib/auth';
 import { useAccount } from '@/components/AuthProvider';
 
 export const Route = createFileRoute('/auth/google/callback')({

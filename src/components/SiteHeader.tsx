@@ -4,7 +4,7 @@ import { Compass, Menu, X, LogOut, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "@/components/AuthProvider";
-import { signOutMongo } from "@/lib/auth.server";
+import { signOutMongo } from "@/lib/auth";
 
 const navLinks = [
   { label: "Destinations", href: "/#destinations" },

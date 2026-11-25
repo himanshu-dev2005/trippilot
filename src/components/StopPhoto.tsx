@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Compass, Mountain, Utensils, Landmark, ShoppingBag } from 'lucide-react';
-import { fetchPlacePhotoDataUrl } from '@/lib/trips.server';
+import { fetchPlacePhotoDataUrl } from '@/lib/trips';
 
 export function StopPhoto({
   name,

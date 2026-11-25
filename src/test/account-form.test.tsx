@@ -15,7 +15,7 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@/components/AuthProvider', () => ({
   useAccount: () => ({ user: null, loading: false, setUser, refresh: vi.fn() }),
 }));
-vi.mock('@/lib/auth.server', () => ({
+vi.mock('@/lib/auth', () => ({
   signInWithMongo: vi.fn(),
   signUpWithMongo,
   requestPasswordResetMongo: vi.fn(),

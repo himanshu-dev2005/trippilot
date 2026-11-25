@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
-import { getSessionUser, type SessionUser } from '@/lib/auth.server';
+import { getSessionUser, type SessionUser } from '@/lib/auth';
 
 type AuthContextValue = {
   user: SessionUser | null;

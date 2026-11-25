@@ -32,7 +32,7 @@ import {
   replanTripBudget,
   saveTripToMongo,
   type TripRecord,
-} from '@/lib/trips.server';
+} from '@/lib/trips';
 import {
   formatTime24,
   generatePackingChecklist,

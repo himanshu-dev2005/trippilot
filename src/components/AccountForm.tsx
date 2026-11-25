@@ -7,7 +7,7 @@ import {
   requestPasswordResetMongo,
   resetPasswordMongo,
   getGoogleOAuthUrl,
-} from '@/lib/auth.server';
+} from '@/lib/auth';
 import { useAccount } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

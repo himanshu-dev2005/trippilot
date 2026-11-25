@@ -185,7 +185,7 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
 export const saveTripToMongo = createServerFn({ method: 'POST' })
   .inputValidator((raw: unknown) => SaveTripSchema.parse(raw))
   .handler(async ({ data }): Promise<{ tripId: string }> => {
-    const { getSessionUser } = await import('@/lib/auth.server');
+    const { getSessionUser } = await import('@/lib/auth');
     const { getMongoDb } = await import('@/lib/mongodb.server');
     const { ObjectId } = await import('mongodb');
 
@@ -241,7 +241,7 @@ export const saveTripToMongo = createServerFn({ method: 'POST' })
 
 export const getSavedTripsFromMongo = createServerFn({ method: 'GET' }).handler(
   async (): Promise<{ trips: TripRecord[] }> => {
-    const { getSessionUser } = await import('@/lib/auth.server');
+    const { getSessionUser } = await import('@/lib/auth');
     const { getMongoDb } = await import('@/lib/mongodb.server');
 
     const { user } = await getSessionUser();
@@ -286,7 +286,7 @@ export const getPublicTripById = createServerFn({ method: 'GET' })
 export const deleteTripFromMongo = createServerFn({ method: 'POST' })
   .inputValidator((raw: unknown) => z.object({ tripId: z.string().min(1) }).parse(raw))
   .handler(async ({ data }) => {
-    const { getSessionUser } = await import('@/lib/auth.server');
+    const { getSessionUser } = await import('@/lib/auth');
     const { getMongoDb } = await import('@/lib/mongodb.server');
     const { ObjectId } = await import('mongodb');
 

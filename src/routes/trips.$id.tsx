@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Clock3, ExternalLink, LoaderCircle, Navigation } from 'lucide-react';
-import { getPublicTripById, type TripRecord } from '@/lib/trips.server';
+import { getPublicTripById, type TripRecord } from '@/lib/trips';
 import { formatTime24 } from '@/lib/optimizer';
 import { DestinationMap } from '@/components/DestinationMap';
 import { Button } from '@/components/ui/button';
