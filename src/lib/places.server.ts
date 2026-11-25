@@ -1,17 +1,21 @@
 import type { AttractionCandidate, Coordinates, StartPoint } from '@/lib/optimizer';
 
-type GooglePlacesResponse = {
-  status: string;
-  error_message?: string;
-  results?: Array<{
-    place_id: string;
-    name: string;
-    geometry?: { location?: { lat: number; lng: number } };
+type GooglePlacesNewResponse = {
+  error?: { message?: string; status?: string };
+  places?: Array<{
+    id: string;
+    displayName?: { text?: string };
+    location?: { latitude: number; longitude: number };
     rating?: number;
     types?: string[];
-    price_level?: number;
-    formatted_address?: string;
-    photos?: Array<{ photo_reference?: string }>;
+    priceLevel?:
+      | 'PRICE_LEVEL_FREE'
+      | 'PRICE_LEVEL_INEXPENSIVE'
+      | 'PRICE_LEVEL_MODERATE'
+      | 'PRICE_LEVEL_EXPENSIVE'
+      | 'PRICE_LEVEL_VERY_EXPENSIVE';
+    formattedAddress?: string;
+    photos?: Array<{ name?: string }>;
   }>;
 };
 
@@ -23,6 +27,8 @@ const OUTDOOR_TYPES = new Set([
   'tourist_attraction',
   'amusement_park',
   'beach',
+  'national_park',
+  'hiking_area',
 ]);
 
 function inferCategoryAndOutdoor(types: string[] = []): { category: string; isOutdoor: boolean } {
@@ -33,26 +39,54 @@ function inferCategoryAndOutdoor(types: string[] = []): { category: string; isOu
   if (lower.includes('hindu_temple') || lower.includes('place_of_worship') || lower.includes('church')) {
     return { category: 'Culture', isOutdoor: false };
   }
-  if (lower.includes('park') || lower.includes('natural_feature')) return { category: 'Nature', isOutdoor: true };
+  if (lower.includes('park') || lower.includes('natural_feature') || lower.includes('national_park')) {
+    return { category: 'Nature', isOutdoor: true };
+  }
   const isOutdoor = lower.some((t) => OUTDOOR_TYPES.has(t));
   return { category: 'Sightseeing', isOutdoor };
 }
 
-function priceLevelToInr(priceLevel?: number): number {
+function priceLevelToInr(priceLevel?: string): number {
   switch (priceLevel) {
-    case 0:
+    case 'PRICE_LEVEL_FREE':
       return 0;
-    case 1:
+    case 'PRICE_LEVEL_INEXPENSIVE':
       return 200;
-    case 2:
+    case 'PRICE_LEVEL_MODERATE':
       return 500;
-    case 3:
+    case 'PRICE_LEVEL_EXPENSIVE':
       return 1200;
-    case 4:
+    case 'PRICE_LEVEL_VERY_EXPENSIVE':
       return 2500;
     default:
       return 250;
   }
+}
+
+async function searchPlacesNew(
+  query: string,
+  googleKey: string,
+  maxResultCount = 20,
+): Promise<NonNullable<GooglePlacesNewResponse['places']>> {
+  const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': googleKey,
+      'X-Goog-FieldMask':
+        'places.id,places.displayName,places.location,places.rating,places.types,places.priceLevel,places.formattedAddress,places.photos',
+    },
+    body: JSON.stringify({
+      textQuery: query,
+      maxResultCount: Math.min(20, maxResultCount),
+    }),
+  });
+
+  const data = (await res.json()) as GooglePlacesNewResponse;
+  if (!res.ok || data.error) {
+    throw new Error(`Google Places error: ${data.error?.message || res.statusText}`);
+  }
+  return data.places ?? [];
 }
 
 export async function discoverAttractions(params: {
@@ -69,42 +103,37 @@ export async function discoverAttractions(params: {
         ? `top ${params.interests.slice(0, 3).join(' ')} attractions in ${params.destination}, India`
         : `top tourist attractions in ${params.destination}, India`;
 
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${encodeURIComponent(googleKey)}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`Google Places request failed (${res.status}).`);
-    }
-    const data = (await res.json()) as GooglePlacesResponse;
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      throw new Error(`Google Places error: ${data.error_message || data.status}`);
-    }
-
-    const rawResults = (data.results ?? []).slice(0, params.limit ?? 18);
+    const rawResults = await searchPlacesNew(query, googleKey, params.limit ?? 18);
     if (rawResults.length === 0) {
       throw new Error(`No attractions found for "${params.destination}" via Google Places.`);
     }
 
     const attractions: AttractionCandidate[] = rawResults
-      .filter((r) => r.geometry?.location)
+      .filter((r) => r.location && r.displayName?.text)
       .map((r) => {
         const { category, isOutdoor } = inferCategoryAndOutdoor(r.types);
+        const photoName = r.photos?.[0]?.name;
         return {
-          attractionId: r.place_id,
-          name: r.name,
+          attractionId: r.id,
+          name: r.displayName!.text!,
           coordinates: {
-            lat: r.geometry!.location!.lat,
-            lng: r.geometry!.location!.lng,
+            lat: r.location!.latitude,
+            lng: r.location!.longitude,
           },
           category,
           isOutdoor,
           rating: r.rating ?? 4.2,
           duration: category === 'Museum' || category === 'Nature' ? 2.5 : 2,
-          cost: priceLevelToInr(r.price_level),
+          cost: priceLevelToInr(r.priceLevel),
           openingHours: { open: 9, close: 19 },
-          ...(r.photos?.[0]?.photo_reference ? { photoReference: r.photos[0].photo_reference } : {}),
-          ...(r.formatted_address ? { note: r.formatted_address } : {}),
+          ...(photoName ? { photoReference: photoName } : {}),
+          ...(r.formattedAddress ? { note: r.formattedAddress } : {}),
         };
       });
+
+    if (attractions.length === 0) {
+      throw new Error(`No attractions with valid coordinates found for "${params.destination}".`);
+    }
 
     const center = attractions[0]!.coordinates;
     return { center, attractions, source: 'google_places' };
@@ -176,25 +205,24 @@ export async function resolveStartPoint(
 
   const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
   if (googleKey) {
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${query}, ${destination}, India`)}&key=${encodeURIComponent(googleKey)}`;
-    const res = await fetch(url);
-    if (res.ok) {
-      const data = (await res.json()) as GooglePlacesResponse;
-      const first = data.results?.[0];
-      if (first?.geometry?.location) {
+    try {
+      const results = await searchPlacesNew(`${query}, ${destination}, India`, googleKey, 1);
+      const first = results[0];
+      if (first?.location) {
         return {
-          name: first.name || query,
-          coordinates: first.geometry.location,
+          name: first.displayName?.text || query,
+          coordinates: { lat: first.location.latitude, lng: first.location.longitude },
         };
       }
+    } catch {
+      // Fallback to Nominatim below
     }
   }
 
-  // Fallback to OpenStreetMap Nominatim geocoding for hotel/start point
   const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(`${query}, ${destination}, India`)}`;
   const osmRes = await fetch(osmUrl, { headers: { 'User-Agent': 'TripPilot/1.0' } });
   if (osmRes.ok) {
-    const results = (await osmRes.json()) as Array<{ lat: string; lon: string; display_name?: string }>;
+    const results = (await osmRes.json()) as Array<{ lat: string; lon: string }>;
     const first = results[0];
     if (first) {
       return {

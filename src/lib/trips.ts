@@ -174,7 +174,9 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
   .handler(async ({ data }): Promise<{ dataUrl: string | null }> => {
     const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
     if (!googleKey) return { dataUrl: null };
-    const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${encodeURIComponent(data.photoReference)}&key=${encodeURIComponent(googleKey)}`;
+    const url = data.photoReference.startsWith('places/')
+      ? `https://places.googleapis.com/v1/${data.photoReference}/media?maxWidthPx=400&key=${encodeURIComponent(googleKey)}`
+      : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${encodeURIComponent(data.photoReference)}&key=${encodeURIComponent(googleKey)}`;
     const res = await fetch(url);
     if (!res.ok) return { dataUrl: null };
     const contentType = res.headers.get('content-type') || 'image/jpeg';
