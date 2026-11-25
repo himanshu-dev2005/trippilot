@@ -93,50 +93,50 @@ export async function discoverAttractions(params: {
   destination: string;
   interests: string[];
   limit?: number;
-}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'google_places' | 'ai_gateway' }> {
+}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
   const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
   const lovableKey = process.env['LOVABLE_API_KEY'];
 
   if (googleKey) {
-    const query =
-      params.interests.length > 0
-        ? `top ${params.interests.slice(0, 3).join(' ')} attractions in ${params.destination}, India`
-        : `top tourist attractions in ${params.destination}, India`;
+    try {
+      const query =
+        params.interests.length > 0
+          ? `top ${params.interests.slice(0, 3).join(' ')} attractions in ${params.destination}, India`
+          : `top tourist attractions in ${params.destination}, India`;
 
-    const rawResults = await searchPlacesNew(query, googleKey, params.limit ?? 18);
-    if (rawResults.length === 0) {
-      throw new Error(`No attractions found for "${params.destination}" via Google Places.`);
+      const rawResults = await searchPlacesNew(query, googleKey, params.limit ?? 18);
+      if (rawResults.length > 0) {
+        const attractions: AttractionCandidate[] = rawResults
+          .filter((r) => r.location && r.displayName?.text)
+          .map((r) => {
+            const { category, isOutdoor } = inferCategoryAndOutdoor(r.types);
+            const photoName = r.photos?.[0]?.name;
+            return {
+              attractionId: r.id,
+              name: r.displayName!.text!,
+              coordinates: {
+                lat: r.location!.latitude,
+                lng: r.location!.longitude,
+              },
+              category,
+              isOutdoor,
+              rating: r.rating ?? 4.2,
+              duration: category === 'Museum' || category === 'Nature' ? 2.5 : 2,
+              cost: priceLevelToInr(r.priceLevel),
+              openingHours: { open: 9, close: 19 },
+              ...(photoName ? { photoReference: photoName } : {}),
+              ...(r.formattedAddress ? { note: r.formattedAddress } : {}),
+            };
+          });
+
+        if (attractions.length > 0) {
+          const center = attractions[0]!.coordinates;
+          return { center, attractions, source: 'google_places' };
+        }
+      }
+    } catch {
+      // Fall through to AI Gateway or OpenStreetMap fallback
     }
-
-    const attractions: AttractionCandidate[] = rawResults
-      .filter((r) => r.location && r.displayName?.text)
-      .map((r) => {
-        const { category, isOutdoor } = inferCategoryAndOutdoor(r.types);
-        const photoName = r.photos?.[0]?.name;
-        return {
-          attractionId: r.id,
-          name: r.displayName!.text!,
-          coordinates: {
-            lat: r.location!.latitude,
-            lng: r.location!.longitude,
-          },
-          category,
-          isOutdoor,
-          rating: r.rating ?? 4.2,
-          duration: category === 'Museum' || category === 'Nature' ? 2.5 : 2,
-          cost: priceLevelToInr(r.priceLevel),
-          openingHours: { open: 9, close: 19 },
-          ...(photoName ? { photoReference: photoName } : {}),
-          ...(r.formattedAddress ? { note: r.formattedAddress } : {}),
-        };
-      });
-
-    if (attractions.length === 0) {
-      throw new Error(`No attractions with valid coordinates found for "${params.destination}".`);
-    }
-
-    const center = attractions[0]!.coordinates;
-    return { center, attractions, source: 'google_places' };
   }
 
   if (lovableKey) {
@@ -191,9 +191,116 @@ Return ONLY valid JSON:
     return { ...parsed, source: 'ai_gateway' };
   }
 
-  throw new Error(
-    'No attraction provider is configured. Set GOOGLE_PLACES_API_KEY (or LOVABLE_API_KEY) in .env / Vercel Environment Variables.',
+  // Zero-key OpenStreetMap (Nominatim + Overpass API) fallback
+  const osmGeoRes = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(`${params.destination}, India`)}`,
+    { headers: { 'User-Agent': 'TripPilot/1.0' } },
   );
+  if (!osmGeoRes.ok) {
+    throw new Error(`Could not look up "${params.destination}" on OpenStreetMap.`);
+  }
+  const geoList = (await osmGeoRes.json()) as Array<{ lat: string; lon: string }>;
+  const cityGeo = geoList[0];
+  if (!cityGeo) {
+    throw new Error(`No location found for "${params.destination}, India".`);
+  }
+
+  const center: Coordinates = { lat: Number(cityGeo.lat), lng: Number(cityGeo.lon) };
+  const overpassQuery = `[out:json][timeout:12];
+(
+  node["tourism"~"attraction|museum|viewpoint"]["name"](around:15000,${center.lat},${center.lng});
+  way["tourism"~"attraction|museum|viewpoint"]["name"](around:15000,${center.lat},${center.lng});
+  node["historic"~"monument|fort|palace|ruins"]["name"](around:15000,${center.lat},${center.lng});
+  node["leisure"~"park|garden"]["name"](around:15000,${center.lat},${center.lng});
+  node["amenity"~"place_of_worship|cafe"]["name"](around:10000,${center.lat},${center.lng});
+);
+out center ${Math.min(35, (params.limit ?? 18) * 2)};`;
+
+  const overpassRes = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain', 'User-Agent': 'TripPilot/1.0' },
+    body: overpassQuery,
+  });
+
+  if (!overpassRes.ok) {
+    throw new Error(`OpenStreetMap Overpass request failed (${overpassRes.status}).`);
+  }
+
+  const overpassJson = (await overpassRes.json()) as {
+    elements?: Array<{
+      type: string;
+      id: number;
+      lat?: number;
+      lon?: number;
+      center?: { lat: number; lon: number };
+      tags?: Record<string, string>;
+    }>;
+  };
+
+  const seen = new Set<string>();
+  const attractions: AttractionCandidate[] = [];
+
+  for (const el of overpassJson.elements ?? []) {
+    const name = el.tags?.['name:en'] || el.tags?.['name'];
+    const lat = el.lat ?? el.center?.lat;
+    const lng = el.lon ?? el.center?.lon;
+    if (!name || lat === undefined || lng === undefined) continue;
+    const norm = name.trim().toLowerCase();
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+
+    const tourism = el.tags?.['tourism'] ?? '';
+    const historic = el.tags?.['historic'] ?? '';
+    const leisure = el.tags?.['leisure'] ?? '';
+    const amenity = el.tags?.['amenity'] ?? '';
+
+    let category = 'Sightseeing';
+    let isOutdoor = true;
+    let cost = 100;
+
+    if (tourism === 'museum') {
+      category = 'Museum';
+      isOutdoor = false;
+      cost = 200;
+    } else if (historic) {
+      category = 'History';
+      isOutdoor = true;
+      cost = 250;
+    } else if (leisure === 'park' || leisure === 'garden' || tourism === 'viewpoint') {
+      category = 'Nature';
+      isOutdoor = true;
+      cost = 50;
+    } else if (amenity === 'place_of_worship') {
+      category = 'Culture';
+      isOutdoor = false;
+      cost = 0;
+    } else if (amenity === 'cafe') {
+      category = 'Food';
+      isOutdoor = false;
+      cost = 400;
+    }
+
+    attractions.push({
+      attractionId: `osm-${el.type}-${el.id}`,
+      name,
+      coordinates: { lat, lng },
+      category,
+      isOutdoor,
+      rating: 4.3,
+      duration: category === 'Food' ? 1.5 : 2,
+      cost,
+      openingHours: { open: 9, close: 19 },
+      ...(el.tags?.['addr:street'] ? { note: el.tags['addr:street'] } : {}),
+    });
+
+    if (attractions.length >= (params.limit ?? 18)) break;
+  }
+
+  if (attractions.length === 0) {
+    throw new Error(`No attractions found near "${params.destination}".`);
+  }
+
+  return { center, attractions, source: 'openstreetmap' };
 }
 
 export async function resolveStartPoint(
