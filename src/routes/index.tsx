@@ -570,20 +570,37 @@ function Index() {
 
   return (
     <main className="bg-background pb-16">
-      <section className="mx-auto max-w-6xl px-6 pt-10 pb-6">
-        <p className="font-mono text-xs uppercase text-primary">
-          Smart Day Grouping · Route Planning · Budget &amp; Weather Aware
-        </p>
-        <h1 className="mt-3 font-display text-4xl text-foreground sm:text-5xl">
-          Intelligent Travel Itinerary Planner
-        </h1>
-        <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-          Enter a destination, trip length, budget, and interests. TripPilot groups nearby attractions by day, minimizes travel time, and adapts to opening hours, budget, and weather.
-        </p>
+      <section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-b from-secondary/60 via-background to-background">
+        <div className="mx-auto max-w-6xl px-6 pt-12 pb-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-xs uppercase text-primary">
+            <MapPin className="size-3.5" />
+            Discover India · Intelligent Trip Planning
+          </div>
+          <h1 className="mt-4 max-w-3xl font-display text-4xl leading-tight text-foreground sm:text-6xl">
+            Plan smarter day-by-day trips in seconds.
+          </h1>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Enter your destination, stay length, budget, and interests. TripPilot groups nearby attractions by day, minimizes transit time, and adapts to opening hours, budget, and live weather.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
+              <RouteIcon className="size-3.5 text-primary" /> Nearest-Stop Routing
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
+              <IndianRupee className="size-3.5 text-primary" /> Budget &amp; Transit Split
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
+              <CloudRain className="size-3.5 text-primary" /> Rain-Aware Swaps
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
+              <CalendarPlus className="size-3.5 text-primary" /> PDF &amp; Calendar Export
+            </span>
+          </div>
+        </div>
       </section>
 
-      <section id="destinations" className="no-print mx-auto max-w-6xl scroll-mt-24 px-6">
-        <form onSubmit={handleGenerate} className="space-y-5 border-y border-border py-6">
+      <section id="destinations" className="no-print mx-auto -mt-4 max-w-6xl scroll-mt-24 px-6">
+        <form onSubmit={handleGenerate} className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <div className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_110px_130px_100px_140px_auto]">
             <div className="space-y-2">
               <Label htmlFor="destination" className="flex items-center gap-2">
@@ -801,15 +818,97 @@ function Index() {
       )}
 
       {!trip && !loading && (
-        <section id="how-it-works" className="mx-auto max-w-6xl px-6 pt-10">
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-            <Compass className="mx-auto size-10 text-primary" />
-            <h2 className="mt-4 font-display text-2xl">Plan Smarter, Travel Better</h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-              Pick a city, your budget, and what you love to do — we’ll group nearby sights into balanced days, minimize transit, and factor in opening hours and weather forecasts.
-            </p>
-          </div>
-        </section>
+        <div id="how-it-works" className="mx-auto max-w-6xl space-y-14 px-6 pt-12">
+          <section>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs uppercase text-primary">Popular Destinations</p>
+                <h2 className="mt-1 font-display text-3xl">Where will you go next?</h2>
+              </div>
+              <Link to="/explore" className="text-sm font-medium text-primary hover:underline">
+                View all destinations →
+              </Link>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { name: 'Dehradun', tag: 'Uttarakhand · Temples & nature', budget: '₹1,500/day' },
+                { name: 'Jaipur', tag: 'Rajasthan · Forts & bazaars', budget: '₹2,000/day' },
+                { name: 'Goa', tag: 'Coast · Beaches & spice farms', budget: '₹2,500/day' },
+                { name: 'Manali', tag: 'Himachal · Mountains & cafés', budget: '₹2,200/day' },
+                { name: 'Udaipur', tag: 'Rajasthan · Lakes & palaces', budget: '₹2,000/day' },
+                { name: 'Varanasi', tag: 'UP · Ghats & heritage', budget: '₹1,400/day' },
+                { name: 'Rishikesh', tag: 'Uttarakhand · River & yoga', budget: '₹1,500/day' },
+                { name: 'Kochi', tag: 'Kerala · Fort Kochi & coast', budget: '₹1,800/day' },
+              ].map((city) => {
+                const selected = destination.trim().toLowerCase() === city.name.toLowerCase();
+                return (
+                  <button
+                    key={city.name}
+                    type="button"
+                    onClick={() => {
+                      setDestination(city.name);
+                      document.getElementById('destinations')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className={`group flex flex-col justify-between rounded-xl border p-4 text-left transition-all ${
+                      selected
+                        ? 'border-primary bg-secondary shadow-sm'
+                        : 'border-border bg-card hover:border-primary/50 hover:shadow-sm'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <MapPin className="size-4" />
+                        </span>
+                        <span className="font-mono text-xs text-muted-foreground">{city.budget}</span>
+                      </div>
+                      <h3 className="mt-3 font-display text-xl text-foreground">{city.name}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">{city.tag}</p>
+                    </div>
+                    <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary group-hover:underline">
+                      Select city →
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section>
+            <p className="font-mono text-xs uppercase text-primary">Everything Built In</p>
+            <h2 className="mt-1 font-display text-3xl">Designed for effortless travel planning</h2>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <article className="rounded-xl border border-border bg-card p-5">
+                <Compass className="size-6 text-primary" />
+                <h3 className="mt-3 font-display text-lg">Coherent Day Grouping</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  Nearby attractions are grouped into the same day so you spend time exploring instead of stuck in transit.
+                </p>
+              </article>
+              <article className="rounded-xl border border-border bg-card p-5">
+                <Clock3 className="size-6 text-primary" />
+                <h3 className="mt-3 font-display text-lg">Opening-Hour &amp; Pace Fit</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  Every stop is timed against opening hours, visit duration, and round-trip travel from your hotel.
+                </p>
+              </article>
+              <article className="rounded-xl border border-border bg-card p-5">
+                <CloudRain className="size-6 text-primary" />
+                <h3 className="mt-3 font-display text-lg">Weather &amp; Budget Adaptive</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  Swap outdoor stops for indoor alternatives when rain is forecast, or re-plan instantly if your budget changes.
+                </p>
+              </article>
+              <article className="rounded-xl border border-border bg-card p-5">
+                <Download className="size-6 text-primary" />
+                <h3 className="mt-3 font-display text-lg">Edit, Save &amp; Export</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  Reorder stops, add custom cafés, save to MongoDB, share read-only links, or export to PDF and Calendar (.ics).
+                </p>
+              </article>
+            </div>
+          </section>
+        </div>
       )}
 
       {trip && (
