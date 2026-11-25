@@ -9,6 +9,7 @@ import {
   getDayEnergyScore,
   getIndiaPracticalAlerts,
   getStopTimingInsight,
+  resolveCitySpelling,
   kMeansCluster,
   moveStopBetweenDays,
   nearestNeighbourOrder,
@@ -316,5 +317,11 @@ describe('Optimization Engine', () => {
     expect(html).toContain('Jaipur Offline Pocket Pass');
     expect(html).toContain('112');
     expect(html).toContain('Birla Mandir');
+  });
+
+  it('auto-corrects minor typos in Indian city names', () => {
+    expect(resolveCitySpelling('Dehradn')).toEqual({ city: 'Dehradun', correctedFrom: 'Dehradn' });
+    expect(resolveCitySpelling('Varansi')).toEqual({ city: 'Varanasi', correctedFrom: 'Varansi' });
+    expect(resolveCitySpelling('Jaipur')).toEqual({ city: 'Jaipur' });
   });
 });

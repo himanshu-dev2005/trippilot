@@ -5,6 +5,7 @@ import {
   optimizeItinerary,
   regenerateSingleDay,
   replanForBudget,
+  resolveCitySpelling,
   type AttractionCandidate,
   type Coordinates,
   type ItineraryDay,
@@ -82,13 +83,17 @@ export const generateOptimizedTrip = createServerFn({ method: 'POST' })
     const { discoverAttractions, resolveStartPoint } = await import('@/lib/places.server');
     const { getDestinationWeather } = await import('@/lib/weather.server');
 
+    const { city: resolvedDestination, correctedFrom } = resolveCitySpelling(data.destination);
+
     const [{ center, attractions, source }, startPoint] = await Promise.all([
       discoverAttractions({
-        destination: data.destination,
+        destination: resolvedDestination,
         interests: data.interests,
         limit: Math.max(12, data.numberOfDays * 5),
       }),
-      data.startPointQuery ? resolveStartPoint(data.startPointQuery, data.destination) : Promise.resolve(undefined),
+      data.startPointQuery
+        ? resolveStartPoint(data.startPointQuery, resolvedDestination)
+        : Promise.resolve(undefined),
     ]);
 
     const weather = await getDestinationWeather({
@@ -98,7 +103,7 @@ export const generateOptimizedTrip = createServerFn({ method: 'POST' })
     });
 
     const optimized = optimizeItinerary({
-      destination: data.destination,
+      destination: resolvedDestination,
       attractions,
       numberOfDays: data.numberOfDays,
       budget: data.budget,
@@ -109,7 +114,8 @@ export const generateOptimizedTrip = createServerFn({ method: 'POST' })
     });
 
     return {
-      destination: data.destination,
+      destination: resolvedDestination,
+      ...(correctedFrom ? { correctedFrom } : {}),
       center,
       source,
       transportMode: data.transportMode,

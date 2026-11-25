@@ -336,6 +336,10 @@ function Index() {
       setCustomPlaceDay(1);
       setCheckedPacking({});
       setSelectedPlaceName(res.itinerary[0]?.stops[0]?.name ?? null);
+      if ('correctedFrom' in res && res.correctedFrom) {
+        setDestination(res.destination);
+        setNotice(`Showing itinerary for "${res.destination}" (corrected from "${res.correctedFrom}").`);
+      }
       requestAnimationFrame(() =>
         document.getElementById('plan')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
       );
