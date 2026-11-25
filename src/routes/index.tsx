@@ -6,6 +6,10 @@ import {
   Star,
   LocateFixed,
   CloudSun,
+  Sun,
+  Cloud,
+  Droplets,
+  Wind,
   MapPin,
   CalendarDays,
   Sparkles,
@@ -1052,12 +1056,12 @@ function Index() {
           </div>
 
           {showWeatherPanel && (
-            <div className="mt-4 rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between gap-2">
+            <div className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
                 <div className="flex items-center gap-2">
                   <CloudSun className="size-4 text-primary" />
                   <h3 className="font-mono text-xs uppercase tracking-wider text-foreground">
-                    Live Weather Forecast
+                    Live Weather Forecast · {trip.destination}
                   </h3>
                 </div>
                 {!trip.weatherConfigured && (
@@ -1066,25 +1070,66 @@ function Index() {
                   </span>
                 )}
               </div>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {trip.itinerary.map((day) => (
-                  <div
-                    key={`wx-${day.dayNumber}`}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
-                      day.hasRainAlert
-                        ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                        : 'border-border bg-background text-muted-foreground'
-                    }`}
-                  >
-                    {day.hasRainAlert ? (
-                      <CloudRain className="size-3.5 text-amber-400" />
-                    ) : (
-                      <CloudSun className="size-3.5 text-primary" />
-                    )}
-                    <span className="font-mono text-foreground">Day {day.dayNumber}:</span>
-                    <span>{day.weatherSummary}</span>
-                  </div>
-                ))}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {trip.itinerary.map((day) => {
+                  const cond = (day.weatherCondition || '').toLowerCase();
+                  const WeatherIcon = day.hasRainAlert
+                    ? CloudRain
+                    : cond.includes('cloud')
+                      ? Cloud
+                      : Sun;
+                  return (
+                    <div
+                      key={`wx-${day.dayNumber}`}
+                      className={`flex flex-col justify-between rounded-xl border p-4 ${
+                        day.hasRainAlert
+                          ? 'border-amber-500/40 bg-amber-500/10'
+                          : 'border-border bg-background'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-mono text-xs font-medium text-primary">Day {day.dayNumber}</p>
+                          <p className="text-[11px] text-muted-foreground">{day.date}</p>
+                        </div>
+                        <WeatherIcon
+                          className={`size-5 ${day.hasRainAlert ? 'text-amber-500' : 'text-amber-500'}`}
+                        />
+                      </div>
+                      <div className="mt-3">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-display text-2xl text-foreground">
+                            {day.tempC !== undefined ? `${day.tempC}°C` : '—'}
+                          </span>
+                          {day.tempMinC !== undefined && day.tempMaxC !== undefined && (
+                            <span className="text-xs text-muted-foreground">
+                              {day.tempMinC}° / {day.tempMaxC}°
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 text-xs capitalize text-muted-foreground">
+                          {day.weatherSummary}
+                        </p>
+                      </div>
+                      {(day.humidity !== undefined || day.windKmh !== undefined) && (
+                        <div className="mt-3 flex items-center gap-3 border-t border-border/60 pt-2 text-[11px] text-muted-foreground">
+                          {day.humidity !== undefined && (
+                            <span className="inline-flex items-center gap-1">
+                              <Droplets className="size-3 text-primary" />
+                              {day.humidity}%
+                            </span>
+                          )}
+                          {day.windKmh !== undefined && (
+                            <span className="inline-flex items-center gap-1">
+                              <Wind className="size-3 text-primary" />
+                              {day.windKmh} km/h
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1197,7 +1242,7 @@ function Index() {
                       No stops fit within the remaining budget and opening hours for this day.
                     </p>
                   ) : (
-                    <ol className="mt-4 space-y-4">
+                    <ol className="relative mt-6 space-y-5 border-l-2 border-border/80 pl-5">
                       {day.stops.map((stop, idx) => {
                         const isFav = favourites.includes(`${trip.destination}::${stop.name}`);
                         const isSelected = selectedPlaceName === stop.name;
@@ -1208,14 +1253,17 @@ function Index() {
                           <li
                             key={`${day.dayNumber}-${stop.attractionId}-${idx}`}
                             onClick={() => setSelectedPlaceName(stop.name)}
-                            className={`cursor-pointer rounded-lg border p-4 transition-colors ${
+                            className={`relative cursor-pointer rounded-xl border p-4 shadow-xs transition-all ${
                               stop.visited
                                 ? 'border-emerald-500/40 bg-emerald-500/5'
                                 : isSelected
-                                  ? 'border-primary bg-secondary/40'
-                                  : 'border-border hover:border-primary/50'
+                                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                  : 'border-border bg-background hover:border-primary/50 hover:shadow-sm'
                             }`}
                           >
+                            <span className="absolute -left-[31px] top-5 flex size-6 items-center justify-center rounded-full border-2 border-background bg-primary font-mono text-[11px] font-medium text-primary-foreground shadow-xs">
+                              {globalNumber}
+                            </span>
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                               <StopPhoto
                                 name={stop.name}
@@ -1225,11 +1273,19 @@ function Index() {
 
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary font-mono text-xs text-primary-foreground">
-                                      {globalNumber}
-                                    </span>
-                                    <h4 className={`font-display text-lg ${stop.visited ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                                  <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-medium text-primary">
+                                        {stop.startTime}
+                                      </span>
+                                      <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
+                                        {stop.category}
+                                      </span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {stop.isOutdoor ? 'Outdoor' : 'Indoor'}
+                                      </span>
+                                    </div>
+                                    <h4 className={`mt-1.5 font-display text-xl ${stop.visited ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                                       {stop.name}
                                     </h4>
                                   </div>
@@ -1265,13 +1321,10 @@ function Index() {
                                   </div>
                                 </div>
 
-                                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                                  <span className="font-mono text-primary">{stop.startTime}</span>
-                                  <span>{stop.category}</span>
-                                  <span>{stop.isOutdoor ? 'Outdoor' : 'Indoor'}</span>
+                                <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1">
-                                    <Clock3 className="size-3" />
-                                    {stop.duration}h
+                                    <Clock3 className="size-3 text-primary" />
+                                    {stop.duration}h visit
                                   </span>
                                   <span>₹{stop.cost}</span>
                                   <span>

@@ -18,20 +18,20 @@ const navLinks = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [lightMode, setLightMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const [error, setError] = useState("");
   const { user, loading, setUser } = useAccount();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   useEffect(() => {
-    setLightMode(document.documentElement.classList.contains("light"));
+    setDarkMode(document.documentElement.classList.contains("dark"));
   }, []);
 
   function toggleTheme() {
-    const next = !lightMode;
-    setLightMode(next);
-    document.documentElement.classList.toggle("light", next);
+    const next = !darkMode;
+    setDarkMode(next);
+    document.documentElement.classList.toggle("dark", next);
   }
 
   async function signOut() {
@@ -127,9 +127,9 @@ export function SiteHeader() {
             size="icon"
             aria-label="Toggle theme"
             onClick={toggleTheme}
-            className="size-8 rounded-md border-border bg-card text-amber-400"
+            className="size-8 rounded-md border-border bg-card"
           >
-            {lightMode ? <Moon className="size-3.5 text-foreground" /> : <Sun className="size-3.5" />}
+            {darkMode ? <Sun className="size-3.5 text-amber-400" /> : <Moon className="size-3.5 text-foreground" />}
           </Button>
           {accountControls}
         </div>
@@ -164,7 +164,7 @@ export function SiteHeader() {
             <div className="flex items-center justify-between border-t border-border pt-3">
               {accountControls}
               <Button type="button" variant="outline" size="icon" onClick={toggleTheme} className="size-8">
-                {lightMode ? <Moon className="size-3.5" /> : <Sun className="size-3.5 text-amber-400" />}
+                {darkMode ? <Sun className="size-3.5 text-amber-400" /> : <Moon className="size-3.5" />}
               </Button>
             </div>
           </div>

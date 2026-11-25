@@ -63,6 +63,12 @@ export type ItineraryDay = {
   totalTravelTime: number; // minutes
   weatherSummary: string;
   hasRainAlert: boolean;
+  tempC?: number;
+  tempMinC?: number;
+  tempMaxC?: number;
+  humidity?: number;
+  windKmh?: number;
+  weatherCondition?: string;
   stops: Stop[];
 };
 
@@ -417,7 +423,16 @@ export function optimizeItinerary(params: {
   startDate?: string;
   transportMode?: TransportMode;
   startPoint?: StartPoint;
-  dailyWeather?: Array<{ hasRain: boolean; summary: string }>;
+  dailyWeather?: Array<{
+    hasRain: boolean;
+    summary: string;
+    tempC?: number;
+    tempMinC?: number;
+    tempMaxC?: number;
+    humidity?: number;
+    windKmh?: number;
+    condition?: string;
+  }>;
 }): OptimizationResult {
   const {
     destination,
@@ -462,7 +477,15 @@ export function optimizeItinerary(params: {
 
     optimizedDistanceKm += totalRouteDistanceKm(day.stops);
     remainingBudget -= budgetUsed;
-    itinerary.push(day);
+    itinerary.push({
+      ...day,
+      ...(weather?.tempC !== undefined ? { tempC: weather.tempC } : {}),
+      ...(weather?.tempMinC !== undefined ? { tempMinC: weather.tempMinC } : {}),
+      ...(weather?.tempMaxC !== undefined ? { tempMaxC: weather.tempMaxC } : {}),
+      ...(weather?.humidity !== undefined ? { humidity: weather.humidity } : {}),
+      ...(weather?.windKmh !== undefined ? { windKmh: weather.windKmh } : {}),
+      ...(weather?.condition ? { weatherCondition: weather.condition } : {}),
+    });
   }
 
   const totalCost = itinerary.reduce((sum, d) => sum + d.totalCost, 0);
