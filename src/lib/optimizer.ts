@@ -52,6 +52,7 @@ export type Stop = AttractionCandidate & {
   instagramSearchUrl: string;
   userNote?: string;
   visited?: boolean;
+  votes?: { up: number; down: number };
 };
 
 export type ItineraryDay = {

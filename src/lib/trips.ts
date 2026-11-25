@@ -429,10 +429,53 @@ export const reverseGeocodeCity = createServerFn({ method: 'GET' })
           state?: string;
         };
       };
-      const addr = json.address;
+    const addr = json.address;
       const city = addr?.city || addr?.town || addr?.village || addr?.state_district || addr?.state || null;
       return { city };
     } catch {
       return { city: null };
     }
+  });
+
+export const voteTripStop = createServerFn({ method: 'POST' })
+  .inputValidator((raw: unknown) =>
+    z
+      .object({
+        tripId: z.string().min(1),
+        dayNumber: z.number().int().min(1),
+        attractionId: z.string().min(1),
+        direction: z.enum(['up', 'down']),
+      })
+      .parse(raw),
+  )
+  .handler(async ({ data }): Promise<{ itinerary: ItineraryDay[] }> => {
+    const { getMongoDb } = await import('@/lib/mongodb.server');
+    const { ObjectId } = await import('mongodb');
+
+    if (!ObjectId.isValid(data.tripId)) {
+      throw new Error('Invalid trip ID.');
+    }
+
+    const db = await getMongoDb();
+    const trips = db.collection('trips');
+    const field = data.direction === 'up' ? 'itinerary.$[d].stops.$[s].votes.up' : 'itinerary.$[d].stops.$[s].votes.down';
+
+    await trips.updateOne(
+      { _id: new ObjectId(data.tripId) },
+      {
+        $inc: { [field]: 1 },
+        $set: { updatedAt: new Date().toISOString() },
+      },
+      {
+        arrayFilters: [
+          { 'd.dayNumber': data.dayNumber },
+          { 's.attractionId': data.attractionId },
+        ],
+      },
+    );
+
+    const updated = await trips.findOne({ _id: new ObjectId(data.tripId) });
+    return {
+      itinerary: (updated?.['itinerary'] as ItineraryDay[] | undefined) ?? [],
+    };
   });
