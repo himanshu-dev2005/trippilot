@@ -1,27 +1,38 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Menu, X, LogOut, UserRound, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, LogOut, UserRound, Sun, Moon, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAccount } from "@/components/AuthProvider";
 import { signOutMongo } from "@/lib/auth";
 
 const navLinks = [
-  { label: "Planner", to: "/" },
-  { label: "Explore", to: "/explore" },
-  { label: "My Trips", to: "/trips" },
-  { label: "Favourites", to: "/favourites" },
-  { label: "How it works", to: "/how-it-works" },
+  { label: "HOME", to: "/" },
+  { label: "EXPLORE INDIA", to: "/explore" },
+  { label: "MY SAVED TRIPS", to: "/trips" },
+  { label: "FAVOURITES", to: "/favourites" },
+  { label: "HOW IT WORKS", to: "/how-it-works" },
 ] as const;
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [lightMode, setLightMode] = useState(false);
   const [error, setError] = useState("");
   const { user, loading, setUser } = useAccount();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setLightMode(document.documentElement.classList.contains("light"));
+  }, []);
+
+  function toggleTheme() {
+    const next = !lightMode;
+    setLightMode(next);
+    document.documentElement.classList.toggle("light", next);
+  }
 
   async function signOut() {
     setSigningOut(true);
@@ -47,11 +58,11 @@ export function SiteHeader() {
       <Link
         to="/profile"
         onClick={() => setOpen(false)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary"
         title={user.email}
       >
         <UserRound className="size-3.5 text-primary" />
-        Profile
+        PROFILE
       </Link>
       <Button
         variant="ghost"
@@ -66,42 +77,62 @@ export function SiteHeader() {
     </div>
   ) : (
     <div className="flex items-center gap-2">
-      <Button asChild variant="ghost" size="sm">
+      <Button asChild variant="ghost" size="sm" className="font-mono text-[11px] uppercase tracking-wider">
         <Link to="/auth" onClick={() => setOpen(false)}>
-          Sign in
+          SIGN IN
         </Link>
       </Button>
-      <Button asChild size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90">
-        <Link to="/signup" onClick={() => setOpen(false)}>
-          <Sparkles className="size-3.5" />
-          Get started
-        </Link>
+      <Button
+        asChild
+        size="sm"
+        className="rounded-md bg-primary px-3.5 font-mono text-[11px] uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+      >
+        <a href="/#destinations" onClick={() => setOpen(false)}>
+          <Plus className="size-3.5" />
+          PLAN A TRIP
+        </a>
       </Button>
     </div>
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link to="/" className="transition-opacity hover:opacity-90" onClick={() => setOpen(false)}>
           <BrandLogo />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-6 md:flex">
           {navLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
-              activeProps={{ className: "bg-secondary text-foreground font-medium" }}
-              inactiveProps={{ className: "text-muted-foreground hover:text-foreground hover:bg-secondary/50" }}
-              className="rounded-full px-3.5 py-1.5 text-sm transition-colors"
+              activeProps={{
+                className: "border-b-2 border-primary text-foreground pb-1",
+              }}
+              inactiveProps={{
+                className: "border-b-2 border-transparent text-muted-foreground hover:text-foreground pb-1",
+              }}
+              className="font-mono text-[11px] tracking-[0.14em] transition-colors"
             >
               {l.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">{accountControls}</div>
+        <div className="hidden items-center gap-2 md:flex">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+            className="size-8 rounded-md border-border bg-card text-amber-400"
+          >
+            {lightMode ? <Moon className="size-3.5 text-foreground" /> : <Sun className="size-3.5" />}
+          </Button>
+          {accountControls}
+        </div>
 
         <Button
           variant="ghost"
@@ -125,12 +156,17 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
                 activeProps={{ className: "text-primary font-medium" }}
                 inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
-                className="py-1 text-sm"
+                className="py-1 font-mono text-xs tracking-wider"
               >
                 {l.label}
               </Link>
             ))}
-            <div className="border-t border-border pt-3">{accountControls}</div>
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              {accountControls}
+              <Button type="button" variant="outline" size="icon" onClick={toggleTheme} className="size-8">
+                {lightMode ? <Moon className="size-3.5" /> : <Sun className="size-3.5 text-amber-400" />}
+              </Button>
+            </div>
           </div>
         </nav>
       )}

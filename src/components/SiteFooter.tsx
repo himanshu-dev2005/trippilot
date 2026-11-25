@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, CloudRain, IndianRupee, Route as RouteIcon } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
-const POPULAR_CITIES = ["Dehradun", "Jaipur", "Goa", "Manali", "Udaipur", "Varanasi"];
+const POPULAR_CITIES = ["Jaipur", "Varanasi", "Alleppey & Munnar", "Dehradun", "Manali", "Goa"];
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-card">
+    <footer className="border-t border-border bg-card/60">
       <div className="mx-auto max-w-6xl px-6 py-14">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
@@ -14,24 +14,13 @@ export function SiteFooter() {
               <BrandLogo />
             </Link>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Intelligent day-by-day travel planning for Indian cities. Group nearby attractions, minimize daily transit, and adapt automatically to your budget and live weather.
+              Curated day-by-day Indian itineraries sequenced with verified coordinates, budget awareness, and live weather adaptation.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1">
-                <RouteIcon className="size-3 text-primary" /> Smart Routes
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1">
-                <IndianRupee className="size-3 text-primary" /> Budget Aware
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1">
-                <CloudRain className="size-3 text-primary" /> Weather Adaptive
-              </span>
-            </div>
           </div>
 
           <div>
-            <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              Popular Cities
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Popular Circuits
             </h3>
             <ul className="mt-4 space-y-2.5">
               {POPULAR_CITIES.map((city) => (
@@ -42,7 +31,7 @@ export function SiteFooter() {
                     className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
                     <MapPin className="size-3 text-primary" />
-                    {city}, India
+                    {city}
                   </Link>
                 </li>
               ))}
@@ -50,18 +39,18 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-              Platform
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Navigation
             </h3>
             <ul className="mt-4 space-y-2.5">
               <li>
                 <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                  Trip Planner
+                  Home
                 </Link>
               </li>
               <li>
                 <Link to="/explore" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                  Explore Destinations
+                  Explore India
                 </Link>
               </li>
               <li>
@@ -71,7 +60,7 @@ export function SiteFooter() {
               </li>
               <li>
                 <Link to="/favourites" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                  Saved Places
+                  Favourites
                 </Link>
               </li>
               <li>
@@ -79,19 +68,14 @@ export function SiteFooter() {
                   How It Works
                 </Link>
               </li>
-              <li>
-                <Link to="/profile" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                  Traveler Profile
-                </Link>
-              </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
-          <p className="text-xs text-muted-foreground">© 2026 TripPilot. Plan smarter, travel better.</p>
+          <p className="font-mono text-xs text-muted-foreground">© 2026 TRIPPILOT · INDIA</p>
           <p className="text-xs text-muted-foreground">
-            Itineraries adapt to opening hours, budget, and weather — verify local timings before visiting.
+            Verify local opening hours before visiting.
           </p>
         </div>
       </div>

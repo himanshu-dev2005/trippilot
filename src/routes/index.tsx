@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState, useEffect, useMemo, type FormEvent } from 'react';
 import {
+  ArrowRight,
+  SlidersHorizontal,
+  Star,
   MapPin,
   CalendarDays,
   Sparkles,
@@ -75,7 +78,22 @@ const INTEREST_OPTIONS = [
   'Museums & Art',
 ] as const;
 
-const QUICK_CITIES = ['Dehradun', 'Jaipur', 'Goa', 'Manali', 'Udaipur', 'Varanasi', 'Rishikesh', 'Kochi'];
+const QUICK_PROMPTS = [
+  { label: '4 Days in Jaipur Forts', city: 'Jaipur', days: 4, interests: ['History & Forts', 'Culture & Heritage'] },
+  { label: '3 Days in Varanasi & Ghats', city: 'Varanasi', days: 3, interests: ['Spiritual & Temples', 'Culture & Heritage'] },
+  { label: '5 Days Kerala Backwaters', city: 'Alleppey', days: 5, interests: ['Nature & Parks', 'Food & Cafés'] },
+  { label: '3 Days in Dehradun', city: 'Dehradun', days: 3, interests: ['Nature & Parks', 'Culture & Heritage'] },
+  { label: '4 Days Udaipur Lakes', city: 'Udaipur', days: 4, interests: ['History & Forts', 'Culture & Heritage'] },
+];
+
+const FEATURED_CIRCUITS = [
+  { city: 'Jaipur', title: 'Jaipur, Rajasthan', region: 'RAJASTHAN', days: 4, rating: '4.9' },
+  { city: 'Varanasi', title: 'Varanasi, Uttar Pradesh', region: 'UTTAR PRADESH', days: 3, rating: '4.9' },
+  { city: 'Alleppey', title: 'Alleppey & Munnar, Kerala', region: 'KERALA', days: 5, rating: '4.9' },
+  { city: 'Dehradun', title: 'Dehradun, Uttarakhand', region: 'UTTARAKHAND', days: 3, rating: '4.8' },
+  { city: 'Manali', title: 'Manali, Himachal Pradesh', region: 'HIMACHAL PRADESH', days: 4, rating: '4.8' },
+  { city: 'Goa', title: 'North & South Goa', region: 'GOA', days: 4, rating: '4.9' },
+];
 const FAVOURITES_KEY = 'trippilot:favourites';
 
 type ActiveTripState = {
@@ -124,6 +142,7 @@ function Index() {
   const [interests, setInterests] = useState<string[]>(['Culture & Heritage', 'Nature & Parks']);
 
   const [loading, setLoading] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const [busyAction, setBusyAction] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -570,211 +589,210 @@ function Index() {
 
   return (
     <main className="bg-background pb-24">
-      <section className="border-b-2 border-foreground bg-foreground text-background">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 pt-20 pb-28 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:items-end">
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
-              India · Day-by-Day Travel Planner
-            </p>
-            <h1 className="mt-5 font-display text-5xl leading-[1.02] tracking-tight sm:text-7xl">
-              Every city.
-              <br />
-              Every hour. <span className="italic text-accent">Mapped.</span>
-            </h1>
-          </div>
-          <div className="border-l border-background/20 pl-8">
-            <p className="text-base leading-relaxed text-background/80">
-              Stop juggling twenty open tabs. Pick your city, budget, and interests — TripPilot builds a realistic route timed to opening hours, local transit, and live weather.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-6 font-mono text-xs uppercase tracking-wider text-background/60">
-              <span>8+ Curated Cities</span>
-              <span>Live Weather</span>
-              <span>PDF &amp; .ICS</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="destinations" className="no-print mx-auto -mt-12 max-w-6xl scroll-mt-24 px-6">
-        <form
-          onSubmit={handleGenerate}
-          className="space-y-7 rounded-xl border-2 border-foreground bg-card p-6 shadow-[6px_6px_0px_0px_var(--foreground)] sm:p-8"
-        >
-          <div className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_110px_130px_100px_140px_auto]">
-            <div className="space-y-2">
-              <Label htmlFor="destination" className="flex items-center gap-2">
-                <MapPin className="size-4 text-primary" />
-                Destination
-              </Label>
-              <Input
-                id="destination"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                placeholder="e.g. Dehradun, Jaipur, Goa..."
-                required
-                className="h-11 bg-card"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="days" className="flex items-center gap-2">
-                <CalendarDays className="size-4 text-primary" />
-                Days
-              </Label>
-              <Select value={String(numberOfDays)} onValueChange={(v) => setNumberOfDays(Number(v))}>
-                <SelectTrigger id="days" className="h-11 bg-card">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 10 }, (_, i) => i + 1).map((d) => (
-                    <SelectItem key={d} value={String(d)}>
-                      {d} day{d === 1 ? '' : 's'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="budget" className="flex items-center gap-2">
-                <IndianRupee className="size-4 text-primary" />
-                Budget (₹)
-              </Label>
-              <Input
-                id="budget"
-                type="number"
-                min={0}
-                step={100}
-                value={budget}
-                onChange={(e) => setBudget(Number(e.target.value))}
-                required
-                className="h-11 bg-card"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="travelers" className="flex items-center gap-1.5">
-                <Users className="size-4 text-primary" />
-                Group
-              </Label>
-              <Input
-                id="travelers"
-                type="number"
-                min={1}
-                max={20}
-                value={travelers}
-                onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
-                className="h-11 bg-card"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-11 bg-card"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading || !destination.trim()}
-              className="h-11 bg-accent px-6 text-accent-foreground hover:bg-accent/90"
-            >
-              {loading ? <LoaderCircle className="animate-spin" /> : <Sparkles />}
-              {loading ? 'Planning...' : 'Generate'}
-            </Button>
+      <section className="relative overflow-hidden border-b border-border/60">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.16),transparent_65%)]" />
+        <div className="relative mx-auto max-w-4xl px-6 pt-20 pb-16 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <Sparkles className="size-3.5 text-primary" />
+            TRIP PLANNER FOR INDIA
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="startPoint" className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Hotel className="size-3.5 text-primary" />
-                Hotel / Starting point (optional, for round-trip routing)
-              </Label>
-              <Input
-                id="startPoint"
-                value={startPointQuery}
-                onChange={(e) => setStartPointQuery(e.target.value)}
-                placeholder="e.g. Clock Tower, Railway Station, Hotel..."
-                className="h-10 bg-card"
-              />
-            </div>
+          <h1 className="mt-7 font-display text-5xl leading-[1.05] tracking-tight text-foreground sm:text-7xl">
+            Plan Your Dream Trip to India
+            <br />
+            in Seconds.
+          </h1>
 
-            <div className="space-y-2">
-              <Label htmlFor="transportMode" className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Car className="size-3.5 text-primary" />
-                Local transport mode
-              </Label>
-              <Select value={transportMode} onValueChange={(v) => setTransportMode(v as TransportMode)}>
-                <SelectTrigger id="transportMode" className="h-10 bg-card">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(TRANSPORT_CONFIG).map(([key, cfg]) => (
-                    <SelectItem key={key} value={key}>
-                      {cfg.label} (~{cfg.speedKmh} km/h · ₹{cfg.costPerKm}/km)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
+            Tell TripPilot your destination, pacing, budget in ₹, and local interests. We sequence every hour with verified Indian coordinates and minimal transit.
+          </p>
 
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Interests</Label>
-            <div className="flex flex-wrap gap-2">
-              {INTEREST_OPTIONS.map((option) => {
-                const active = interests.includes(option);
-                return (
+          <section id="destinations" className="no-print mx-auto mt-10 max-w-3xl scroll-mt-24 text-left">
+            <form onSubmit={handleGenerate} className="space-y-4">
+              <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2 shadow-2xl shadow-black/40 sm:flex-row sm:items-center">
+                <div className="flex flex-1 items-center gap-3 px-3">
+                  <Sparkles className="size-4 shrink-0 text-primary" />
+                  <Input
+                    id="destination"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    placeholder="Enter an Indian city (e.g. Jaipur, Varanasi, Dehradun, Goa...)"
+                    required
+                    className="h-11 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
                   <Button
-                    key={option}
                     type="button"
+                    variant="ghost"
                     size="sm"
-                    variant={active ? 'default' : 'outline'}
-                    aria-pressed={active}
-                    onClick={() => toggleInterest(option)}
-                    className="h-8 rounded-full text-xs"
+                    onClick={() => setShowOptions((v) => !v)}
+                    className="h-11 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {option}
+                    <SlidersHorizontal className="size-3.5" />
+                    {numberOfDays}d · ₹{budget.toLocaleString('en-IN')}
                   </Button>
-                );
-              })}
-            </div>
-          </div>
+                  <Button
+                    type="submit"
+                    disabled={loading || !destination.trim()}
+                    className="h-11 rounded-lg bg-primary px-5 font-mono text-xs uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+                  >
+                    {loading ? <LoaderCircle className="animate-spin" /> : null}
+                    {loading ? 'PLANNING...' : 'GENERATE TRIP'}
+                    {!loading && <ArrowRight className="size-4" />}
+                  </Button>
+                </div>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span>Quick cities:</span>
-            {QUICK_CITIES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setDestination(c)}
-                className={`rounded-full border px-2.5 py-0.5 transition-colors ${
-                  destination.trim().toLowerCase() === c.toLowerCase()
-                    ? 'border-primary bg-secondary text-foreground'
-                    : 'border-border hover:border-primary/60'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </form>
+              {showOptions && (
+                <div className="space-y-5 rounded-xl border border-border bg-card p-6 text-left shadow-xl">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="days" className="text-xs text-muted-foreground">Days</Label>
+                      <Select value={String(numberOfDays)} onValueChange={(v) => setNumberOfDays(Number(v))}>
+                        <SelectTrigger id="days" className="h-10 bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((d) => (
+                            <SelectItem key={d} value={String(d)}>
+                              {d} day{d === 1 ? '' : 's'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-        {error && (
-          <div role="alert" className="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-        {notice && (
-          <div role="status" className="mt-4 rounded-lg border border-primary/30 bg-secondary p-3.5 text-sm text-foreground">
-            {notice}
-          </div>
-        )}
+                    <div className="space-y-2">
+                      <Label htmlFor="budget" className="text-xs text-muted-foreground">Budget (₹)</Label>
+                      <Input
+                        id="budget"
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={budget}
+                        onChange={(e) => setBudget(Number(e.target.value))}
+                        className="h-10 bg-background"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="travelers" className="text-xs text-muted-foreground">Travelers</Label>
+                      <Input
+                        id="travelers"
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={travelers}
+                        onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
+                        className="h-10 bg-background"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate" className="text-xs text-muted-foreground">Start date</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="h-10 bg-background"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="startPoint" className="text-xs text-muted-foreground">
+                        Hotel / Starting point (optional)
+                      </Label>
+                      <Input
+                        id="startPoint"
+                        value={startPointQuery}
+                        onChange={(e) => setStartPointQuery(e.target.value)}
+                        placeholder="e.g. Clock Tower, Railway Station..."
+                        className="h-10 bg-background"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="transportMode" className="text-xs text-muted-foreground">
+                        Local transport
+                      </Label>
+                      <Select value={transportMode} onValueChange={(v) => setTransportMode(v as TransportMode)}>
+                        <SelectTrigger id="transportMode" className="h-10 bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(TRANSPORT_CONFIG).map(([key, cfg]) => (
+                            <SelectItem key={key} value={key}>
+                              {cfg.label} (~{cfg.speedKmh} km/h · ₹{cfg.costPerKm}/km)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Interests</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {INTEREST_OPTIONS.map((option) => {
+                        const active = interests.includes(option);
+                        return (
+                          <Button
+                            key={option}
+                            type="button"
+                            size="sm"
+                            variant={active ? 'default' : 'outline'}
+                            aria-pressed={active}
+                            onClick={() => toggleInterest(option)}
+                            className="h-8 rounded-full text-xs"
+                          >
+                            {option}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
+                <span className="font-mono text-[11px] uppercase tracking-wider">TRY:</span>
+                {QUICK_PROMPTS.map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    onClick={() => {
+                      setDestination(q.city);
+                      setNumberOfDays(q.days);
+                      setInterests(q.interests);
+                    }}
+                    className={`rounded-full border px-3 py-1 transition-colors ${
+                      destination.trim().toLowerCase() === q.city.toLowerCase()
+                        ? 'border-primary bg-primary/15 text-foreground'
+                        : 'border-border bg-card/70 hover:border-primary/50 hover:text-foreground'
+                    }`}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            </form>
+
+            {error && (
+              <div role="alert" className="mt-5 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+            {notice && (
+              <div role="status" className="mt-5 rounded-lg border border-primary/30 bg-card p-3.5 text-sm text-foreground">
+                {notice}
+              </div>
+            )}
+          </section>
+        </div>
       </section>
 
       {savedTrips.length > 0 && (
@@ -817,90 +835,63 @@ function Index() {
       )}
 
       {!trip && !loading && (
-        <div id="how-it-works" className="mx-auto max-w-6xl space-y-24 px-6 pt-20">
+        <div id="how-it-works" className="mx-auto max-w-6xl space-y-20 px-6 pt-16">
           <section>
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-foreground pb-5">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
               <div>
-                <p className="font-mono text-xs uppercase tracking-widest text-primary">Destination Index</p>
-                <h2 className="mt-2 font-display text-3xl sm:text-4xl">Pick a city to start</h2>
+                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
+                  Featured Circuits
+                </p>
+                <h2 className="mt-2 font-display text-3xl sm:text-4xl">Explore India</h2>
               </div>
-              <Link to="/explore" className="font-mono text-xs uppercase tracking-wider text-foreground underline underline-offset-4 hover:text-primary">
-                All destinations →
+              <Link
+                to="/explore"
+                className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-primary"
+              >
+                VIEW ALL CIRCUITS →
               </Link>
             </div>
-            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { name: 'Dehradun', tag: 'Uttarakhand · Temples & nature', budget: '₹1,500/day' },
-                { name: 'Jaipur', tag: 'Rajasthan · Forts & bazaars', budget: '₹2,000/day' },
-                { name: 'Goa', tag: 'Coast · Beaches & spice farms', budget: '₹2,500/day' },
-                { name: 'Manali', tag: 'Himachal · Mountains & cafés', budget: '₹2,200/day' },
-                { name: 'Udaipur', tag: 'Rajasthan · Lakes & palaces', budget: '₹2,000/day' },
-                { name: 'Varanasi', tag: 'UP · Ghats & heritage', budget: '₹1,400/day' },
-                { name: 'Rishikesh', tag: 'Uttarakhand · River & yoga', budget: '₹1,500/day' },
-                { name: 'Kochi', tag: 'Kerala · Fort Kochi & coast', budget: '₹1,800/day' },
-              ].map((city, i) => {
-                const selected = destination.trim().toLowerCase() === city.name.toLowerCase();
-                return (
-                  <button
-                    key={city.name}
-                    type="button"
-                    onClick={() => {
-                      setDestination(city.name);
-                      document.getElementById('destinations')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                    className={`group flex flex-col justify-between overflow-hidden rounded-lg border-2 text-left transition-all ${
-                      selected
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-border bg-card hover:border-foreground hover:bg-foreground hover:text-background'
-                    }`}
-                  >
-                    <StopPhoto name={`${city.name}, India`} category="City" className="h-40 w-full" />
-                    <div className="p-5">
-                      <div className="flex items-center justify-between font-mono text-xs opacity-70">
-                        <span>{String(i + 1).padStart(2, '0')}</span>
-                        <span>{city.budget}</span>
-                      </div>
-                      <h3 className="mt-3 font-display text-2xl">{city.name}</h3>
-                      <p className="mt-1.5 text-xs leading-relaxed opacity-75">{city.tag}</p>
-                      <span className="mt-5 inline-block font-mono text-xs uppercase tracking-wider text-accent">
-                        Load city →
+
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURED_CIRCUITS.map((c) => (
+                <button
+                  key={c.title}
+                  type="button"
+                  onClick={() => {
+                    setDestination(c.city);
+                    setNumberOfDays(c.days);
+                    document.getElementById('destinations')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className="group overflow-hidden rounded-xl border border-border bg-card p-3 text-left transition-all hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10"
+                >
+                  <div className="overflow-hidden rounded-lg">
+                    <StopPhoto
+                      name={`${c.city}, India`}
+                      category={c.region}
+                      className="h-52 w-full transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="px-1 pt-4 pb-2">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-display italic text-muted-foreground">{c.title}</span>
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {c.region}
                       </span>
                     </div>
-                  </button>
-                );
-              })}
+                    <div className="mt-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <span>{c.days} DAYS</span>
+                      <span className="inline-flex items-center gap-1 text-amber-400">
+                        <Star className="size-3 fill-current" />
+                        {c.rating}
+                      </span>
+                    </div>
+                    <h3 className="mt-2 font-display text-2xl text-foreground group-hover:text-primary">
+                      {c.title}
+                    </h3>
+                  </div>
+                </button>
+              ))}
             </div>
-          </section>
-
-          <section className="grid gap-10 border-t-2 border-foreground pt-12 md:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                num: '01',
-                title: 'Zero Zig-Zagging',
-                body: 'Stops are grouped by neighborhood so each day stays focused on one part of town.',
-              },
-              {
-                num: '02',
-                title: 'Timed to the Hour',
-                body: 'Opening hours, visit durations, and round-trip hotel transit are calculated automatically.',
-              },
-              {
-                num: '03',
-                title: 'Rain & Budget Ready',
-                body: 'Swap outdoor stops for indoor backups on rainy days or re-plan instantly for a new budget.',
-              },
-              {
-                num: '04',
-                title: 'Yours to Edit & Keep',
-                body: 'Reorder stops, insert custom cafés, save to MongoDB, share links, or export PDF and .ics.',
-              },
-            ].map((item) => (
-              <article key={item.num} className="space-y-3 border-l-2 border-border pl-5">
-                <span className="font-mono text-xs font-medium text-accent">{item.num}</span>
-                <h3 className="font-display text-xl text-foreground">{item.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{item.body}</p>
-              </article>
-            ))}
           </section>
         </div>
       )}
