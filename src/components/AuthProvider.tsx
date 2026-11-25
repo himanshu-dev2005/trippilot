@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { getSessionUser, type SessionUser } from '@/lib/auth';
@@ -20,11 +20,13 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const revisionRef = useRef(0);
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const setUser = useCallback(
     (next: SessionUser | null) => {
+      revisionRef.current += 1;
       setUserState(next);
       setLoading(false);
       void router.invalidate();
@@ -34,13 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const refresh = useCallback(async () => {
+    const startRev = revisionRef.current;
     try {
       const { user: sessionUser } = await getSessionUser();
-      setUserState(sessionUser);
+      if (revisionRef.current === startRev) {
+        setUserState(sessionUser);
+      }
     } catch {
-      setUserState(null);
+      if (revisionRef.current === startRev) {
+        setUserState(null);
+      }
     } finally {
-      setLoading(false);
+      if (revisionRef.current === startRev) {
+        setLoading(false);
+      }
     }
   }, []);
 

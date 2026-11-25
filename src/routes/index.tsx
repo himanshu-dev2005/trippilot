@@ -22,19 +22,28 @@ import {
   CheckSquare,
   Car,
   Hotel,
+  Users,
+  CalendarPlus,
+  Plus,
+  Route as RouteIcon,
 } from 'lucide-react';
 import {
   adjustTripWeather,
   deleteTripFromMongo,
   generateOptimizedTrip,
+  getPublicTripById,
   getSavedTripsFromMongo,
   regenerateTripDay,
   replanTripBudget,
   saveTripToMongo,
+  searchCustomPlace,
   type TripRecord,
 } from '@/lib/trips';
+import { getMongoProfile, toggleMongoFavourite } from '@/lib/profile';
 import {
+  addStopToDay,
   formatTime24,
+  generateIcsCalendar,
   generatePackingChecklist,
   moveStopBetweenDays,
   removeStopFromDay,
@@ -75,6 +84,7 @@ type ActiveTripState = {
   center: Coordinates;
   budget: number;
   numberOfDays: number;
+  travelers: number;
   interests: string[];
   transportMode: TransportMode;
   startPoint?: StartPoint | undefined;
@@ -82,6 +92,7 @@ type ActiveTripState = {
   candidates: AttractionCandidate[];
   totalCost: number;
   remainingBudget: number;
+  distanceSavedKm?: number | undefined;
   weatherConfigured: boolean;
   source?: string;
 };
@@ -106,6 +117,7 @@ function Index() {
   const [destination, setDestination] = useState('Dehradun');
   const [numberOfDays, setNumberOfDays] = useState(3);
   const [budget, setBudget] = useState(5000);
+  const [travelers, setTravelers] = useState(1);
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [transportMode, setTransportMode] = useState<TransportMode>('cab');
   const [startPointQuery, setStartPointQuery] = useState('');
@@ -121,6 +133,8 @@ function Index() {
   const [budgetDraft, setBudgetDraft] = useState('5000');
   const [selectedPlaceName, setSelectedPlaceName] = useState<string | null>(null);
   const [checkedPacking, setCheckedPacking] = useState<Record<string, boolean>>({});
+  const [customPlaceQuery, setCustomPlaceQuery] = useState('');
+  const [customPlaceDay, setCustomPlaceDay] = useState(1);
 
   const [savedTrips, setSavedTrips] = useState<TripRecord[]>([]);
   const [favourites, setFavourites] = useState<string[]>([]);
@@ -132,6 +146,18 @@ function Index() {
     } catch {
       // ignore
     }
+
+    const params = new URLSearchParams(window.location.search);
+    const cityParam = params.get('city');
+    const tripIdParam = params.get('tripId');
+    if (cityParam) setDestination(cityParam);
+    if (tripIdParam) {
+      void getPublicTripById({ data: { tripId: tripIdParam } })
+        .then((res) => {
+          if (res.trip) handleLoadSavedTrip(res.trip);
+        })
+        .catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -142,10 +168,22 @@ function Index() {
     void getSavedTripsFromMongo()
       .then((res) => setSavedTrips(res.trips))
       .catch(() => {});
+    void getMongoProfile()
+      .then(({ profile }) => {
+        if (!profile) return;
+        setBudget(profile.defaultBudget);
+        setNumberOfDays(profile.defaultDays);
+        setTransportMode(profile.defaultTransportMode);
+        if (profile.defaultInterests.length) setInterests(profile.defaultInterests);
+      })
+      .catch(() => {});
   }, [user]);
 
-  function toggleFavourite(dest: string, placeName: string) {
-    const key = `${dest}::${placeName}`;
+  function toggleFavourite(
+    dest: string,
+    stop: { name: string; category: string; coordinates: Coordinates },
+  ) {
+    const key = `${dest}::${stop.name}`;
     setFavourites((prev) => {
       const next = prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key];
       try {
@@ -155,6 +193,17 @@ function Index() {
       }
       return next;
     });
+    if (user) {
+      void toggleMongoFavourite({
+        data: {
+          destination: dest,
+          name: stop.name,
+          category: stop.category,
+          lat: stop.coordinates.lat,
+          lng: stop.coordinates.lng,
+        },
+      }).catch(() => {});
+    }
   }
 
   function toggleInterest(interest: string) {
@@ -187,6 +236,7 @@ function Index() {
         center: res.center,
         budget: Number(budget) || 0,
         numberOfDays,
+        travelers: Math.max(1, Number(travelers) || 1),
         interests,
         transportMode: res.transportMode,
         startPoint: res.startPoint,
@@ -194,11 +244,13 @@ function Index() {
         candidates: res.candidates,
         totalCost: res.totalCost,
         remainingBudget: res.remainingBudget,
+        distanceSavedKm: res.distanceSavedKm,
         weatherConfigured: res.weatherConfigured,
         source: res.source,
       });
       setBudgetDraft(String(budget));
       setActiveDayTab('all');
+      setCustomPlaceDay(1);
       setCheckedPacking({});
       setSelectedPlaceName(res.itinerary[0]?.stops[0]?.name ?? null);
       requestAnimationFrame(() =>
@@ -291,6 +343,45 @@ function Index() {
     }
   }
 
+  async function handleAddCustomStop(e: FormEvent) {
+    e.preventDefault();
+    if (!trip || !customPlaceQuery.trim()) return;
+    setBusyAction('custom-place');
+    setError('');
+    try {
+      const { place } = await searchCustomPlace({
+        data: { query: customPlaceQuery.trim(), destination: trip.destination },
+      });
+      if (!place) {
+        setError(`Could not find "${customPlaceQuery}" in ${trip.destination}.`);
+        return;
+      }
+      const res = addStopToDay({
+        destination: trip.destination,
+        currentItinerary: trip.itinerary,
+        dayNumber: customPlaceDay,
+        candidate: place,
+        totalBudget: trip.budget,
+        transportMode: trip.transportMode,
+        ...(trip.startPoint ? { startPoint: trip.startPoint } : {}),
+      });
+      setTrip({
+        ...trip,
+        itinerary: res.itinerary,
+        candidates: [...trip.candidates, place],
+        totalCost: res.totalCost,
+        remainingBudget: res.remainingBudget,
+      });
+      setCustomPlaceQuery('');
+      setSelectedPlaceName(place.name);
+      setNotice(`Added "${place.name}" to Day ${customPlaceDay}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add custom place.');
+    } finally {
+      setBusyAction('');
+    }
+  }
+
   function handleReorderStop(dayNumber: number, fromIndex: number, toIndex: number) {
     if (!trip) return;
     const res = reorderStopInDay({
@@ -335,6 +426,21 @@ function Index() {
     setTrip({ ...trip, itinerary: res.itinerary, totalCost: res.totalCost, remainingBudget: res.remainingBudget });
   }
 
+  function updateStopMeta(dayNumber: number, attractionId: string, patch: { userNote?: string; visited?: boolean }) {
+    if (!trip) return;
+    setTrip({
+      ...trip,
+      itinerary: trip.itinerary.map((d) =>
+        d.dayNumber !== dayNumber
+          ? d
+          : {
+              ...d,
+              stops: d.stops.map((s) => (s.attractionId === attractionId ? { ...s, ...patch } : s)),
+            },
+      ),
+    });
+  }
+
   async function handleSaveTrip() {
     if (!trip) return;
     setBusyAction('save');
@@ -348,6 +454,7 @@ function Index() {
           center: trip.center,
           budget: trip.budget,
           numberOfDays: trip.numberOfDays,
+          travelers: trip.travelers,
           interests: trip.interests,
           transportMode: trip.transportMode,
           startPoint: trip.startPoint,
@@ -378,6 +485,18 @@ function Index() {
     }
   }
 
+  function handleExportIcs() {
+    if (!trip) return;
+    const ics = generateIcsCalendar(trip.destination, trip.itinerary);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${trip.destination.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-itinerary.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleLoadSavedTrip(saved: TripRecord) {
     const totalCost = saved.itinerary.reduce((s, d) => s + d.totalCost, 0);
     setTrip({
@@ -386,6 +505,7 @@ function Index() {
       center: saved.center,
       budget: saved.budget,
       numberOfDays: saved.numberOfDays,
+      travelers: saved.travelers ?? 1,
       interests: saved.interests,
       transportMode: saved.transportMode ?? 'cab',
       startPoint: saved.startPoint,
@@ -440,6 +560,14 @@ function Index() {
 
   const hasAnyRainAlert = trip?.itinerary.some((d) => d.hasRainAlert) ?? false;
 
+  const totalActivityCost = trip ? trip.itinerary.reduce((s, d) => s + d.activityCost, 0) : 0;
+  const totalTransitCost = trip ? trip.itinerary.reduce((s, d) => s + d.transitCost, 0) : 0;
+  const groupTotalCost = trip
+    ? totalActivityCost * trip.travelers +
+      (trip.transportMode === 'cab' ? totalTransitCost : totalTransitCost * trip.travelers)
+    : 0;
+  const costPerPerson = trip ? Math.round(groupTotalCost / Math.max(1, trip.travelers)) : 0;
+
   return (
     <main className="bg-background pb-16">
       <section className="mx-auto max-w-6xl px-6 pt-10 pb-6">
@@ -456,7 +584,7 @@ function Index() {
 
       <section id="destinations" className="no-print mx-auto max-w-6xl scroll-mt-24 px-6">
         <form onSubmit={handleGenerate} className="space-y-5 border-y border-border py-6">
-          <div className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_120px_135px_145px_auto]">
+          <div className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_110px_130px_100px_140px_auto]">
             <div className="space-y-2">
               <Label htmlFor="destination" className="flex items-center gap-2">
                 <MapPin className="size-4 text-primary" />
@@ -509,6 +637,22 @@ function Index() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="travelers" className="flex items-center gap-1.5">
+                <Users className="size-4 text-primary" />
+                Group
+              </Label>
+              <Input
+                id="travelers"
+                type="number"
+                min={1}
+                max={20}
+                value={travelers}
+                onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
+                className="h-11 bg-card"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="startDate">Start date</Label>
               <Input
                 id="startDate"
@@ -525,7 +669,7 @@ function Index() {
               className="h-11 bg-accent px-6 text-accent-foreground hover:bg-accent/90"
             >
               {loading ? <LoaderCircle className="animate-spin" /> : <Sparkles />}
-              {loading ? 'Planning...' : 'Generate itinerary'}
+              {loading ? 'Planning...' : 'Generate'}
             </Button>
           </div>
 
@@ -619,11 +763,16 @@ function Index() {
 
       {savedTrips.length > 0 && (
         <section className="no-print mx-auto max-w-6xl px-6 pt-6">
-          <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            Your Saved Trips (MongoDB)
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              Your Saved Trips (MongoDB)
+            </h2>
+            <Link to="/trips" className="text-xs font-medium text-primary hover:underline">
+              Manage all trips →
+            </Link>
+          </div>
           <div className="mt-3 flex flex-wrap gap-3">
-            {savedTrips.map((saved) => (
+            {savedTrips.slice(0, 5).map((saved) => (
               <div
                 key={saved._id}
                 className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm"
@@ -690,18 +839,22 @@ function Index() {
                 </Button>
               ) : (
                 <Button asChild variant="outline">
-                  <Link to="/auth">Sign in to save trip</Link>
+                  <Link to="/auth">Sign in to save</Link>
                 </Button>
               )}
               {trip.tripId && (
                 <Button type="button" variant="outline" onClick={() => void handleShareTrip()} className="gap-1.5">
                   <Share2 className="size-4" />
-                  Share link
+                  Share
                 </Button>
               )}
+              <Button type="button" variant="outline" onClick={handleExportIcs} className="gap-1.5">
+                <CalendarPlus className="size-4" />
+                Calendar (.ics)
+              </Button>
               <Button type="button" variant="outline" onClick={() => window.print()} className="gap-1.5">
                 <Download className="size-4" />
-                Download PDF
+                PDF
               </Button>
             </div>
           </div>
@@ -709,21 +862,35 @@ function Index() {
           <div className="mt-6 grid gap-4 rounded-xl border border-border bg-card p-4 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="flex flex-wrap gap-6 text-sm">
               <div>
-                <span className="block text-xs text-muted-foreground">Total Budget</span>
+                <span className="block text-xs text-muted-foreground">Budget (per person)</span>
                 <span className="font-mono text-base font-medium">₹{trip.budget.toLocaleString('en-IN')}</span>
               </div>
               <div>
-                <span className="block text-xs text-muted-foreground">Estimated Cost (incl. transit)</span>
+                <span className="block text-xs text-muted-foreground">Per Person Est.</span>
                 <span className="font-mono text-base font-medium text-primary">
-                  ₹{trip.totalCost.toLocaleString('en-IN')}
+                  ₹{costPerPerson.toLocaleString('en-IN')}
                 </span>
               </div>
+              {trip.travelers > 1 && (
+                <div>
+                  <span className="block text-xs text-muted-foreground">Group ({trip.travelers} travelers)</span>
+                  <span className="font-mono text-base font-medium">
+                    ₹{groupTotalCost.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              )}
               <div>
                 <span className="block text-xs text-muted-foreground">Remaining</span>
                 <span className="font-mono text-base font-medium">
                   ₹{trip.remainingBudget.toLocaleString('en-IN')}
                 </span>
               </div>
+              {trip.distanceSavedKm !== undefined && trip.distanceSavedKm > 0 && (
+                <div className="flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-primary">
+                  <RouteIcon className="size-4" />
+                  Saved {trip.distanceSavedKm} km of travel
+                </div>
+              )}
             </div>
 
             <div className="no-print flex items-center gap-2">
@@ -734,7 +901,7 @@ function Index() {
                 aria-label="New budget"
                 value={budgetDraft}
                 onChange={(e) => setBudgetDraft(e.target.value)}
-                className="h-9 w-32 bg-background"
+                className="h-9 w-28 bg-background"
               />
               <Button
                 type="button"
@@ -769,7 +936,39 @@ function Index() {
             </div>
           )}
 
-          <div className="no-print mt-6 flex flex-wrap items-center gap-2">
+          {/* Add Custom Place Bar */}
+          <form onSubmit={handleAddCustomStop} className="no-print mt-4 flex flex-wrap items-center gap-2">
+            <Input
+              value={customPlaceQuery}
+              onChange={(e) => setCustomPlaceQuery(e.target.value)}
+              placeholder={`Add a specific café, landmark or museum in ${trip.destination}...`}
+              className="h-9 max-w-sm bg-card"
+            />
+            <select
+              aria-label="Target day"
+              value={customPlaceDay}
+              onChange={(e) => setCustomPlaceDay(Number(e.target.value))}
+              className="h-9 rounded-md border border-border bg-card px-2 text-xs"
+            >
+              {trip.itinerary.map((d) => (
+                <option key={d.dayNumber} value={d.dayNumber}>
+                  Day {d.dayNumber}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="submit"
+              size="sm"
+              variant="outline"
+              disabled={busyAction === 'custom-place' || !customPlaceQuery.trim()}
+              className="gap-1"
+            >
+              <Plus className="size-3.5" />
+              {busyAction === 'custom-place' ? 'Adding...' : 'Add stop'}
+            </Button>
+          </form>
+
+          <div className="no-print mt-5 flex flex-wrap items-center gap-2">
             <Button
               type="button"
               size="sm"
@@ -836,7 +1035,11 @@ function Index() {
                             key={`${day.dayNumber}-${stop.attractionId}-${idx}`}
                             onClick={() => setSelectedPlaceName(stop.name)}
                             className={`cursor-pointer rounded-lg border p-4 transition-colors ${
-                              isSelected ? 'border-primary bg-secondary/40' : 'border-border hover:border-primary/50'
+                              stop.visited
+                                ? 'border-emerald-500/40 bg-emerald-500/5'
+                                : isSelected
+                                  ? 'border-primary bg-secondary/40'
+                                  : 'border-border hover:border-primary/50'
                             }`}
                           >
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -852,22 +1055,40 @@ function Index() {
                                     <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary font-mono text-xs text-primary-foreground">
                                       {globalNumber}
                                     </span>
-                                    <h4 className="font-display text-lg text-foreground">{stop.name}</h4>
+                                    <h4 className={`font-display text-lg ${stop.visited ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                                      {stop.name}
+                                    </h4>
                                   </div>
 
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
-                                    className="no-print shrink-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggleFavourite(trip.destination, stop.name);
-                                    }}
-                                  >
-                                    <Heart className={`size-4 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />
-                                  </Button>
+                                  <div className="no-print flex items-center gap-1">
+                                    <label className="flex cursor-pointer items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-secondary">
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(stop.visited)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) =>
+                                          updateStopMeta(day.dayNumber, stop.attractionId, {
+                                            visited: e.target.checked,
+                                          })
+                                        }
+                                        className="accent-primary"
+                                      />
+                                      Visited
+                                    </label>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
+                                      className="shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleFavourite(trip.destination, stop);
+                                      }}
+                                    >
+                                      <Heart className={`size-4 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-muted-foreground'}`} />
+                                    </Button>
+                                  </div>
                                 </div>
 
                                 <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -885,6 +1106,19 @@ function Index() {
                                 </div>
 
                                 {stop.note && <p className="mt-2 text-sm text-muted-foreground">{stop.note}</p>}
+
+                                <div className="no-print mt-2" onClick={(e) => e.stopPropagation()}>
+                                  <Input
+                                    value={stop.userNote ?? ''}
+                                    onChange={(e) =>
+                                      updateStopMeta(day.dayNumber, stop.attractionId, {
+                                        userNote: e.target.value,
+                                      })
+                                    }
+                                    placeholder="Add personal note / ticket ref..."
+                                    className="h-8 bg-background text-xs"
+                                  />
+                                </div>
 
                                 <div className="no-print mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
                                   <div className="flex flex-wrap items-center gap-3">

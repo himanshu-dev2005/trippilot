@@ -50,6 +50,8 @@ export type Stop = AttractionCandidate & {
   travelToNext: TravelSegment | null;
   weatherStatus: 'clear' | 'rain' | 'adjusted';
   instagramSearchUrl: string;
+  userNote?: string;
+  visited?: boolean;
 };
 
 export type ItineraryDay = {
@@ -68,6 +70,9 @@ export type OptimizationResult = {
   itinerary: ItineraryDay[];
   totalCost: number;
   remainingBudget: number;
+  optimizedDistanceKm?: number;
+  unoptimizedDistanceKm?: number;
+  distanceSavedKm?: number;
 };
 
 const DAY_START_HOUR = 9;
@@ -429,6 +434,8 @@ export function optimizeItinerary(params: {
   const clusters = kMeansCluster(attractions, numberOfDays);
   const itinerary: ItineraryDay[] = [];
   let remainingBudget = budget;
+  let unoptimizedDistanceKm = 0;
+  let optimizedDistanceKm = 0;
 
   for (let i = 0; i < numberOfDays; i++) {
     const dayDate = new Date(baseDate);
@@ -436,6 +443,7 @@ export function optimizeItinerary(params: {
     const dateStr = dayDate.toISOString().slice(0, 10);
 
     const cluster = clusters[i] ?? [];
+    unoptimizedDistanceKm += totalRouteDistanceKm(cluster);
     const nnRoute = nearestNeighbourOrder(cluster, startPoint);
     const optimizedRoute = twoOptImprove(nnRoute);
     const weather = dailyWeather?.[i];
@@ -452,12 +460,23 @@ export function optimizeItinerary(params: {
       startPoint,
     );
 
+    optimizedDistanceKm += totalRouteDistanceKm(day.stops);
     remainingBudget -= budgetUsed;
     itinerary.push(day);
   }
 
   const totalCost = itinerary.reduce((sum, d) => sum + d.totalCost, 0);
-  return { itinerary, totalCost, remainingBudget: budget - totalCost };
+  const roundedUnopt = Number(unoptimizedDistanceKm.toFixed(1));
+  const roundedOpt = Number(optimizedDistanceKm.toFixed(1));
+  const distanceSavedKm = Number(Math.max(0, roundedUnopt - roundedOpt).toFixed(1));
+  return {
+    itinerary,
+    totalCost,
+    remainingBudget: budget - totalCost,
+    unoptimizedDistanceKm: roundedUnopt,
+    optimizedDistanceKm: roundedOpt,
+    distanceSavedKm,
+  };
 }
 
 export function regenerateSingleDay(params: {
@@ -726,4 +745,63 @@ export function generatePackingChecklist(itinerary: ItineraryDay[]): ChecklistIt
   }
 
   return items;
+}
+
+/** Insert a custom attraction into a specific day and recalculate timings/costs. */
+export function addStopToDay(params: {
+  destination: string;
+  currentItinerary: ItineraryDay[];
+  dayNumber: number;
+  candidate: AttractionCandidate;
+  totalBudget: number;
+  transportMode?: TransportMode;
+  startPoint?: StartPoint;
+}): OptimizationResult {
+  const { destination, currentItinerary, dayNumber, candidate, totalBudget, transportMode = 'cab', startPoint } = params;
+  const nextItinerary = currentItinerary.map((day) => {
+    if (day.dayNumber !== dayNumber) return day;
+    const combined = [...day.stops, candidate];
+    return buildTimedDay(combined, destination, day.dayNumber, day.date, day.hasRainAlert, day.weatherSummary, transportMode, startPoint);
+  });
+  const totalCost = nextItinerary.reduce((s, d) => s + d.totalCost, 0);
+  return { itinerary: nextItinerary, totalCost, remainingBudget: totalBudget - totalCost };
+}
+
+/** Export itinerary as an iCalendar (.ics) string for Google/Apple Calendar import. */
+export function generateIcsCalendar(destination: string, itinerary: ItineraryDay[]): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//TripPilot//Travel Itinerary//EN',
+    'CALSCALE:GREGORIAN',
+  ];
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const formatIcsDateTime = (dateStr: string, timeStr: string, addHours = 0) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const [hh, mm] = timeStr.split(':').map(Number);
+    const dt = new Date(y || 2026, (m || 1) - 1, d || 1, hh || 9, mm || 0);
+    dt.setMinutes(dt.getMinutes() + Math.round(addHours * 60));
+    return `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+  };
+
+  for (const day of itinerary) {
+    for (const stop of day.stops) {
+      const dtStart = formatIcsDateTime(day.date, stop.startTime, 0);
+      const dtEnd = formatIcsDateTime(day.date, stop.startTime, stop.duration);
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:${stop.attractionId}-day${day.dayNumber}@trippilot`,
+        `DTSTART:${dtStart}`,
+        `DTEND:${dtEnd}`,
+        `SUMMARY:${stop.name} (${destination})`,
+        `LOCATION:${destination}, India`,
+        `DESCRIPTION:${stop.category} · Est. cost INR ${stop.cost}${stop.userNote ? ` · Note: ${stop.userNote}` : ''}`,
+        'END:VEVENT',
+      );
+    }
+  }
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
 }

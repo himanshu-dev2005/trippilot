@@ -84,9 +84,11 @@ export const getSessionUser = createServerFn({ method: 'GET' }).handler(async ()
 export const signUpWithMongo = createServerFn({ method: 'POST' })
   .inputValidator((raw: unknown) => SignUpSchema.parse(raw))
   .handler(async ({ data }): Promise<{ user: SessionUser }> => {
-    const { setCookie } = await import('@tanstack/react-start/server');
+    const { setCookie, getRequestHeader, getRequestUrl } = await import('@tanstack/react-start/server');
     const { getMongoDb } = await import('@/lib/mongodb.server');
     const { hashPassword, signSession } = await getCryptoHelpers();
+    const isHttps =
+      getRequestHeader('x-forwarded-proto') === 'https' || getRequestUrl().protocol === 'https:';
 
     const db = await getMongoDb();
     const users = db.collection('users');
@@ -108,7 +110,7 @@ export const signUpWithMongo = createServerFn({ method: 'POST' })
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
-      secure: process.env['NODE_ENV'] === 'production',
+      secure: isHttps,
       maxAge: SESSION_TTL_SECONDS,
     });
 
@@ -118,9 +120,11 @@ export const signUpWithMongo = createServerFn({ method: 'POST' })
 export const signInWithMongo = createServerFn({ method: 'POST' })
   .inputValidator((raw: unknown) => CredentialsSchema.parse(raw))
   .handler(async ({ data }): Promise<{ user: SessionUser }> => {
-    const { setCookie } = await import('@tanstack/react-start/server');
+    const { setCookie, getRequestHeader, getRequestUrl } = await import('@tanstack/react-start/server');
     const { getMongoDb } = await import('@/lib/mongodb.server');
     const { verifyPassword, signSession } = await getCryptoHelpers();
+    const isHttps =
+      getRequestHeader('x-forwarded-proto') === 'https' || getRequestUrl().protocol === 'https:';
 
     const db = await getMongoDb();
     const users = db.collection('users');
@@ -136,7 +140,7 @@ export const signInWithMongo = createServerFn({ method: 'POST' })
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
-      secure: process.env['NODE_ENV'] === 'production',
+      secure: isHttps,
       maxAge: SESSION_TTL_SECONDS,
     });
 
@@ -257,9 +261,11 @@ export const exchangeGoogleCodeMongo = createServerFn({ method: 'POST' })
       throw new Error('Google account email is unavailable.');
     }
 
-    const { setCookie } = await import('@tanstack/react-start/server');
+    const { setCookie, getRequestHeader, getRequestUrl } = await import('@tanstack/react-start/server');
     const { getMongoDb } = await import('@/lib/mongodb.server');
     const { signSession } = await getCryptoHelpers();
+    const isHttps =
+      getRequestHeader('x-forwarded-proto') === 'https' || getRequestUrl().protocol === 'https:';
 
     const db = await getMongoDb();
     const users = db.collection('users');
@@ -284,7 +290,7 @@ export const exchangeGoogleCodeMongo = createServerFn({ method: 'POST' })
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
-      secure: process.env['NODE_ENV'] === 'production',
+      secure: isHttps,
       maxAge: SESSION_TTL_SECONDS,
     });
 

@@ -19,6 +19,7 @@ export type TripRecord = {
   center: Coordinates;
   budget: number;
   numberOfDays: number;
+  travelers?: number;
   interests: string[];
   transportMode: TransportMode;
   startPoint?: StartPoint;
@@ -66,6 +67,7 @@ const SaveTripSchema = z.object({
   center: z.object({ lat: z.number(), lng: z.number() }),
   budget: z.number().min(0),
   numberOfDays: z.number().int().min(1),
+  travelers: z.number().int().min(1).max(20).default(1),
   interests: z.array(z.string()),
   transportMode: TransportSchema,
   startPoint: z.any().optional(),
@@ -209,6 +211,7 @@ export const saveTripToMongo = createServerFn({ method: 'POST' })
             center: data.center,
             budget: data.budget,
             numberOfDays: data.numberOfDays,
+            travelers: data.travelers,
             interests: data.interests,
             transportMode: data.transportMode,
             ...(data.startPoint ? { startPoint: data.startPoint } : {}),
@@ -228,6 +231,7 @@ export const saveTripToMongo = createServerFn({ method: 'POST' })
       center: data.center,
       budget: data.budget,
       numberOfDays: data.numberOfDays,
+      travelers: data.travelers,
       interests: data.interests,
       transportMode: data.transportMode,
       ...(data.startPoint ? { startPoint: data.startPoint } : {}),
@@ -298,4 +302,44 @@ export const deleteTripFromMongo = createServerFn({ method: 'POST' })
     const db = await getMongoDb();
     await db.collection('trips').deleteOne({ _id: new ObjectId(data.tripId), userId: user.id });
     return { ok: true };
+  });
+
+export const duplicateTripInMongo = createServerFn({ method: 'POST' })
+  .inputValidator((raw: unknown) => z.object({ tripId: z.string().min(1) }).parse(raw))
+  .handler(async ({ data }): Promise<{ tripId: string }> => {
+    const { getSessionUser } = await import('@/lib/auth');
+    const { getMongoDb } = await import('@/lib/mongodb.server');
+    const { ObjectId } = await import('mongodb');
+
+    const { user } = await getSessionUser();
+    if (!user) throw new Error('Sign in required.');
+
+    const db = await getMongoDb();
+    const trips = db.collection('trips');
+    const doc = await trips.findOne({ _id: new ObjectId(data.tripId), userId: user.id });
+    if (!doc) throw new Error('Trip not found.');
+
+    const now = new Date().toISOString();
+    const { _id: _, ...rest } = doc;
+    const inserted = await trips.insertOne({
+      ...rest,
+      destination: `${String(doc['destination'])} (Copy)`,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return { tripId: inserted.insertedId.toString() };
+  });
+
+export const searchCustomPlace = createServerFn({ method: 'POST' })
+  .inputValidator((raw: unknown) =>
+    z.object({ query: z.string().trim().min(2), destination: z.string().trim().min(2) }).parse(raw),
+  )
+  .handler(async ({ data }): Promise<{ place: AttractionCandidate | null }> => {
+    const { discoverAttractions } = await import('@/lib/places.server');
+    const res = await discoverAttractions({
+      destination: `${data.query} in ${data.destination}`,
+      interests: [],
+      limit: 3,
+    });
+    return { place: res.attractions[0] ?? null };
   });

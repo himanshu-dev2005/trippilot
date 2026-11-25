@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addStopToDay,
   applyWeatherAdjustment,
+  generateIcsCalendar,
   generatePackingChecklist,
   kMeansCluster,
   moveStopBetweenDays,
@@ -237,5 +239,29 @@ describe('Optimization Engine', () => {
     const checklist = generatePackingChecklist(initial.itinerary);
     expect(checklist.some((i) => i.id === 'umbrella')).toBe(true);
     expect(checklist.some((i) => i.id === 'modest')).toBe(true);
+  });
+
+  it('adds custom stops and exports valid ICS calendar', () => {
+    const initial = optimizeItinerary({
+      destination: 'Jaipur',
+      attractions: [makeSpot('hawa', 26.9239, 75.8267)],
+      numberOfDays: 1,
+      budget: 3000,
+      startDate: '2026-12-01',
+    });
+    const custom = makeSpot('cafe', 26.92, 75.82, { category: 'Food', cost: 400 });
+    const updated = addStopToDay({
+      destination: 'Jaipur',
+      currentItinerary: initial.itinerary,
+      dayNumber: 1,
+      candidate: custom,
+      totalBudget: 3000,
+    });
+    expect(updated.itinerary[0]!.stops).toHaveLength(2);
+
+    const ics = generateIcsCalendar('Jaipur', updated.itinerary);
+    expect(ics).toContain('BEGIN:VCALENDAR');
+    expect(ics).toContain('SUMMARY:Spot cafe (Jaipur)');
+    expect(ics).toContain('END:VCALENDAR');
   });
 });

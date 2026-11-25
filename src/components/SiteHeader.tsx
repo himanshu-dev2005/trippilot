@@ -7,10 +7,12 @@ import { useAccount } from "@/components/AuthProvider";
 import { signOutMongo } from "@/lib/auth";
 
 const navLinks = [
-  { label: "Destinations", href: "/#destinations" },
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Your plan", href: "/#plan" },
-];
+  { label: "Planner", to: "/" },
+  { label: "Explore", to: "/explore" },
+  { label: "My Trips", to: "/trips" },
+  { label: "Favourites", to: "/favourites" },
+  { label: "How it works", to: "/how-it-works" },
+] as const;
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -34,7 +36,7 @@ export function SiteHeader() {
   }
 
   const accountControls = loading ? <span className="h-9 w-20" /> : user ? <div className="flex items-center gap-2">
-    <span className="flex items-center gap-2 text-sm text-primary" title={user.email}><UserRound className="size-4" />Account</span>
+    <Link to="/profile" onClick={() => setOpen(false)} className="flex items-center gap-1.5 text-sm text-primary hover:underline" title={user.email}><UserRound className="size-4" />Profile</Link>
     <Button variant="ghost" size="icon" aria-label="Sign out" title="Sign out" disabled={signingOut} onClick={() => void signOut()}><LogOut /></Button>
   </div> : <Button asChild variant="ghost"><Link to="/auth" onClick={() => setOpen(false)}>Sign in</Link></Button>;
 
@@ -48,22 +50,17 @@ export function SiteHeader() {
           <span className="font-display text-2xl tracking-tight text-foreground">TripPilot</span>
         </Link>
 
-        <nav className="hidden items-center gap-4 md:flex">
+        <nav className="hidden items-center gap-5 md:flex">
           {navLinks.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
+            <Link
+              key={l.to}
+              to={l.to}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
           {accountControls}
-          <Button asChild className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90"><a
-            href="/#destinations"
-          >
-            Plan a trip
-          </a></Button>
         </nav>
 
         <Button variant="ghost" size="icon"
@@ -80,22 +77,16 @@ export function SiteHeader() {
         <nav className="border-t border-border bg-background px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4">
             {navLinks.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
+              <Link
+                key={l.to}
+                to={l.to}
                 onClick={() => setOpen(false)}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 {l.label}
-              </a>
+              </Link>
             ))}
             {accountControls}
-            <Button asChild className="w-fit rounded-full bg-accent text-accent-foreground hover:bg-accent/90"><a
-              href="/#destinations"
-              onClick={() => setOpen(false)}
-            >
-              Plan a trip
-            </a></Button>
           </div>
         </nav>
       )}
