@@ -6,6 +6,7 @@ import { BrandLogo } from '@/components/BrandLogo';
 const CIRCUITS = [
   {
     city: 'Jaipur',
+    landmark: 'Hawa Mahal Jaipur',
     title: 'Jaipur, Rajasthan',
     subtitle: 'Jaipur, Rajasthan',
     region: 'RAJASTHAN',
@@ -15,6 +16,7 @@ const CIRCUITS = [
   },
   {
     city: 'Varanasi',
+    landmark: 'Dashashwamedh Ghat Varanasi',
     title: 'Varanasi, Uttar Pradesh',
     subtitle: 'Varanasi, Uttar Pradesh',
     region: 'UTTAR PRADESH',
@@ -24,6 +26,7 @@ const CIRCUITS = [
   },
   {
     city: 'Alleppey',
+    landmark: 'Alleppey backwaters houseboat Kerala',
     title: 'Alleppey & Munnar, Kerala',
     subtitle: 'Alleppey & Munnar, Kerala',
     region: 'KERALA',
@@ -33,6 +36,7 @@ const CIRCUITS = [
   },
   {
     city: 'Leh',
+    landmark: 'Pangong Lake Leh Ladakh',
     title: 'Leh & Ladakh',
     subtitle: 'High Passes & Monasteries',
     region: 'LADAKH',
@@ -42,6 +46,7 @@ const CIRCUITS = [
   },
   {
     city: 'Udaipur',
+    landmark: 'Lake Pichola City Palace Udaipur',
     title: 'Udaipur, Rajasthan',
     subtitle: 'Lakes & Heritage Havelis',
     region: 'RAJASTHAN',
@@ -51,6 +56,7 @@ const CIRCUITS = [
   },
   {
     city: 'Dehradun',
+    landmark: "Robber's Cave Gucchupani Dehradun",
     title: 'Dehradun, Uttarakhand',
     subtitle: 'Foothills, Temples & Forests',
     region: 'UTTARAKHAND',
@@ -101,7 +107,7 @@ function ExplorePage() {
           >
             <div className="overflow-hidden rounded-lg">
               <StopPhoto
-                name={`${c.city}, India`}
+                name={c.landmark}
                 category={c.region}
                 className="h-52 w-full transition-transform duration-300 group-hover:scale-105"
               />
