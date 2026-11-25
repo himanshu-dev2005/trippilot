@@ -25,8 +25,12 @@ export const Route = createFileRoute('/profile')({
 });
 
 function ProfilePage() {
-  const { user, loading: authLoading } = useAccount();
+  const { user, loading: authLoading, setUser } = useAccount();
+  const [displayName, setDisplayName] = useState('');
   const [homeCity, setHomeCity] = useState('');
+  const [travelPace, setTravelPace] = useState<'relaxed' | 'balanced' | 'fast'>('balanced');
+  const [dietaryPreference, setDietaryPreference] = useState<'any' | 'veg' | 'vegan' | 'jain'>('any');
+  const [bio, setBio] = useState('');
   const [defaultBudget, setDefaultBudget] = useState(5000);
   const [defaultDays, setDefaultDays] = useState(3);
   const [defaultTransportMode, setDefaultTransportMode] = useState<TransportMode>('cab');
@@ -45,7 +49,11 @@ function ProfilePage() {
     void getMongoProfile()
       .then(({ profile }) => {
         if (profile) {
+          setDisplayName(profile.displayName);
           setHomeCity(profile.homeCity);
+          setTravelPace(profile.travelPace);
+          setDietaryPreference(profile.dietaryPreference);
+          setBio(profile.bio);
           setDefaultBudget(profile.defaultBudget);
           setDefaultDays(profile.defaultDays);
           setDefaultTransportMode(profile.defaultTransportMode);
@@ -61,15 +69,23 @@ function ProfilePage() {
     setSavedMsg('');
     setError('');
     try {
+      const cleanName = displayName.trim();
       await saveMongoProfile({
         data: {
-          homeCity,
+          displayName: cleanName,
+          homeCity: homeCity.trim(),
+          travelPace,
+          dietaryPreference,
+          bio: bio.trim(),
           defaultBudget: Number(defaultBudget) || 5000,
           defaultDays: Number(defaultDays) || 3,
           defaultTransportMode,
           defaultInterests,
         },
       });
+      if (user) {
+        setUser(cleanName ? { id: user.id, email: user.email, name: cleanName } : { id: user.id, email: user.email });
+      }
       setSavedMsg('Saved.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save profile.');
@@ -96,9 +112,11 @@ function ProfilePage() {
         <UserRound className="size-5" />
         <span className="font-mono text-xs uppercase">{user?.email}</span>
       </div>
-      <h1 className="mt-2 font-display text-4xl">Traveler Preferences</h1>
+      <h1 className="mt-2 font-display text-4xl">
+        {displayName.trim() || 'Traveler Preferences'}
+      </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Save your default travel settings to speed up planning.
+        Save your name and default travel settings to personalize your account and speed up planning.
       </p>
 
       {loading ? (
@@ -107,13 +125,69 @@ function ProfilePage() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="mt-8 space-y-5 rounded-xl border border-border bg-card p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="displayName">Full Name</Label>
+              <Input
+                id="displayName"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="e.g. Deepesh Sharma"
+                maxLength={80}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="homeCity">Home City</Label>
+              <Input
+                id="homeCity"
+                value={homeCity}
+                onChange={(e) => setHomeCity(e.target.value)}
+                placeholder="e.g. Delhi, Mumbai, Bengaluru"
+                maxLength={80}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="travelPace">Travel Pace</Label>
+              <select
+                id="travelPace"
+                value={travelPace}
+                onChange={(e) => setTravelPace(e.target.value as 'relaxed' | 'balanced' | 'fast')}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              >
+                <option value="relaxed">Relaxed (fewer stops, longer breaks)</option>
+                <option value="balanced">Balanced (classic day pace)</option>
+                <option value="fast">Fast-paced (pack in more sights)</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dietaryPreference">Food Preference</Label>
+              <select
+                id="dietaryPreference"
+                value={dietaryPreference}
+                onChange={(e) => setDietaryPreference(e.target.value as 'any' | 'veg' | 'vegan' | 'jain')}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              >
+                <option value="any">Any / No restriction</option>
+                <option value="veg">Vegetarian</option>
+                <option value="vegan">Vegan</option>
+                <option value="jain">Jain</option>
+              </select>
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="homeCity">Home City</Label>
+            <Label htmlFor="bio">Travel Note / Bio (optional)</Label>
             <Input
-              id="homeCity"
-              value={homeCity}
-              onChange={(e) => setHomeCity(e.target.value)}
-              placeholder="e.g. Delhi, Mumbai, Bengaluru"
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="e.g. Love heritage walks, sunrise viewpoints, and local street food"
+              maxLength={240}
             />
           </div>
 

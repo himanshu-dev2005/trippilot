@@ -58,11 +58,11 @@ export function SiteHeader() {
       <Link
         to="/profile"
         onClick={() => setOpen(false)}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary"
+        className="inline-flex max-w-[160px] items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
         title={user.email}
       >
-        <UserRound className="size-3.5 text-primary" />
-        PROFILE
+        <UserRound className="size-3.5 shrink-0 text-primary" />
+        <span className="truncate">{user.name?.trim() || user.email.split("@")[0] || "Profile"}</span>
       </Link>
       <Button
         variant="ghost"

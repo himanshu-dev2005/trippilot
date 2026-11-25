@@ -3,7 +3,11 @@ import { z } from 'zod';
 import type { TransportMode } from '@/lib/optimizer';
 
 export type TravelerProfile = {
+  displayName: string;
   homeCity: string;
+  travelPace: 'relaxed' | 'balanced' | 'fast';
+  dietaryPreference: 'any' | 'veg' | 'vegan' | 'jain';
+  bio: string;
   defaultBudget: number;
   defaultDays: number;
   defaultTransportMode: TransportMode;
@@ -21,7 +25,11 @@ export type FavouritePlace = {
 };
 
 const ProfileSchema = z.object({
-  homeCity: z.string().max(80).default(''),
+  displayName: z.string().trim().max(80).default(''),
+  homeCity: z.string().trim().max(80).default(''),
+  travelPace: z.enum(['relaxed', 'balanced', 'fast']).default('balanced'),
+  dietaryPreference: z.enum(['any', 'veg', 'vegan', 'jain']).default('any'),
+  bio: z.string().trim().max(240).default(''),
   defaultBudget: z.number().min(0).max(500000).default(5000),
   defaultDays: z.number().int().min(1).max(10).default(3),
   defaultTransportMode: z.enum(['walking', 'transit', 'cab']).default('cab'),
@@ -50,7 +58,11 @@ export const getMongoProfile = createServerFn({ method: 'GET' }).handler(
 
     return {
       profile: {
+        displayName: String(doc['displayName'] ?? ''),
         homeCity: String(doc['homeCity'] ?? ''),
+        travelPace: (doc['travelPace'] as TravelerProfile['travelPace']) || 'balanced',
+        dietaryPreference: (doc['dietaryPreference'] as TravelerProfile['dietaryPreference']) || 'any',
+        bio: String(doc['bio'] ?? ''),
         defaultBudget: Number(doc['defaultBudget'] ?? 5000),
         defaultDays: Number(doc['defaultDays'] ?? 3),
         defaultTransportMode: (doc['defaultTransportMode'] as TransportMode) || 'cab',
@@ -75,7 +87,11 @@ export const saveMongoProfile = createServerFn({ method: 'POST' })
       {
         $set: {
           userId: user.id,
+          displayName: data.displayName,
           homeCity: data.homeCity,
+          travelPace: data.travelPace,
+          dietaryPreference: data.dietaryPreference,
+          bio: data.bio,
           defaultBudget: data.defaultBudget,
           defaultDays: data.defaultDays,
           defaultTransportMode: data.defaultTransportMode,

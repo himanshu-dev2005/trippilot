@@ -4,6 +4,7 @@ import { z } from 'zod';
 export type SessionUser = {
   id: string;
   email: string;
+  name?: string;
 };
 
 const COOKIE_NAME = 'trippilot_session';
@@ -78,7 +79,24 @@ export const getSessionUser = createServerFn({ method: 'GET' }).handler(async ()
   const { getCookie } = await import('@tanstack/react-start/server');
   const { verifySession } = await getCryptoHelpers();
   const token = getCookie(COOKIE_NAME);
-  return { user: verifySession(token) };
+  const sessionUser = verifySession(token);
+  if (!sessionUser) return { user: null };
+
+  try {
+    const { getMongoDb } = await import('@/lib/mongodb.server');
+    const db = await getMongoDb();
+    const profile = await db
+      .collection('profiles')
+      .findOne({ userId: sessionUser.id }, { projection: { displayName: 1 } });
+    const displayName = typeof profile?.['displayName'] === 'string' ? profile['displayName'].trim() : '';
+    if (displayName) {
+      return { user: { ...sessionUser, name: displayName } };
+    }
+  } catch {
+    // Fall back to cookie-only session if profile lookup fails
+  }
+
+  return { user: sessionUser };
 });
 
 export const signUpWithMongo = createServerFn({ method: 'POST' })
