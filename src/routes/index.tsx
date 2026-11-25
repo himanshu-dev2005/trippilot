@@ -569,24 +569,24 @@ function Index() {
   const costPerPerson = trip ? Math.round(groupTotalCost / Math.max(1, trip.travelers)) : 0;
 
   return (
-    <main className="bg-background pb-20">
+    <main className="bg-background pb-24">
       <section className="border-b-2 border-foreground bg-foreground text-background">
-        <div className="mx-auto grid max-w-6xl gap-8 px-6 pt-14 pb-20 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] lg:items-end">
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 pt-20 pb-28 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:items-end">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent">
               India · Day-by-Day Travel Planner
             </p>
-            <h1 className="mt-4 font-display text-5xl leading-[0.98] tracking-tight sm:text-7xl">
+            <h1 className="mt-5 font-display text-5xl leading-[1.02] tracking-tight sm:text-7xl">
               Every city.
               <br />
               Every hour. <span className="italic text-accent">Mapped.</span>
             </h1>
           </div>
-          <div className="border-l border-background/20 pl-6">
+          <div className="border-l border-background/20 pl-8">
             <p className="text-base leading-relaxed text-background/80">
               Stop juggling twenty open tabs. Pick your city, budget, and interests — TripPilot builds a realistic route timed to opening hours, local transit, and live weather.
             </p>
-            <div className="mt-5 flex gap-6 font-mono text-xs uppercase tracking-wider text-background/60">
+            <div className="mt-6 flex flex-wrap gap-6 font-mono text-xs uppercase tracking-wider text-background/60">
               <span>8+ Curated Cities</span>
               <span>Live Weather</span>
               <span>PDF &amp; .ICS</span>
@@ -595,10 +595,10 @@ function Index() {
         </div>
       </section>
 
-      <section id="destinations" className="no-print mx-auto -mt-10 max-w-6xl scroll-mt-24 px-6">
+      <section id="destinations" className="no-print mx-auto -mt-12 max-w-6xl scroll-mt-24 px-6">
         <form
           onSubmit={handleGenerate}
-          className="space-y-5 rounded-xl border-2 border-foreground bg-card p-6 shadow-[6px_6px_0px_0px_var(--foreground)]"
+          className="space-y-7 rounded-xl border-2 border-foreground bg-card p-6 shadow-[6px_6px_0px_0px_var(--foreground)] sm:p-8"
         >
           <div className="grid items-end gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_110px_130px_100px_140px_auto]">
             <div className="space-y-2">
@@ -817,18 +817,18 @@ function Index() {
       )}
 
       {!trip && !loading && (
-        <div id="how-it-works" className="mx-auto max-w-6xl space-y-16 px-6 pt-16">
+        <div id="how-it-works" className="mx-auto max-w-6xl space-y-24 px-6 pt-20">
           <section>
-            <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-foreground pb-4">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-foreground pb-5">
               <div>
                 <p className="font-mono text-xs uppercase tracking-widest text-primary">Destination Index</p>
-                <h2 className="mt-1 font-display text-3xl sm:text-4xl">Pick a city to start</h2>
+                <h2 className="mt-2 font-display text-3xl sm:text-4xl">Pick a city to start</h2>
               </div>
               <Link to="/explore" className="font-mono text-xs uppercase tracking-wider text-foreground underline underline-offset-4 hover:text-primary">
                 All destinations →
               </Link>
             </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { name: 'Dehradun', tag: 'Uttarakhand · Temples & nature', budget: '₹1,500/day' },
                 { name: 'Jaipur', tag: 'Rajasthan · Forts & bazaars', budget: '₹2,000/day' },
@@ -854,15 +854,15 @@ function Index() {
                         : 'border-border bg-card hover:border-foreground hover:bg-foreground hover:text-background'
                     }`}
                   >
-                    <StopPhoto name={`${city.name}, India`} category="City" className="h-32 w-full" />
-                    <div className="p-4">
+                    <StopPhoto name={`${city.name}, India`} category="City" className="h-40 w-full" />
+                    <div className="p-5">
                       <div className="flex items-center justify-between font-mono text-xs opacity-70">
                         <span>{String(i + 1).padStart(2, '0')}</span>
                         <span>{city.budget}</span>
                       </div>
-                      <h3 className="mt-2 font-display text-2xl">{city.name}</h3>
-                      <p className="mt-1 text-xs opacity-75">{city.tag}</p>
-                      <span className="mt-4 inline-block font-mono text-xs uppercase tracking-wider text-accent">
+                      <h3 className="mt-3 font-display text-2xl">{city.name}</h3>
+                      <p className="mt-1.5 text-xs leading-relaxed opacity-75">{city.tag}</p>
+                      <span className="mt-5 inline-block font-mono text-xs uppercase tracking-wider text-accent">
                         Load city →
                       </span>
                     </div>
@@ -872,7 +872,7 @@ function Index() {
             </div>
           </section>
 
-          <section className="grid gap-6 border-t-2 border-foreground pt-10 md:grid-cols-2 lg:grid-cols-4">
+          <section className="grid gap-10 border-t-2 border-foreground pt-12 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
                 num: '01',
@@ -895,7 +895,7 @@ function Index() {
                 body: 'Reorder stops, insert custom cafés, save to MongoDB, share links, or export PDF and .ics.',
               },
             ].map((item) => (
-              <article key={item.num} className="space-y-2 border-l-2 border-border pl-4">
+              <article key={item.num} className="space-y-3 border-l-2 border-border pl-5">
                 <span className="font-mono text-xs font-medium text-accent">{item.num}</span>
                 <h3 className="font-display text-xl text-foreground">{item.title}</h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">{item.body}</p>
@@ -1083,10 +1083,10 @@ function Index() {
             ))}
           </div>
 
-          <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
-            <div className="space-y-8">
+          <div className="mt-8 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_400px]">
+            <div className="space-y-10">
               {displayedDays.map((day) => (
-                <section key={day.dayNumber} className="rounded-xl border border-border bg-card p-5">
+                <section key={day.dayNumber} className="rounded-xl border border-border bg-card p-6 sm:p-7">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
                     <div>
                       <h3 className="font-display text-2xl">
