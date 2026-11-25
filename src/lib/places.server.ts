@@ -191,10 +191,13 @@ Return ONLY valid JSON:
     return { ...parsed, source: 'ai_gateway' };
   }
 
-  // Zero-key OpenStreetMap (Nominatim + Overpass API) fallback
+  // Zero-key OpenStreetMap (Nominatim + Overpass API) + Wikipedia GeoSearch fallback
   const osmGeoRes = await fetch(
     `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(`${params.destination}, India`)}`,
-    { headers: { 'User-Agent': 'TripPilot/1.0' } },
+    {
+      headers: { 'User-Agent': 'TripPilot/1.0' },
+      signal: AbortSignal.timeout(5000),
+    },
   );
   if (!osmGeoRes.ok) {
     throw new Error(`Could not look up "${params.destination}" on OpenStreetMap.`);
@@ -206,7 +209,7 @@ Return ONLY valid JSON:
   }
 
   const center: Coordinates = { lat: Number(cityGeo.lat), lng: Number(cityGeo.lon) };
-  const overpassQuery = `[out:json][timeout:8];
+  const overpassQuery = `[out:json][timeout:6];
 (
   node["tourism"~"attraction|museum|viewpoint"]["name"](around:12000,${center.lat},${center.lng});
   node["historic"~"monument|fort|palace|ruins"]["name"](around:12000,${center.lat},${center.lng});
@@ -230,23 +233,47 @@ out ${Math.min(35, (params.limit ?? 18) * 2)};`;
       tags?: Record<string, string>;
     }>;
   };
-  let overpassJson: OverpassResponse | null = null;
 
-  for (const endpoint of overpassMirrors) {
-    try {
-      const overpassRes = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain', 'User-Agent': 'TripPilot/1.0' },
-        body: overpassQuery,
-      });
-      if (overpassRes.ok) {
-        overpassJson = (await overpassRes.json()) as OverpassResponse;
-        if (overpassJson.elements?.length) break;
+  async function fetchOverpass(): Promise<OverpassResponse | null> {
+    for (const endpoint of overpassMirrors) {
+      try {
+        const overpassRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain', 'User-Agent': 'TripPilot/1.0' },
+          body: overpassQuery,
+          signal: AbortSignal.timeout(3500),
+        });
+        if (overpassRes.ok) {
+          const json = (await overpassRes.json()) as OverpassResponse;
+          if (json.elements?.length) return json;
+        }
+      } catch {
+        // Try next mirror
       }
+    }
+    return null;
+  }
+
+  async function fetchWikiGeo(): Promise<Array<{ pageid: number; title: string; lat: number; lon: number }>> {
+    try {
+      const wikiRes = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${center.lat}|${center.lng}&gsradius=10000&gslimit=45&format=json`,
+        {
+          headers: { 'User-Agent': 'TripPilot/1.0' },
+          signal: AbortSignal.timeout(4000),
+        },
+      );
+      if (!wikiRes.ok) return [];
+      const wikiJson = (await wikiRes.json()) as {
+        query?: { geosearch?: Array<{ pageid: number; title: string; lat: number; lon: number }> };
+      };
+      return wikiJson.query?.geosearch ?? [];
     } catch {
-      // Try next mirror
+      return [];
     }
   }
+
+  const [overpassJson, wikiItems] = await Promise.all([fetchOverpass(), fetchWikiGeo()]);
 
   const seen = new Set<string>();
   const attractions: AttractionCandidate[] = [];
@@ -308,59 +335,50 @@ out ${Math.min(35, (params.limit ?? 18) * 2)};`;
   }
 
   // Fallback to Wikipedia GeoSearch if Overpass mirrors are unavailable
-  if (attractions.length === 0) {
-    const wikiRes = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${center.lat}|${center.lng}&gsradius=10000&gslimit=45&format=json`,
-      { headers: { 'User-Agent': 'TripPilot/1.0' } },
-    );
-    if (wikiRes.ok) {
-      const wikiJson = (await wikiRes.json()) as {
-        query?: { geosearch?: Array<{ pageid: number; title: string; lat: number; lon: number }> };
-      };
-      const ignorePattern = /election|constituency|municipal|ward|tehsil|district|school|hospital|university|college|academy/i;
+  if (attractions.length === 0 && wikiItems.length > 0) {
+    const ignorePattern = /election|constituency|municipal|ward|tehsil|district|school|hospital|university|college|academy/i;
 
-      for (const item of wikiJson.query?.geosearch ?? []) {
-        if (ignorePattern.test(item.title)) continue;
-        const lower = item.title.toLowerCase();
-        let category = 'Sightseeing';
-        let isOutdoor = true;
-        let cost = 150;
+    for (const item of wikiItems) {
+      if (ignorePattern.test(item.title)) continue;
+      const lower = item.title.toLowerCase();
+      let category = 'Sightseeing';
+      let isOutdoor = true;
+      let cost = 150;
 
-        if (/museum|gallery|planetarium/.test(lower)) {
-          category = 'Museum';
-          isOutdoor = false;
-          cost = 200;
-        } else if (/temple|mandir|church|mosque|masjid|gurudwara|ghat|ashram|monastery/.test(lower)) {
-          category = 'Culture';
-          isOutdoor = false;
-          cost = 0;
-        } else if (/fort|palace|mahal|tomb|memorial|gate|monument/.test(lower)) {
-          category = 'History';
-          isOutdoor = true;
-          cost = 250;
-        } else if (/park|garden|lake|falls|waterfall|hill|peak|beach|forest|zoo/.test(lower)) {
-          category = 'Nature';
-          isOutdoor = true;
-          cost = 100;
-        } else if (/market|bazaar|mall/.test(lower)) {
-          category = 'Shopping';
-          isOutdoor = false;
-          cost = 300;
-        }
-
-        attractions.push({
-          attractionId: `wiki-${item.pageid}`,
-          name: item.title,
-          coordinates: { lat: item.lat, lng: item.lon },
-          category,
-          isOutdoor,
-          rating: 4.3,
-          duration: 2,
-          cost,
-          openingHours: { open: 9, close: 19 },
-        });
-        if (attractions.length >= (params.limit ?? 18)) break;
+      if (/museum|gallery|planetarium/.test(lower)) {
+        category = 'Museum';
+        isOutdoor = false;
+        cost = 200;
+      } else if (/temple|mandir|church|mosque|masjid|gurudwara|ghat|ashram|monastery/.test(lower)) {
+        category = 'Culture';
+        isOutdoor = false;
+        cost = 0;
+      } else if (/fort|palace|mahal|tomb|memorial|gate|monument/.test(lower)) {
+        category = 'History';
+        isOutdoor = true;
+        cost = 250;
+      } else if (/park|garden|lake|falls|waterfall|hill|peak|beach|forest|zoo/.test(lower)) {
+        category = 'Nature';
+        isOutdoor = true;
+        cost = 100;
+      } else if (/market|bazaar|mall/.test(lower)) {
+        category = 'Shopping';
+        isOutdoor = false;
+        cost = 300;
       }
+
+      attractions.push({
+        attractionId: `wiki-${item.pageid}`,
+        name: item.title,
+        coordinates: { lat: item.lat, lng: item.lon },
+        category,
+        isOutdoor,
+        rating: 4.3,
+        duration: 2,
+        cost,
+        openingHours: { open: 9, close: 19 },
+      });
+      if (attractions.length >= (params.limit ?? 18)) break;
     }
   }
 
@@ -395,7 +413,10 @@ export async function resolveStartPoint(
   }
 
   const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(`${query}, ${destination}, India`)}`;
-  const osmRes = await fetch(osmUrl, { headers: { 'User-Agent': 'TripPilot/1.0' } });
+  const osmRes = await fetch(osmUrl, {
+    headers: { 'User-Agent': 'TripPilot/1.0' },
+    signal: AbortSignal.timeout(4000),
+  });
   if (osmRes.ok) {
     const results = (await osmRes.json()) as Array<{ lat: string; lon: string }>;
     const first = results[0];
