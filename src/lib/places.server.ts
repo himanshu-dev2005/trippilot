@@ -1,4 +1,6 @@
 import type { AttractionCandidate, Coordinates, StartPoint } from '@/lib/optimizer';
+import { destinations } from '@/lib/destinations';
+import { getImportedAttractionsForCity } from '@/lib/karnataka-catalog';
 
 type GooglePlacesNewResponse = {
   error?: { message?: string; status?: string };
@@ -181,16 +183,214 @@ function parseCuratedAttractions(
   return null;
 }
 
+const VERIFIED_DEHRADUN_ATTRACTIONS: AttractionCandidate[] = [
+  {
+    attractionId: 'ddn-robbers-cave',
+    name: "Gucchupani Robbers' Cave",
+    coordinates: { lat: 30.3787, lng: 78.0635 },
+    category: 'Nature',
+    isOutdoor: true,
+    rating: 4.6,
+    duration: 2,
+    cost: 40,
+    openingHours: { open: 7, close: 18 },
+    note: 'River cave and gorge where you wade through cold stream water between narrow rock walls; entry ₹25–₹50 (cash-only).',
+  },
+  {
+    attractionId: 'ddn-tapkeshwar-mandir',
+    name: 'Tapkeshwar Mahadev Mandir',
+    coordinates: { lat: 30.3573, lng: 78.0162 },
+    category: 'Culture',
+    isOutdoor: false,
+    rating: 4.7,
+    duration: 1.5,
+    cost: 0,
+    openingHours: { open: 4, close: 22.5 },
+    note: 'Cave shrine along the Tamsa River with natural water dripping onto the Shivling; peaceful on weekday mornings.',
+  },
+  {
+    attractionId: 'ddn-mindrolling-monastery',
+    name: 'Mindrolling Monastery',
+    coordinates: { lat: 30.2618, lng: 77.9973 },
+    category: 'Culture',
+    isOutdoor: false,
+    rating: 4.7,
+    duration: 2,
+    cost: 0,
+    openingHours: { open: 7, close: 18 },
+    note: 'Major Tibetan Buddhist center and Great Stupa complex in Clement Town.',
+  },
+  {
+    attractionId: 'ddn-dehradun-zoo',
+    name: 'Dehradun Zoo (Malsi Deer Park)',
+    coordinates: { lat: 30.3902, lng: 78.0749 },
+    category: 'Nature',
+    isOutdoor: true,
+    rating: 4.3,
+    duration: 2.5,
+    cost: 60,
+    openingHours: { open: 9, close: 17 },
+    note: 'Set in the Shivalik foothills on Mussoorie Road (closed Mondays); entry around ₹60.',
+  },
+  {
+    attractionId: 'ddn-sahastradhara',
+    name: 'Sahastradhara Ropeway & Springs',
+    coordinates: { lat: 30.3853, lng: 78.1298 },
+    category: 'Adventure',
+    isOutdoor: true,
+    rating: 4.4,
+    duration: 2.5,
+    cost: 200,
+    openingHours: { open: 9.5, close: 19 },
+    note: 'Scenic ropeway ride near sulphur springs and Doon Valley hill views.',
+  },
+  {
+    attractionId: 'ddn-shikhar-falls',
+    name: 'Shikhar Falls',
+    coordinates: { lat: 30.4112, lng: 78.0981 },
+    category: 'Nature',
+    isOutdoor: true,
+    rating: 4.5,
+    duration: 2.5,
+    cost: 0,
+    openingHours: { open: 6, close: 18 },
+    note: 'Offbeat waterfall reached via a rugged ~1 km trail; carry cash and water as there are no restrooms on site.',
+  },
+  {
+    attractionId: 'ddn-gandhi-park',
+    name: 'Gandhi Park',
+    coordinates: { lat: 30.3259, lng: 78.0458 },
+    category: 'Nature',
+    isOutdoor: true,
+    rating: 4.2,
+    duration: 1.5,
+    cost: 20,
+    openingHours: { open: 5, close: 19 },
+    note: 'Central city park off Rajpur Road with walking paths and a nominal entry fee.',
+  },
+  {
+    attractionId: 'ddn-fri',
+    name: 'Forest Research Institute',
+    coordinates: { lat: 30.3438, lng: 77.9996 },
+    category: 'History',
+    isOutdoor: true,
+    rating: 4.5,
+    duration: 2.5,
+    cost: 50,
+    openingHours: { open: 9, close: 17.5 },
+    note: "Explore the institute's colonial Greco-Roman architecture and green campus.",
+  },
+  {
+    attractionId: 'ddn-lacchiwalla',
+    name: 'Lacchiwalla Nature Park',
+    coordinates: { lat: 30.2145, lng: 78.1331 },
+    category: 'Nature',
+    isOutdoor: true,
+    rating: 4.0,
+    duration: 2.5,
+    cost: 50,
+    openingHours: { open: 8, close: 17 },
+    note: 'Forested picnic spot and stream area; check current access to water areas.',
+  },
+  {
+    attractionId: 'ddn-oil-museum',
+    name: 'Subir Raha Oil Museum',
+    coordinates: { lat: 30.3358, lng: 78.0195 },
+    category: 'Museum',
+    isOutdoor: false,
+    rating: 4.5,
+    duration: 1.5,
+    cost: 0,
+    openingHours: { open: 10, close: 17 },
+    note: 'ONGC museum showcasing petroleum and energy industry exhibits.',
+  },
+  {
+    attractionId: 'ddn-shiv-mandir',
+    name: 'Shiv Mandir',
+    coordinates: { lat: 30.3911, lng: 78.0815 },
+    category: 'Culture',
+    isOutdoor: false,
+    rating: 4.5,
+    duration: 1,
+    cost: 0,
+    openingHours: { open: 6, close: 20 },
+    note: 'Visit the hillside Shiva temple on the Dehradun–Mussoorie route.',
+  },
+  {
+    attractionId: 'ddn-pacific-mall',
+    name: 'Pacific Mall',
+    coordinates: { lat: 30.3626, lng: 78.0679 },
+    category: 'Shopping',
+    isOutdoor: false,
+    rating: 4.2,
+    duration: 2,
+    cost: 200,
+    openingHours: { open: 10, close: 22 },
+    note: 'Browse shops and stop for a meal on Rajpur Road.',
+  },
+];
+
+function getCuratedDestinationAttractions(
+  destination: string,
+  interests: string[],
+): { center: Coordinates; attractions: AttractionCandidate[] } | null {
+  const norm = destination.trim().toLowerCase();
+  if (norm === 'dehradun') {
+    return {
+      center: { lat: 30.3165, lng: 78.0322 },
+      attractions: VERIFIED_DEHRADUN_ATTRACTIONS,
+    };
+  }
+
+  const dest = destinations.find(
+    (d) => d.id.toLowerCase() === norm || d.name.toLowerCase() === norm,
+  );
+  if (dest) {
+    const attractions: AttractionCandidate[] = dest.spots.map((s, idx) => {
+      const catLower = s.type.toLowerCase();
+      const isOutdoor = !['culture', 'museum', 'shopping', 'food', 'education'].includes(catLower);
+      return {
+        attractionId: `${dest.id}-${idx + 1}`,
+        name: s.name,
+        coordinates: { lat: s.lat, lng: s.lng },
+        category: s.type,
+        isOutdoor,
+        rating: s.rating ?? 4.5,
+        duration: s.hours,
+        cost: catLower === 'culture' ? 0 : 200,
+        openingHours: { open: 9, close: 18 },
+        note: s.note,
+      };
+    });
+    return { center: { lat: dest.lat, lng: dest.lng }, attractions };
+  }
+
+  return getImportedAttractionsForCity(destination, interests);
+}
+
 export async function discoverAttractions(params: {
   destination: string;
   interests: string[];
   limit?: number;
-}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'gemini' | 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
+}): Promise<{ center: Coordinates; attractions: AttractionCandidate[]; source: 'curated' | 'gemini' | 'google_places' | 'ai_gateway' | 'openstreetmap' }> {
   const geminiKey = process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'];
   const groqKey = process.env['GROQ_API_KEY'];
   const openrouterKey = process.env['OPENROUTER_API_KEY'];
   const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
   const lovableKey = process.env['LOVABLE_API_KEY'];
+
+  // Serve verified curated data first for cities with grounded coordinates (Dehradun, Goa, Jaipur, Manali)
+  const curated = getCuratedDestinationAttractions(params.destination, params.interests);
+  const isGroundedStaticCity = ['dehradun', 'goa', 'jaipur', 'manali'].includes(
+    params.destination.trim().toLowerCase(),
+  );
+  if (curated && isGroundedStaticCity) {
+    const enriched = googleKey
+      ? await enrichWithGooglePhotos(curated.attractions, params.destination, googleKey)
+      : curated.attractions;
+    return { center: curated.center, attractions: enriched, source: 'curated' };
+  }
+
   const prompt = buildCurationPrompt(params.destination, params.interests, params.limit ?? 16);
 
   if (geminiKey) {
@@ -531,7 +731,7 @@ out ${Math.min(35, (params.limit ?? 18) * 2)};`;
   // Fallback to Wikipedia GeoSearch if Overpass mirrors are unavailable
   if (attractions.length === 0 && wikiItems.length > 0) {
     const ignorePattern =
-      /election|constituency|municipal|ward|tehsil|district|school|hospital|university|college|academy|institute|office|bhavan|secretariat|commission|board|council|railway station|bus stand/i;
+      /election|constituency|municipal|ward|tehsil|taluk|district|school|hospital|university|college|academy|institute|office|bhavan|secretariat|commission|board|council|railway station|bus stand|road|highway|nagar|colony|sector|mohalla|chowk|bypass|bridge|flyover|airport|junction|depot|bank|clinic|apartment|complex|gram panchayat|assembly|lok sabha|vidhan sabha/i;
     const destLower = params.destination.trim().toLowerCase();
 
     for (const item of wikiItems) {
@@ -578,6 +778,15 @@ out ${Math.min(35, (params.limit ?? 18) * 2)};`;
       });
       if (attractions.length >= (params.limit ?? 18)) break;
     }
+  }
+
+  if (curated && curated.attractions.length > 0) {
+    const existingNames = new Set(attractions.map((a) => a.name.toLowerCase()));
+    const merged = [
+      ...attractions,
+      ...curated.attractions.filter((a) => !existingNames.has(a.name.toLowerCase())),
+    ].slice(0, params.limit ?? 18);
+    return { center: curated.center, attractions: merged, source: attractions.length > 0 ? 'openstreetmap' : 'curated' };
   }
 
   if (attractions.length === 0) {

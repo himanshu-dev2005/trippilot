@@ -974,12 +974,17 @@ export function generateOfflinePocketPassHtml(params: {
 }
 
 const KNOWN_INDIAN_CITIES = [
-  'Agra', 'Ahmedabad', 'Alleppey', 'Amritsar', 'Bengaluru', 'Bhopal', 'Chennai',
-  'Coorg', 'Darjeeling', 'Dehradun', 'Delhi', 'Gangtok', 'Goa', 'Guwahati',
-  'Hampi', 'Hyderabad', 'Jaipur', 'Jaisalmer', 'Jodhpur', 'Kanyakumari', 'Kochi',
-  'Kolkata', 'Leh', 'Lucknow', 'Madurai', 'Manali', 'Mumbai', 'Munnar', 'Mussoorie',
-  'Mysuru', 'Nainital', 'Ooty', 'Pondicherry', 'Pune', 'Pushkar', 'Rishikesh',
-  'Shillong', 'Shimla', 'Srinagar', 'Udaipur', 'Varanasi',
+  'Agra', 'Ahmedabad', 'Alleppey', 'Amritsar', 'Ballari', 'Bangalore', 'Belagavi',
+  'Belgaum', 'Bellary', 'Bengaluru', 'Bhopal', 'Bidar', 'Bijapur', 'Chamarajanagar',
+  'Chennai', 'Chikballapur', 'Chikkaballapur', 'Chikmagalur', 'Chitradurga', 'Coorg',
+  'Dandeli', 'Darjeeling', 'Davanagere', 'Dehradun', 'Delhi', 'Dharwad', 'Gadag',
+  'Gangtok', 'Goa', 'Gulbarga', 'Guwahati', 'Hampi', 'Hassan', 'Haveri', 'Hospet',
+  'Hyderabad', 'Jaipur', 'Jaisalmer', 'Jodhpur', 'Kalaburagi', 'Kanyakumari', 'Karwar',
+  'Kochi', 'Kodagu', 'Kolkata', 'Kolar', 'Koppal', 'Leh', 'Lucknow', 'Madurai',
+  'Manali', 'Mandya', 'Mangalore', 'Mangaluru', 'Mumbai', 'Munnar', 'Mussoorie',
+  'Mysore', 'Mysuru', 'Nainital', 'Ooty', 'Pondicherry', 'Pune', 'Pushkar', 'Raichur',
+  'Ramanagara', 'Ramnagaram', 'Rishikesh', 'Shillong', 'Shimla', 'Shimoga', 'Shivamogga',
+  'Srinagar', 'Tumakuru', 'Tumkur', 'Udaipur', 'Udupi', 'Varanasi', 'Vijayapura',
 ];
 
 function levenshtein(a: string, b: string): number {
