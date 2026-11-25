@@ -68,7 +68,7 @@ function SharedTripPage() {
             {trip.numberOfDays}-Day {trip.destination} Plan
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Budget: ₹{trip.budget.toLocaleString('en-IN')} · Transport: {trip.transportMode}
+            Budget: ₹{trip.budget.toLocaleString('en-IN')}
           </p>
         </div>
         <Button asChild variant="outline">

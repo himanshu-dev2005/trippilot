@@ -23,7 +23,6 @@ import {
   ArrowDown,
   Share2,
   CheckSquare,
-  Car,
   Hotel,
   Users,
   CalendarPlus,
@@ -701,37 +700,17 @@ function Index() {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="startPoint" className="text-xs text-muted-foreground">
-                        Hotel / Starting point (optional)
-                      </Label>
-                      <Input
-                        id="startPoint"
-                        value={startPointQuery}
-                        onChange={(e) => setStartPointQuery(e.target.value)}
-                        placeholder="e.g. Clock Tower, Railway Station..."
-                        className="h-10 bg-background"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="transportMode" className="text-xs text-muted-foreground">
-                        Local transport
-                      </Label>
-                      <Select value={transportMode} onValueChange={(v) => setTransportMode(v as TransportMode)}>
-                        <SelectTrigger id="transportMode" className="h-10 bg-background">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(TRANSPORT_CONFIG).map(([key, cfg]) => (
-                            <SelectItem key={key} value={key}>
-                              {cfg.label} (~{cfg.speedKmh} km/h · ₹{cfg.costPerKm}/km)
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="startPoint" className="text-xs text-muted-foreground">
+                      Hotel / Starting point (optional)
+                    </Label>
+                    <Input
+                      id="startPoint"
+                      value={startPointQuery}
+                      onChange={(e) => setStartPointQuery(e.target.value)}
+                      placeholder="e.g. Clock Tower, Railway Station..."
+                      className="h-10 bg-background"
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -901,7 +880,7 @@ function Index() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="font-mono text-xs uppercase text-primary">
-                Trip Plan · {trip.destination} · {TRANSPORT_CONFIG[trip.transportMode].label}
+                Trip Plan · {trip.destination}
                 {trip.startPoint ? ` · From ${trip.startPoint.name}` : ''}
               </p>
               <h2 className="mt-1 font-display text-3xl sm:text-4xl">

@@ -2,12 +2,11 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useState, type FormEvent } from 'react';
 import { CheckCircle2, LoaderCircle, UserRound } from 'lucide-react';
 import { getMongoProfile, saveMongoProfile } from '@/lib/profile';
-import { TRANSPORT_CONFIG, type TransportMode } from '@/lib/optimizer';
+import { type TransportMode } from '@/lib/optimizer';
 import { useAccount } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const INTERESTS = [
   'Culture & Heritage',
@@ -142,25 +141,6 @@ function ProfilePage() {
                 onChange={(e) => setDefaultDays(Number(e.target.value))}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="defaultTransport">Preferred Transport Mode</Label>
-            <Select
-              value={defaultTransportMode}
-              onValueChange={(v) => setDefaultTransportMode(v as TransportMode)}
-            >
-              <SelectTrigger id="defaultTransport">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(TRANSPORT_CONFIG).map(([key, cfg]) => (
-                  <SelectItem key={key} value={key}>
-                    {cfg.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">
