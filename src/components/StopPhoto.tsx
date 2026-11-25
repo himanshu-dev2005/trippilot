@@ -6,20 +6,23 @@ export function StopPhoto({
   name,
   category,
   photoReference,
+  className,
 }: {
   name: string;
   category: string;
   photoReference?: string;
+  className?: string;
 }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!photoReference) {
-      setDataUrl(null);
-      return;
-    }
     let active = true;
-    void fetchPlacePhotoDataUrl({ data: { photoReference } })
+    void fetchPlacePhotoDataUrl({
+      data: {
+        ...(photoReference ? { photoReference } : {}),
+        placeName: name,
+      },
+    })
       .then((res) => {
         if (active && res.dataUrl) setDataUrl(res.dataUrl);
       })
@@ -27,7 +30,9 @@ export function StopPhoto({
     return () => {
       active = false;
     };
-  }, [photoReference]);
+  }, [photoReference, name]);
+
+  const sizeClass = className ?? 'h-24 w-24 shrink-0 rounded-md sm:h-28 sm:w-28';
 
   if (dataUrl) {
     return (
@@ -35,7 +40,7 @@ export function StopPhoto({
         src={dataUrl}
         alt={name}
         loading="lazy"
-        className="h-24 w-24 shrink-0 rounded-md bg-muted object-cover sm:h-28 sm:w-28"
+        className={`${sizeClass} bg-muted object-cover`}
       />
     );
   }
@@ -59,7 +64,7 @@ export function StopPhoto({
 
   return (
     <div
-      className={`flex h-24 w-24 shrink-0 flex-col items-center justify-center rounded-md bg-gradient-to-br ${gradient} p-2 text-white sm:h-28 sm:w-28`}
+      className={`flex flex-col items-center justify-center bg-gradient-to-br ${gradient} p-2 text-white ${sizeClass}`}
     >
       <Icon className="size-6 opacity-90" />
       <span className="mt-1 truncate text-[10px] font-mono uppercase opacity-90">{category}</span>

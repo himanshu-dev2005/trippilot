@@ -172,18 +172,72 @@ export const adjustTripWeather = createServerFn({ method: 'POST' })
   });
 
 export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
-  .inputValidator((raw: unknown) => z.object({ photoReference: z.string().min(1) }).parse(raw))
+  .inputValidator((raw: unknown) =>
+    z.object({ photoReference: z.string().optional(), placeName: z.string().optional() }).parse(raw),
+  )
   .handler(async ({ data }): Promise<{ dataUrl: string | null }> => {
     const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
-    if (!googleKey) return { dataUrl: null };
-    const url = data.photoReference.startsWith('places/')
-      ? `https://places.googleapis.com/v1/${data.photoReference}/media?maxWidthPx=400&key=${encodeURIComponent(googleKey)}`
-      : `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${encodeURIComponent(data.photoReference)}&key=${encodeURIComponent(googleKey)}`;
-    const res = await fetch(url);
-    if (!res.ok) return { dataUrl: null };
-    const contentType = res.headers.get('content-type') || 'image/jpeg';
-    const buffer = Buffer.from(await res.arrayBuffer());
-    return { dataUrl: `data:${contentType};base64,${buffer.toString('base64')}` };
+
+    if (googleKey && data.photoReference) {
+      try {
+        if (data.photoReference.startsWith('places/')) {
+          const metaUrl = `https://places.googleapis.com/v1/${data.photoReference}/media?maxWidthPx=600&skipHttpRedirect=true&key=${encodeURIComponent(googleKey)}`;
+          const metaRes = await fetch(metaUrl);
+          if (metaRes.ok) {
+            const payload = (await metaRes.json()) as { photoUri?: string };
+            if (payload.photoUri) return { dataUrl: payload.photoUri };
+          }
+        } else {
+          const legacyUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=${encodeURIComponent(data.photoReference)}&key=${encodeURIComponent(googleKey)}`;
+          const res = await fetch(legacyUrl);
+          if (res.ok) {
+            const contentType = res.headers.get('content-type') || 'image/jpeg';
+            const buffer = Buffer.from(await res.arrayBuffer());
+            return { dataUrl: `data:${contentType};base64,${buffer.toString('base64')}` };
+          }
+        }
+      } catch {
+        // Fall through to Wikipedia thumbnail fallback
+      }
+    }
+
+    if (data.placeName) {
+      try {
+        const title = encodeURIComponent(data.placeName.trim().replace(/\s+/g, '_'));
+        const summaryRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`, {
+          headers: { 'User-Agent': 'TripPilot/1.0' },
+        });
+        if (summaryRes.ok) {
+          const summary = (await summaryRes.json()) as { thumbnail?: { source?: string } };
+          if (summary.thumbnail?.source) return { dataUrl: summary.thumbnail.source };
+        }
+
+        const searchRes = await fetch(
+          `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(data.placeName)}&format=json&srlimit=1`,
+          { headers: { 'User-Agent': 'TripPilot/1.0' } },
+        );
+        if (searchRes.ok) {
+          const searchJson = (await searchRes.json()) as {
+            query?: { search?: Array<{ title?: string }> };
+          };
+          const bestTitle = searchJson.query?.search?.[0]?.title;
+          if (bestTitle) {
+            const fallbackRes = await fetch(
+              `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestTitle.replace(/\s+/g, '_'))}`,
+              { headers: { 'User-Agent': 'TripPilot/1.0' } },
+            );
+            if (fallbackRes.ok) {
+              const summary = (await fallbackRes.json()) as { thumbnail?: { source?: string } };
+              if (summary.thumbnail?.source) return { dataUrl: summary.thumbnail.source };
+            }
+          }
+        }
+      } catch {
+        // Ignore fallback failure
+      }
+    }
+
+    return { dataUrl: null };
   });
 
 export const saveTripToMongo = createServerFn({ method: 'POST' })

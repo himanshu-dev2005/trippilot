@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { LocateFixed, Navigation, MapPin, LoaderCircle, Plus, Minus, Clock3, IndianRupee } from 'lucide-react';
 import { haversineKm } from '@/lib/destinations';
 import { Button } from '@/components/ui/button';
@@ -98,7 +98,7 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
       .join(' ');
   }, [places, centerWorld, zoom]);
 
-  function requestUserLocation() {
+  const requestUserLocation = useCallback(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setLocationError('Geolocation is not supported in this browser.');
       return;
@@ -120,7 +120,11 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
-  }
+  }, []);
+
+  useEffect(() => {
+    requestUserLocation();
+  }, [requestUserLocation]);
 
   const selectedDistanceKm =
     userLocation && selectedPlace
