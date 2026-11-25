@@ -412,3 +412,27 @@ export const searchCustomPlace = createServerFn({ method: 'POST' })
     });
     return { place: res.attractions[0] ?? null };
   });
+
+export const reverseGeocodeCity = createServerFn({ method: 'GET' })
+  .inputValidator((raw: unknown) => z.object({ lat: z.number(), lng: z.number() }).parse(raw))
+  .handler(async ({ data }): Promise<{ city: string | null }> => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${data.lat}&lon=${data.lng}`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'TripPilot/1.0' } });
+      if (!res.ok) return { city: null };
+      const json = (await res.json()) as {
+        address?: {
+          city?: string;
+          town?: string;
+          village?: string;
+          state_district?: string;
+          state?: string;
+        };
+      };
+      const addr = json.address;
+      const city = addr?.city || addr?.town || addr?.village || addr?.state_district || addr?.state || null;
+      return { city };
+    } catch {
+      return { city: null };
+    }
+  });

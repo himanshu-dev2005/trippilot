@@ -4,6 +4,8 @@ import {
   ArrowRight,
   SlidersHorizontal,
   Star,
+  LocateFixed,
+  CloudSun,
   MapPin,
   CalendarDays,
   Sparkles,
@@ -37,6 +39,7 @@ import {
   getSavedTripsFromMongo,
   regenerateTripDay,
   replanTripBudget,
+  reverseGeocodeCity,
   saveTripToMongo,
   searchCustomPlace,
   type TripRecord,
@@ -141,7 +144,9 @@ function Index() {
   const [interests, setInterests] = useState<string[]>(['Culture & Heritage', 'Nature & Parks']);
 
   const [loading, setLoading] = useState(false);
+  const [locatingCity, setLocatingCity] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [showWeatherPanel, setShowWeatherPanel] = useState(true);
   const [busyAction, setBusyAction] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -176,7 +181,54 @@ function Index() {
         })
         .catch(() => {});
     }
+
+    if (!cityParam && !tripIdParam && typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          void reverseGeocodeCity({
+            data: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          })
+            .then((res) => {
+              if (res.city) setDestination(res.city);
+            })
+            .catch(() => {});
+        },
+        () => {},
+        { timeout: 6000 },
+      );
+    }
   }, []);
+
+  function detectCurrentCity() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setError('Geolocation is not supported in this browser.');
+      return;
+    }
+    setLocatingCity(true);
+    setError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        void reverseGeocodeCity({
+          data: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+        })
+          .then((res) => {
+            if (res.city) {
+              setDestination(res.city);
+              setNotice(`Detected your current location: ${res.city}`);
+            } else {
+              setError('Could not determine city name from your coordinates.');
+            }
+          })
+          .catch(() => setError('Could not look up your city.'))
+          .finally(() => setLocatingCity(false));
+      },
+      () => {
+        setLocatingCity(false);
+        setError('Location permission denied. Type a city name or allow location access.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
 
   useEffect(() => {
     if (!user) {
@@ -624,6 +676,18 @@ function Index() {
                   <Button
                     type="button"
                     variant="ghost"
+                    size="icon"
+                    onClick={detectCurrentCity}
+                    disabled={locatingCity}
+                    title="Use my current location"
+                    aria-label="Use my current location"
+                    className="h-11 w-10 text-muted-foreground hover:text-primary"
+                  >
+                    {locatingCity ? <LoaderCircle className="size-4 animate-spin" /> : <LocateFixed className="size-4" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
                     size="sm"
                     onClick={() => setShowOptions((v) => !v)}
                     className="h-11 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
@@ -911,6 +975,15 @@ function Index() {
                   Share
                 </Button>
               )}
+              <Button
+                type="button"
+                variant={showWeatherPanel ? 'default' : 'outline'}
+                onClick={() => setShowWeatherPanel((v) => !v)}
+                className="gap-1.5"
+              >
+                <CloudSun className="size-4" />
+                Weather
+              </Button>
               <Button type="button" variant="outline" onClick={handleExportIcs} className="gap-1.5">
                 <CalendarPlus className="size-4" />
                 Calendar (.ics)
@@ -978,26 +1051,41 @@ function Index() {
             </div>
           </div>
 
-          {trip.weatherConfigured && (
-            <div className="mt-4 flex flex-wrap gap-3">
-              {trip.itinerary.map((day) => (
-                <div
-                  key={`wx-${day.dayNumber}`}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
-                    day.hasRainAlert
-                      ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
-                      : 'border-border bg-card text-muted-foreground'
-                  }`}
-                >
-                  {day.hasRainAlert ? (
-                    <CloudRain className="size-3.5 text-amber-400" />
-                  ) : (
-                    <Compass className="size-3.5 text-primary" />
-                  )}
-                  <span className="font-mono text-foreground">Day {day.dayNumber}:</span>
-                  <span>{day.weatherSummary}</span>
+          {showWeatherPanel && (
+            <div className="mt-4 rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CloudSun className="size-4 text-primary" />
+                  <h3 className="font-mono text-xs uppercase tracking-wider text-foreground">
+                    Live Weather Forecast
+                  </h3>
                 </div>
-              ))}
+                {!trip.weatherConfigured && (
+                  <span className="text-xs text-muted-foreground">
+                    Add OPENWEATHER_API_KEY in Vercel to enable live forecasts
+                  </span>
+                )}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {trip.itinerary.map((day) => (
+                  <div
+                    key={`wx-${day.dayNumber}`}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
+                      day.hasRainAlert
+                        ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                        : 'border-border bg-background text-muted-foreground'
+                    }`}
+                  >
+                    {day.hasRainAlert ? (
+                      <CloudRain className="size-3.5 text-amber-400" />
+                    ) : (
+                      <CloudSun className="size-3.5 text-primary" />
+                    )}
+                    <span className="font-mono text-foreground">Day {day.dayNumber}:</span>
+                    <span>{day.weatherSummary}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
