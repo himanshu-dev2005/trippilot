@@ -86,7 +86,6 @@ import { useAccount } from '@/components/AuthProvider';
 import { CityAutocomplete } from '@/components/CityAutocomplete';
 import { DestinationMap } from '@/components/DestinationMap';
 import { BudgetBreakdownChart } from '@/components/BudgetBreakdownChart';
-import { StopPhoto } from '@/components/StopPhoto';
 import { PlaceDetailDialog } from '@/components/PlaceDetailDialog';
 import { GroupExpenseSplitter } from '@/components/GroupExpenseSplitter';
 
@@ -1830,39 +1829,28 @@ function Index() {
                                     setDetailStop(stop);
                                   }}
                                   onMouseEnter={() => setSelectedPlaceName(stop.name)}
-                                  className={`neu-raised flex w-full cursor-pointer flex-col gap-5 rounded-2xl p-5 transition-all md:flex-row md:items-center ${isSelected ? 'ring-2 ring-primary/40' : ''
+                                  className={`neu-raised flex w-full cursor-pointer flex-col gap-3 rounded-2xl p-6 transition-all ${isSelected ? 'ring-2 ring-primary/40' : 'hover:border-primary/40'
                                     }`}
                                 >
-                                  <div className="relative shrink-0">
-                                    <StopPhoto
-                                      name={stop.name}
-                                      category={stop.category}
-                                      destination={trip.destination}
-                                      coordinates={stop.coordinates}
-                                      {...(stop.photoReference
-                                        ? { photoReference: stop.photoReference }
-                                        : {})}
-                                      className="neu-inset-sm h-36 w-full rounded-xl md:h-32 md:w-44"
-                                    />
-                                    <span className="absolute left-2.5 top-2.5 flex size-6 items-center justify-center rounded-lg bg-background/90 font-mono text-xs font-bold text-primary shadow-sm">
-                                      {globalNumber}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
+                                  <div className="flex min-w-0 flex-1 flex-col justify-between gap-2.5">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                      <span className="text-xs font-semibold uppercase tracking-wider text-primary tabular-nums">
-                                        {stop.startTime} • {stop.isOutdoor ? 'Outdoor' : 'Indoor'} •{' '}
-                                        {stop.duration}h
-                                        {timingInsight ? ` • ${timingInsight}` : ''}
-                                      </span>
+                                      <div className="flex items-center gap-2.5">
+                                        <span className="flex size-7 items-center justify-center rounded-lg bg-[#F3F0FF] font-mono text-xs font-bold text-[#6C3FE4] dark:bg-[#1E103C] dark:text-[#c4b5fd]">
+                                          {globalNumber}
+                                        </span>
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-primary tabular-nums">
+                                          {stop.startTime} • {stop.isOutdoor ? 'Outdoor' : 'Indoor'} •{' '}
+                                          {stop.duration}h
+                                          {timingInsight ? ` • ${timingInsight}` : ''}
+                                        </span>
+                                      </div>
                                       <span className="rounded-full bg-tertiary-fixed px-3 py-0.5 text-xs font-semibold text-tertiary-fixed-foreground">
                                         {stop.category}
                                       </span>
                                     </div>
 
                                     <h4
-                                      className={`font-display text-lg font-semibold ${stop.visited
+                                      className={`font-display text-2xl font-extrabold tracking-tight sm:text-3xl ${stop.visited
                                         ? 'line-through text-muted-foreground'
                                         : 'text-foreground'
                                         }`}
