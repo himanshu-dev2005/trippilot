@@ -228,7 +228,7 @@ function Index() {
   const [notice, setNotice] = useState('');
 
   const [trip, setTrip] = useState<ActiveTripState | null>(null);
-  const [activeDayTab, setActiveDayTab] = useState<number | 'all'>(1);
+  const [activeDayTab, setActiveDayTab] = useState<number | 'all'>('all');
   const [budgetDraft, setBudgetDraft] = useState('6000');
   const [selectedPlaceName, setSelectedPlaceName] = useState<string | null>(null);
   const [detailStop, setDetailStop] = useState<Stop | null>(null);
@@ -301,7 +301,7 @@ function Index() {
           source: res.source,
         });
         setBudgetDraft(String(targetBudget));
-        setActiveDayTab(res.itinerary[0]?.dayNumber ?? 'all');
+        setActiveDayTab('all');
         setCustomPlaceDay(1);
         setCheckedPacking({});
         setSelectedPlaceName(res.itinerary[0]?.stops[0]?.name ?? null);
@@ -348,7 +348,7 @@ function Index() {
     setNumberOfDays(saved.numberOfDays);
     setBudget(saved.budget);
     setBudgetDraft(String(saved.budget));
-    setActiveDayTab(saved.itinerary[0]?.dayNumber ?? 'all');
+    setActiveDayTab('all');
     setSelectedPlaceName(saved.itinerary[0]?.stops[0]?.name ?? null);
     setNotice(`Loaded saved trip to ${saved.destination}.`);
   }
@@ -1624,35 +1624,7 @@ function Index() {
               </div>
             )}
 
-            {/* Day Selector Tabs (Stitch Day Tabs) */}
-            <div className="flex items-center gap-3 overflow-x-auto py-2">
-              <button
-                type="button"
-                onClick={() => setActiveDayTab('all')}
-                className={`shrink-0 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${activeDayTab === 'all'
-                  ? 'neu-btn-primary'
-                  : 'neu-raised-sm text-muted-foreground hover:text-foreground'
-                  }`}
-              >
-                All Days
-              </button>
-              {trip.itinerary.map((day) => {
-                const active = activeDayTab === day.dayNumber;
-                return (
-                  <button
-                    key={day.dayNumber}
-                    type="button"
-                    onClick={() => setActiveDayTab(day.dayNumber)}
-                    className={`shrink-0 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${active
-                      ? 'neu-btn-primary'
-                      : 'neu-raised-sm text-muted-foreground hover:text-foreground'
-                      }`}
-                  >
-                    Day {day.dayNumber} ({day.stops.length})
-                  </button>
-                );
-              })}
-            </div>
+            {/* Showing All Days together */}
 
             {/* Main Bento Grid: Left Timeline (8 cols) + Right Widgets (4 cols) */}
             <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">

@@ -454,7 +454,10 @@ export async function discoverAttractions(params: {
   const geminiKey = process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'];
   const groqKey = process.env['GROQ_API_KEY'];
   const openrouterKey = process.env['OPENROUTER_API_KEY'];
-  const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+  const googleKey =
+    process.env['GOOGLE_PLACES_API_KEY'] ||
+    process.env['GOOGLE_MAPS_API_KEY'] ||
+    process.env['GOOGLE_API_KEY'];
   const lovableKey = process.env['LOVABLE_API_KEY'];
 
   // Serve verified curated data first for cities with grounded coordinates
@@ -693,12 +696,13 @@ Return ONLY valid JSON:
   const center: Coordinates = { lat: Number(cityGeo.lat), lng: Number(cityGeo.lon) };
   const overpassQuery = `[out:json][timeout:6];
 (
-  node["tourism"~"attraction|museum|viewpoint"]["name"](around:12000,${center.lat},${center.lng});
-  node["historic"~"monument|fort|palace|ruins"]["name"](around:12000,${center.lat},${center.lng});
-  node["leisure"~"park|garden"]["name"](around:12000,${center.lat},${center.lng});
-  node["amenity"~"place_of_worship|cafe"]["name"](around:8000,${center.lat},${center.lng});
+  node["tourism"~"attraction|museum|viewpoint|zoo|theme_park|gallery"]["name"](around:15000,${center.lat},${center.lng});
+  way["tourism"~"attraction|museum|viewpoint|zoo|theme_park"]["name"](around:15000,${center.lat},${center.lng});
+  node["historic"~"monument|fort|palace|castle|ruins|memorial"]["name"](around:15000,${center.lat},${center.lng});
+  node["natural"~"waterfall|beach|peak|cave"]["name"](around:15000,${center.lat},${center.lng});
+  node["leisure"~"park|garden|nature_reserve"]["name"](around:12000,${center.lat},${center.lng});
 );
-out ${Math.min(35, (params.limit ?? 18) * 2)};`;
+out center ${Math.min(35, (params.limit ?? 18) * 2)};`;
 
   const overpassMirrors = [
     'https://overpass.kumi.systems/api/interpreter',
@@ -819,13 +823,16 @@ out ${Math.min(35, (params.limit ?? 18) * 2)};`;
   // Fallback to Wikipedia GeoSearch if Overpass mirrors are unavailable
   if (attractions.length === 0 && wikiItems.length > 0) {
     const ignorePattern =
-      /election|constituency|municipal|ward|tehsil|taluk|district|school|hospital|university|college|academy|institute|office|bhavan|secretariat|commission|board|council|railway station|bus stand|road|highway|nagar|colony|sector|mohalla|chowk|bypass|bridge|flyover|airport|junction|depot|bank|clinic|apartment|complex|gram panchayat|assembly|lok sabha|vidhan sabha/i;
+      /election|constituency|municipal|ward|tehsil|taluk|district|school|hospital|university|college|academy|institute|office|bhavan|secretariat|commission|board|council|railway station|bus stand|road|highway|nagar|colony|sector|mohalla|chowk|bypass|flyover|airport|junction|depot|bank|clinic|apartment|complex|gram panchayat|assembly|lok sabha|vidhan sabha/i;
+    const landmarkPattern =
+      /temple|mandir|church|mosque|masjid|gurudwara|ghat|ashram|monastery|fort|palace|mahal|tomb|memorial|gate|monument|museum|gallery|planetarium|park|garden|lake|falls|waterfall|beach|hill|peak|forest|zoo|sanctuary|reserve|market|bazaar|cave|dam|observatory|tower/i;
     const destLower = params.destination.trim().toLowerCase();
 
     for (const item of wikiItems) {
       const titleLower = item.title.trim().toLowerCase();
       if (titleLower === destLower || titleLower === 'uttarakhand' || titleLower === 'india') continue;
       if (ignorePattern.test(item.title)) continue;
+      if (!landmarkPattern.test(item.title)) continue;
       const lower = item.title.toLowerCase();
       let category = 'Sightseeing';
       let isOutdoor = true;
@@ -939,7 +946,7 @@ ${params.startDate ? `- Start Date: ${params.startDate}` : ''}
 ${params.startPointQuery ? `- Starting Hotel / Landmark: ${params.startPointQuery}` : ''}
 
 REQUIREMENTS:
-1. Every stop MUST be a real, specific place in or near ${params.destination} with accurate WGS84 coordinates (lat, lng).
+1. Every stop MUST be a famous, real tourist attraction, landmark, museum, viewpoint, temple, fort, beach, park, or iconic local food street in or near ${params.destination} with accurate WGS84 coordinates (lat, lng). NEVER include residential colonies, offices, schools, hospitals, banks, roads, or generic neighborhoods.
 2. Respect the ${params.numberOfDays}-day duration (return exactly ${params.numberOfDays} day objects) and stay realistic for the ₹${params.budget.toLocaleString('en-IN')} per-person activity/entry budget.
 3. Include 3 to 4 stops per day (Morning, Afternoon, Evening) ordered logically by geography.
 4. Provide "aiResponseText": a direct, helpful, well-formatted response written straight to the traveler summarizing their ${params.numberOfDays}-day ${params.destination} trip, daily highlights, local dining picks, and practical budget tips for ₹${params.budget.toLocaleString('en-IN')}.
@@ -1303,7 +1310,10 @@ export async function resolveStartPoint(
   const query = hotelOrStart.trim();
   if (!query) return undefined;
 
-  const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+  const googleKey =
+    process.env['GOOGLE_PLACES_API_KEY'] ||
+    process.env['GOOGLE_MAPS_API_KEY'] ||
+    process.env['GOOGLE_API_KEY'];
   if (googleKey) {
     try {
       const results = await searchPlacesNew(`${query}, ${destination}, India`, googleKey, 1);
