@@ -853,299 +853,306 @@ function Index() {
 
   return (
     <main className="min-h-screen w-full bg-background pb-20">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-12 px-6 py-10 lg:px-12">
-        {/* Hero Section: Extruded Silk Neomorphic AI Planner */}
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-8 lg:px-10">
+        {/* Hero Section: TripPilot.com style — gradient banner + clean white form card */}
         <section
           id="destinations"
-          className="no-print neu-raised relative flex flex-col gap-8 overflow-hidden rounded-3xl p-7 lg:p-12"
+          className="no-print"
         >
-          {/* Subtle decorative neomorphic glows */}
-          <div className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-primary-container/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-24 size-96 rounded-full bg-tertiary-container/20 blur-3xl" />
+          {/* Top gradient hero banner */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 px-8 py-12 text-white lg:px-14 lg:py-16">
+            {/* Decorative floating orbs */}
+            <div className="pointer-events-none absolute -right-20 -top-20 size-80 rounded-full bg-white/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-20 size-80 rounded-full bg-orange-400/20 blur-3xl" />
 
-          <div className="relative z-10 flex max-w-2xl flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-widest text-primary">
-                AI-Powered Journey Architect
-              </span>
-            </div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground lg:text-5xl">
-              Where does your imagination wander next?
-            </h1>
-            <p className="text-base text-muted-foreground">
-              Enter where you want to go, your days, and your budget. Gemini AI builds your custom day-by-day itinerary and responds directly.
-            </p>
-          </div>
-
-          <form onSubmit={handleGenerate} className="relative z-10 flex flex-col gap-6">
-            {/* Core User Inputs: Destination, Days, Budget, Travel Style */}
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-12">
-              {/* Destination */}
-              <div className="flex flex-col gap-2 lg:col-span-5">
-                <label
-                  htmlFor="destination"
-                  className="text-xs font-semibold text-muted-foreground"
-                >
-                  Where do you want to go?
-                </label>
-                <div className="neu-inset flex items-center gap-2 rounded-xl px-3.5 py-1.5">
-                  <Compass className="size-4 shrink-0 text-outline" />
-                  <CityAutocomplete
-                    id="destination"
-                    value={destination}
-                    onChange={setDestination}
-                    placeholder="Jaipur, Goa, Kyoto, Manali..."
-                    inputClassName="h-10 text-sm font-medium"
-                  />
-                  <button
-                    type="button"
-                    onClick={detectCurrentCity}
-                    disabled={locatingCity}
-                    title="Use my current location"
-                    aria-label="Use my current location"
-                    className="neu-raised-sm flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {locatingCity ? (
-                      <LoaderCircle className="size-3.5 animate-spin" />
-                    ) : (
-                      <LocateFixed className="size-3.5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Days */}
-              <div className="flex flex-col gap-2 lg:col-span-3">
-                <label htmlFor="days-input" className="text-xs font-semibold text-muted-foreground">
-                  How many days?
-                </label>
-                <div className="neu-inset flex h-[52px] items-center justify-between rounded-xl px-3.5">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="size-4 shrink-0 text-outline" />
-                    <input
-                      id="days-input"
-                      type="number"
-                      min={1}
-                      max={14}
-                      value={numberOfDays}
-                      onChange={(e) =>
-                        setNumberOfDays(Math.min(14, Math.max(1, Number(e.target.value) || 1)))
-                      }
-                      className="w-14 bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
-                    />
-                    <span className="text-xs text-muted-foreground">days</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      aria-label="Decrease days"
-                      onClick={() => setNumberOfDays((d) => Math.max(1, d - 1))}
-                      className="neu-raised-sm flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
-                    >
-                      <Minus className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Increase days"
-                      onClick={() => setNumberOfDays((d) => Math.min(14, d + 1))}
-                      className="neu-raised-sm flex size-7 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
-                    >
-                      <Plus className="size-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Budget */}
-              <div className="flex flex-col gap-2 lg:col-span-4">
-                <label htmlFor="budget" className="text-xs font-semibold text-muted-foreground">
-                  Budget per person (₹ INR)
-                </label>
-                <div className="neu-inset flex h-[52px] items-center gap-2.5 rounded-xl px-4">
-                  <Wallet className="size-4 shrink-0 text-outline" />
-                  <span className="font-mono text-sm font-semibold text-primary">₹</span>
-                  <input
-                    id="budget"
-                    type="number"
-                    min={0}
-                    step={500}
-                    value={budget}
-                    onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
-                    placeholder="e.g. 6000"
-                    className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Travel Style Pills (Stitch style-pill pattern) */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-muted-foreground">Travel Style</span>
-                <button
-                  type="button"
-                  onClick={() => setShowOptions((v) => !v)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
-                >
-                  <SlidersHorizontal className="size-3.5" />
-                  {showOptions ? 'Hide extra options' : 'Travelers, dates & transport'}
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2.5 py-1">
-                {TRAVEL_STYLES.map((style) => {
-                  const active = interests.includes(style.label);
-                  return (
-                    <button
-                      key={style.label}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => toggleInterest(style.label)}
-                      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${
-                        active
-                          ? 'bg-primary-container text-white shadow-[inset_3px_3px_6px_rgba(0,0,0,0.14)]'
-                          : 'neu-raised-sm text-foreground hover:text-primary'
-                      }`}
-                    >
-                      <span>{style.short}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Extra Options Panel */}
-            {showOptions && (
-              <div className="neu-inset-sm grid grid-cols-1 gap-4 rounded-2xl p-5 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="travelers" className="text-xs font-semibold text-muted-foreground">
-                    Travelers
-                  </label>
-                  <input
-                    id="travelers"
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={travelers}
-                    onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
-                    className="neu-inset h-10 rounded-xl px-3.5 font-mono text-sm font-medium text-foreground focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="startDate" className="text-xs font-semibold text-muted-foreground">
-                    Start date
-                  </label>
-                  <input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="neu-inset h-10 rounded-xl px-3.5 text-sm font-medium text-foreground focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="startPoint" className="text-xs font-semibold text-muted-foreground">
-                    Starting hotel / area (optional)
-                  </label>
-                  <input
-                    id="startPoint"
-                    value={startPointQuery}
-                    onChange={(e) => setStartPointQuery(e.target.value)}
-                    placeholder="e.g. Connaught Place, Baga..."
-                    className="neu-inset h-10 rounded-xl px-3.5 text-sm text-foreground placeholder:text-outline focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-muted-foreground">Local transport</span>
-                  <div className="neu-inset flex h-10 items-center gap-1 rounded-xl p-1">
-                    {TRANSPORT_OPTIONS.map(({ mode, label, icon: Icon }) => {
-                      const active = transportMode === mode;
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => setTransportMode(mode)}
-                          className={`flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-xs font-semibold transition-all ${
-                            active
-                              ? 'bg-primary text-primary-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        >
-                          <Icon className="size-3.5" />
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Optional Gemini API Key prompt only if server key is not set */}
-            {needsGeminiKey && (
-              <div className="neu-inset-sm flex flex-col gap-3 rounded-2xl p-5">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-                  <KeyRound className="size-4" />
-                  <span>Gemini API Key Required</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Set <code className="font-mono text-foreground">GEMINI_API_KEY</code> in your server <code className="font-mono text-foreground">.env</code> file, or paste a Gemini API key below for this session to get live responses directly from Gemini AI:
-                </p>
-                <input
-                  type="password"
-                  value={customGeminiKey}
-                  onChange={(e) => setCustomGeminiKey(e.target.value)}
-                  placeholder="Paste Gemini API key (AIza...) for this session"
-                  className="neu-inset h-11 w-full rounded-xl px-4 font-mono text-xs text-foreground placeholder:text-outline focus:outline-none"
-                />
-              </div>
-            )}
-
-            {/* Action Row */}
-            <div className="flex flex-col items-center justify-between gap-4 pt-1 sm:flex-row">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <div className="neu-inset-sm flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-primary">
-                  AI
-                </div>
-                <span>
-                  Powered directly by Gemini AI — no canned or random placeholder trips.
+            <div className="relative z-10 max-w-2xl">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
+                <Sparkles className="size-3.5 text-amber-300" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-amber-100">
+                  AI-Powered Travel Planner
                 </span>
               </div>
+              <h1 className="font-display text-3xl font-bold leading-tight tracking-tight lg:text-5xl">
+                Build a Custom-Fit Travel<br className="hidden lg:block" />{' '}
+                Itinerary For You
+              </h1>
+              <p className="mt-4 text-base leading-relaxed text-blue-100">
+                Tell us where you want to go, your budget, and how many days — Gemini AI creates your personalized day-by-day itinerary instantly.
+              </p>
+            </div>
+          </div>
 
-              <button
-                type="submit"
-                disabled={loading || !destination.trim()}
-                className="neu-btn-primary flex w-full items-center justify-center gap-2.5 rounded-xl px-8 py-4 font-display text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          {/* White form card floating below the banner */}
+          <div className="relative -mt-6 mx-4 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white/5 lg:mx-8">
+            <form onSubmit={handleGenerate} className="flex flex-col gap-5 p-6 lg:p-8">
+              {/* Core User Inputs: Destination, Days, Budget, Travel Style */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
+                {/* Destination */}
+                <div className="flex flex-col gap-1.5 lg:col-span-5">
+                  <label
+                    htmlFor="destination"
+                    className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    Where do you want to go?
+                  </label>
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3.5 py-1.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                    <Compass className="size-4 shrink-0 text-muted-foreground" />
+                    <CityAutocomplete
+                      id="destination"
+                      value={destination}
+                      onChange={setDestination}
+                      placeholder="Jaipur, Goa, Kyoto, Manali..."
+                      inputClassName="h-10 text-sm font-medium"
+                    />
+                    <button
+                      type="button"
+                      onClick={detectCurrentCity}
+                      disabled={locatingCity}
+                      title="Use my current location"
+                      aria-label="Use my current location"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                    >
+                      {locatingCity ? (
+                        <LoaderCircle className="size-3.5 animate-spin" />
+                      ) : (
+                        <LocateFixed className="size-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Days */}
+                <div className="flex flex-col gap-1.5 lg:col-span-3">
+                  <label htmlFor="days-input" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    How many days?
+                  </label>
+                  <div className="flex h-[52px] items-center justify-between rounded-xl border border-border bg-background px-3.5 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                      <input
+                        id="days-input"
+                        type="number"
+                        min={1}
+                        max={14}
+                        value={numberOfDays}
+                        onChange={(e) =>
+                          setNumberOfDays(Math.min(14, Math.max(1, Number(e.target.value) || 1)))
+                        }
+                        className="w-14 bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                      />
+                      <span className="text-xs text-muted-foreground">days</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label="Decrease days"
+                        onClick={() => setNumberOfDays((d) => Math.max(1, d - 1))}
+                        className="flex size-7 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <Minus className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Increase days"
+                        onClick={() => setNumberOfDays((d) => Math.min(14, d + 1))}
+                        className="flex size-7 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <Plus className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Budget */}
+                <div className="flex flex-col gap-1.5 lg:col-span-4">
+                  <label htmlFor="budget" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Budget per person (₹ INR)
+                  </label>
+                  <div className="flex h-[52px] items-center gap-2.5 rounded-xl border border-border bg-background px-4 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                    <Wallet className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="font-mono text-sm font-semibold text-primary">₹</span>
+                    <input
+                      id="budget"
+                      type="number"
+                      min={0}
+                      step={500}
+                      value={budget}
+                      onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="e.g. 6000"
+                      className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Travel Style Pills */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Travel Style</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowOptions((v) => !v)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                  >
+                    <SlidersHorizontal className="size-3.5" />
+                    {showOptions ? 'Hide extra options' : 'Travelers, dates & transport'}
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 py-1">
+                  {TRAVEL_STYLES.map((style) => {
+                    const active = interests.includes(style.label);
+                    return (
+                      <button
+                        key={style.label}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => toggleInterest(style.label)}
+                        className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all border ${
+                          active
+                            ? 'bg-primary text-white border-primary shadow-sm'
+                            : 'bg-background border-border text-foreground hover:border-primary hover:text-primary'
+                        }`}
+                      >
+                        <span>{style.short}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Extra Options Panel */}
+              {showOptions && (
+                <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-muted/40 p-5 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="travelers" className="text-xs font-semibold text-muted-foreground">
+                      Travelers
+                    </label>
+                    <input
+                      id="travelers"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={travelers}
+                      onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
+                      className="h-10 rounded-xl border border-border bg-background px-3.5 font-mono text-sm font-medium text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="startDate" className="text-xs font-semibold text-muted-foreground">
+                      Start date
+                    </label>
+                    <input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="h-10 rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="startPoint" className="text-xs font-semibold text-muted-foreground">
+                      Starting hotel / area (optional)
+                    </label>
+                    <input
+                      id="startPoint"
+                      value={startPointQuery}
+                      onChange={(e) => setStartPointQuery(e.target.value)}
+                      placeholder="e.g. Connaught Place, Baga..."
+                      className="h-10 rounded-xl border border-border bg-background px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-semibold text-muted-foreground">Local transport</span>
+                    <div className="flex h-10 items-center gap-1 rounded-xl border border-border bg-background p-1">
+                      {TRANSPORT_OPTIONS.map(({ mode, label, icon: Icon }) => {
+                        const active = transportMode === mode;
+                        return (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => setTransportMode(mode)}
+                            className={`flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-xs font-semibold transition-all ${
+                              active
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            <Icon className="size-3.5" />
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Optional Gemini API Key prompt only if server key is not set */}
+              {needsGeminiKey && (
+                <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800/40 dark:bg-amber-950/20">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                    <KeyRound className="size-4" />
+                    <span>Gemini API Key Required</span>
+                  </div>
+                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
+                    Set <code className="font-mono text-foreground">GEMINI_API_KEY</code> in your server <code className="font-mono text-foreground">.env</code> file, or paste a Gemini API key below for this session:
+                  </p>
+                  <input
+                    type="password"
+                    value={customGeminiKey}
+                    onChange={(e) => setCustomGeminiKey(e.target.value)}
+                    placeholder="Paste Gemini API key (AIza...) for this session"
+                    className="h-11 w-full rounded-xl border border-border bg-background px-4 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+              )}
+
+              {/* Action Row */}
+              <div className="flex flex-col items-center justify-between gap-4 pt-1 sm:flex-row">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    AI
+                  </div>
+                  <span>
+                    Powered by Gemini AI — real responses to your exact trip details.
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || !destination.trim()}
+                  className="btn-cta-orange flex w-full items-center justify-center gap-2.5 rounded-xl px-8 py-4 font-display text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  {loading ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <Zap className="size-4 fill-current" />
+                  )}
+                  <span>{loading ? 'Generating with Gemini…' : 'Plan My Trip'}</span>
+                </button>
+              </div>
+            </form>
+
+            {error && (
+              <div
+                role="alert"
+                className="mx-6 mb-5 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive"
               >
-                {loading ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <Zap className="size-4 fill-current" />
-                )}
-                <span>{loading ? 'Generating with Gemini…' : 'AI Generate Itinerary'}</span>
-              </button>
-            </div>
-          </form>
-
-          {error && (
-            <div
-              role="alert"
-              className="neu-inset-sm relative z-10 rounded-xl px-4 py-3 text-sm font-medium text-destructive"
-            >
-              {error}
-            </div>
-          )}
-          {notice && (
-            <div
-              role="status"
-              className="neu-inset-sm relative z-10 rounded-xl px-4 py-3 text-sm font-medium text-primary"
-            >
-              {notice}
-            </div>
-          )}
+                {error}
+              </div>
+            )}
+            {notice && (
+              <div
+                role="status"
+                className="mx-6 mb-5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary"
+              >
+                {notice}
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Saved Trips Quick Strip */}
@@ -1218,7 +1225,7 @@ function Index() {
                   key={c.city}
                   type="button"
                   onClick={() => void handlePlanCircuit(c)}
-                  className="neu-raised group flex cursor-pointer flex-col gap-4 rounded-2xl p-5 text-left transition-transform hover:-translate-y-1"
+                  className="neu-raised group flex cursor-pointer flex-col gap-4 rounded-2xl p-5 text-left transition-all hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="neu-inset relative h-60 w-full overflow-hidden rounded-xl">
                     <img

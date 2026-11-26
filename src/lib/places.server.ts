@@ -484,7 +484,7 @@ export async function discoverAttractions(params: {
   if (geminiKey) {
     try {
       const gemRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiKey)}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(geminiKey)}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -647,7 +647,7 @@ Return ONLY valid JSON:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3.8-flash',
         temperature: 0.3,
         response_format: { type: 'json_object' },
         messages: [
@@ -1085,7 +1085,7 @@ export async function generateDirectGeminiItinerary(params: {
   let lastError = 'Gemini AI did not return a valid itinerary response.';
 
   if (geminiKey) {
-    const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    const geminiModels = ['gemini-3.8-flash', 'gemini-2.5-flash'];
     for (const model of geminiModels) {
       try {
         const gemRes = await fetch(
@@ -1129,7 +1129,7 @@ export async function generateDirectGeminiItinerary(params: {
           }
           return {
             ...parsed,
-            modelName: model === 'gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.0 Flash',
+            modelName: model === 'gemini-3.8-flash' ? 'Gemini 3.8 Flash' : 'Gemini 2.5 Flash',
           };
         }
         lastError = 'Gemini returned an unexpected format. Please try again.';
@@ -1144,8 +1144,8 @@ export async function generateDirectGeminiItinerary(params: {
       ? {
           url: 'https://ai.gateway.lovable.dev/v1/chat/completions',
           key: lovableKey,
-          model: 'google/gemini-2.5-flash',
-          label: 'Gemini 2.5 Flash (Lovable AI)',
+          model: 'google/gemini-3.8-flash',
+          label: 'Gemini 3.8 Flash (Lovable AI)',
         }
       : null,
     openrouterKey

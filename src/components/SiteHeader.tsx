@@ -100,7 +100,7 @@ export function SiteHeader() {
     <Link
       to="/auth"
       onClick={() => setOpen(false)}
-      className="neu-btn-primary inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition-all"
+      className="neu-btn-primary inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-semibold transition-all"
     >
       <LogIn className="size-4" />
       <span>Sign in</span>
@@ -108,8 +108,8 @@ export function SiteHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-background/85 backdrop-blur-xl shadow-[0_1px_10px_rgba(0,0,0,0.05)]">
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-6 lg:px-12">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-white/90 backdrop-blur-xl dark:bg-slate-900/90 shadow-sm">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 lg:px-10">
         <Link
           to="/"
           className="shrink-0 whitespace-nowrap transition-opacity hover:opacity-90"
@@ -118,18 +118,18 @@ export function SiteHeader() {
           <BrandLogo />
         </Link>
 
-        <nav className="hidden items-center gap-2 md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               activeProps={{
                 className:
-                  "bg-primary-container text-white font-semibold rounded-xl px-4 py-2 text-sm shadow-[4px_4px_10px_rgba(99,102,241,0.22),-4px_-4px_10px_var(--neu-shadow-light)]",
+                  "text-primary font-semibold bg-accent rounded-lg px-3.5 py-2 text-sm",
               }}
               inactiveProps={{
                 className:
-                  "text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 px-3.5 py-2 rounded-xl",
+                  "text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted px-3.5 py-2 rounded-lg",
               }}
               className="shrink-0 whitespace-nowrap transition-all"
             >
@@ -138,12 +138,12 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2.5">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
             onClick={toggleTheme}
-            className="neu-raised-sm inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-all hover:text-foreground"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
           >
             {darkMode ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4" />}
           </button>
@@ -152,7 +152,7 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="neu-raised-sm inline-flex size-10 items-center justify-center rounded-xl text-foreground md:hidden"
+            className="inline-flex size-9 items-center justify-center rounded-lg border border-border text-foreground md:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
             aria-expanded={open}
@@ -163,26 +163,27 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <nav className="bg-surface-low px-6 py-4 shadow-inner md:hidden">
-          <div className="flex flex-col gap-2">
+        <nav className="border-t border-border bg-background px-5 py-3 md:hidden">
+          <div className="flex flex-col gap-1">
             {navLinks.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                activeProps={{ className: "bg-primary-container text-white font-semibold rounded-xl px-3.5 py-2.5" }}
-                inactiveProps={{ className: "text-muted-foreground hover:text-foreground rounded-xl px-3.5 py-2.5" }}
+                activeProps={{ className: "text-primary font-semibold bg-accent rounded-lg px-3.5 py-2.5" }}
+                inactiveProps={{ className: "text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg px-3.5 py-2.5" }}
                 className="text-sm transition-all"
               >
                 {l.label}
               </Link>
             ))}
+            <div className="mt-2 pt-2 border-t border-border">{accountAction}</div>
           </div>
         </nav>
       )}
 
       {error && (
-        <p role="alert" className="px-6 pb-2 text-sm text-destructive">
+        <p role="alert" className="px-5 pb-2 text-sm text-destructive">
           {error}
         </p>
       )}

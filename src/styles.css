@@ -9,14 +9,15 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design system definition — TripPilot Silk (Neomorphic / Soft UI)
- * Inspired by Stitch AI Itinerary Planner: Cool clay surface (#e8eaf0),
- * Indigo primary (#6366f1), Violet tertiary (#7c3aed), Plus Jakarta Sans.
+ * Design system definition — TripPilot (Matching trippilot.com)
+ * Clean modern travel SaaS: White surfaces, deep navy primary (#0f172a),
+ * Vibrant teal accent (#0ea5e9), warm orange CTA (#f97316).
+ * Typography: Inter / Plus Jakarta Sans, clean weights.
  */
 
 @theme inline {
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   --font-mono: "DM Mono", monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -75,119 +76,142 @@
 }
 
 :root {
-  --google-background: #f0f2f8;
-  --google-foreground: #2e3040;
-  --google-border: #d0d2dc;
+  --google-background: #f8fafc;
+  --google-foreground: #0f172a;
+  --google-border: #e2e8f0;
   --radius: 0.75rem;
 
-  /* Silk Light Surface Tokens */
-  --background: #e8eaf0;
-  --foreground: #2e3040;
-  --card: #e8eaf0;
-  --card-foreground: #2e3040;
-  --popover: #f0f2f8;
-  --popover-foreground: #2e3040;
+  /* TripPilot Light Tokens — clean white SaaS */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
 
-  --primary: #6366f1;
+  /* Primary: deep teal/sky — matches trippilot.com brand */
+  --primary: #0ea5e9;
   --primary-foreground: #ffffff;
-  --primary-container: #818cf8;
-  --primary-fixed: #e0e2ff;
+  --primary-container: #bae6fd;
+  --primary-fixed: #e0f2fe;
 
-  --tertiary: #7c3aed;
+  /* Tertiary: warm orange accent for CTAs */
+  --tertiary: #f97316;
   --tertiary-foreground: #ffffff;
-  --tertiary-container: #a78bfa;
-  --tertiary-fixed: #ede9fe;
-  --tertiary-fixed-foreground: #2e1065;
+  --tertiary-container: #fed7aa;
+  --tertiary-fixed: #fff7ed;
+  --tertiary-fixed-foreground: #9a3412;
 
-  --secondary: #e2e4ea;
-  --secondary-foreground: #2e3040;
-  --muted: #dcdee4;
-  --muted-foreground: #585a68;
-  --accent: #e0e2ff;
-  --accent-foreground: #4338ca;
-  --destructive: #dc2626;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #e0f2fe;
+  --accent-foreground: #0369a1;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #d0d2dc;
-  --input: #d0d2dc;
-  --ring: #6366f1;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0ea5e9;
 
-  --surface-lowest: #f0f2f8;
-  --surface-low: #e5e7ed;
-  --surface-high: #dcdee4;
-  --outline: #8a8c9a;
+  --surface-lowest: #f8fafc;
+  --surface-low: #f1f5f9;
+  --surface-high: #e2e8f0;
+  --outline: #94a3b8;
 
-  --neu-shadow-dark: rgba(0, 0, 0, 0.08);
-  --neu-shadow-light: rgba(255, 255, 255, 0.65);
-  --neu-inset-dark: rgba(0, 0, 0, 0.06);
-  --neu-inset-light: rgba(255, 255, 255, 0.55);
+  /* Subtle shadows — clean, not neomorphic */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.07), 0 4px 6px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.08), 0 8px 10px rgba(0,0,0,0.04);
 
-  --chart-1: #6366f1;
-  --chart-2: #7c3aed;
-  --chart-3: #818cf8;
-  --chart-4: #6c6e7e;
-  --chart-5: #a78bfa;
+  /* Legacy neomorphic compat vars — kept as transparent so old classes gracefully fade */
+  --neu-shadow-dark: rgba(0, 0, 0, 0.0);
+  --neu-shadow-light: rgba(255, 255, 255, 0.0);
+  --neu-inset-dark: rgba(0, 0, 0, 0.0);
+  --neu-inset-light: rgba(255, 255, 255, 0.0);
 
-  --sidebar: #e5e7ed;
-  --sidebar-foreground: #2e3040;
-  --sidebar-primary: #6366f1;
+  --chart-1: #0ea5e9;
+  --chart-2: #f97316;
+  --chart-3: #8b5cf6;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
+
+  --sidebar: #f1f5f9;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0ea5e9;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e2e4ea;
-  --sidebar-accent-foreground: #2e3040;
-  --sidebar-border: #d0d2dc;
-  --sidebar-ring: #6366f1;
+  --sidebar-accent: #e0f2fe;
+  --sidebar-accent-foreground: #0369a1;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0ea5e9;
 }
 
 .dark {
-  --google-background: #1c1f2b;
-  --google-foreground: #eef0f6;
-  --google-border: #2f3447;
+  --google-background: #1e293b;
+  --google-foreground: #f1f5f9;
+  --google-border: #334155;
 
-  /* Silk Dark Neomorphic Tokens */
-  --background: #191c26;
-  --foreground: #eef0f6;
-  --card: #191c26;
-  --card-foreground: #eef0f6;
-  --popover: #202432;
-  --popover-foreground: #eef0f6;
+  /* TripPilot Dark Tokens */
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card: #1e293b;
+  --card-foreground: #f1f5f9;
+  --popover: #1e293b;
+  --popover-foreground: #f1f5f9;
 
-  --primary: #818cf8;
-  --primary-foreground: #121420;
-  --primary-container: #6366f1;
-  --primary-fixed: #272b45;
+  --primary: #38bdf8;
+  --primary-foreground: #0c2340;
+  --primary-container: #0369a1;
+  --primary-fixed: #0c3454;
 
-  --tertiary: #a78bfa;
-  --tertiary-foreground: #121420;
-  --tertiary-container: #7c3aed;
-  --tertiary-fixed: #2a2444;
-  --tertiary-fixed-foreground: #ede9fe;
+  --tertiary: #fb923c;
+  --tertiary-foreground: #431407;
+  --tertiary-container: #c2410c;
+  --tertiary-fixed: #3c1a07;
+  --tertiary-fixed-foreground: #fed7aa;
 
-  --secondary: #222634;
-  --secondary-foreground: #eef0f6;
-  --muted: #262a3a;
-  --muted-foreground: #a0a4b8;
-  --accent: #272b45;
-  --accent-foreground: #c7d2fe;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #cbd5e1;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #0c3454;
+  --accent-foreground: #7dd3fc;
+  --destructive: #f87171;
+  --destructive-foreground: #450a0a;
   --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: #818cf8;
+  --input: rgba(255, 255, 255, 0.10);
+  --ring: #38bdf8;
 
-  --surface-lowest: #141720;
-  --surface-low: #1d202c;
-  --surface-high: #262a38;
-  --outline: #8d91a5;
+  --surface-lowest: #090e1a;
+  --surface-low: #111827;
+  --surface-high: #1e293b;
+  --outline: #64748b;
 
-  --neu-shadow-dark: rgba(0, 0, 0, 0.45);
-  --neu-shadow-light: rgba(255, 255, 255, 0.05);
-  --neu-inset-dark: rgba(0, 0, 0, 0.45);
-  --neu-inset-light: rgba(255, 255, 255, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.2);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.35), 0 8px 10px rgba(0,0,0,0.2);
 
-  --chart-1: #818cf8;
-  --chart-2: #a78bfa;
-  --chart-3: #6366f1;
-  --chart-4: #94a3b8;
-  --chart-5: #c4b5fd;
+  --neu-shadow-dark: rgba(0, 0, 0, 0.0);
+  --neu-shadow-light: rgba(255, 255, 255, 0.0);
+  --neu-inset-dark: rgba(0, 0, 0, 0.0);
+  --neu-inset-light: rgba(255, 255, 255, 0.0);
+
+  --chart-1: #38bdf8;
+  --chart-2: #fb923c;
+  --chart-3: #a78bfa;
+  --chart-4: #34d399;
+  --chart-5: #fbbf24;
+
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #38bdf8;
+  --sidebar-primary-foreground: #0c2340;
+  --sidebar-accent: #0c3454;
+  --sidebar-accent-foreground: #7dd3fc;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #38bdf8;
 }
 
 @layer base {
@@ -203,65 +227,82 @@
   }
 }
 
-/* Silk Neomorphic Utility Classes */
+/* =====================================================================
+   TripPilot Card & Button Utility Classes
+   Clean flat-shadow style matching trippilot.com
+   ===================================================================== */
+
+/* Card / raised surface — white card with clean shadow */
 .neu-raised {
-  background-color: var(--background);
-  box-shadow:
-    6px 6px 12px var(--neu-shadow-dark),
-    -6px -6px 12px var(--neu-shadow-light);
+  background-color: var(--card);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
 }
 
 .neu-raised-lg {
-  background-color: var(--background);
-  box-shadow:
-    10px 10px 20px var(--neu-shadow-dark),
-    -10px -10px 20px var(--neu-shadow-light);
+  background-color: var(--card);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
 }
 
 .neu-raised-sm {
-  background-color: var(--background);
-  box-shadow:
-    4px 4px 8px var(--neu-shadow-dark),
-    -4px -4px 8px var(--neu-shadow-light);
+  background-color: var(--card);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 
+/* Inset / input surface */
 .neu-inset {
   background-color: var(--surface-lowest);
-  box-shadow:
-    inset 4px 4px 8px var(--neu-inset-dark),
-    inset -4px -4px 8px var(--neu-inset-light);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .neu-inset-clay {
-  background-color: var(--background);
-  box-shadow:
-    inset 4px 4px 8px var(--neu-inset-dark),
-    inset -4px -4px 8px var(--neu-inset-light);
+  background-color: var(--surface-low);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .neu-inset-sm {
   background-color: var(--surface-low);
-  box-shadow:
-    inset 2px 2px 4px var(--neu-inset-dark),
-    inset -2px -2px 4px var(--neu-inset-light);
+  border: 1px solid var(--border);
 }
 
+/* Primary CTA button — sky blue / teal, matches trippilot.com */
 .neu-btn-primary {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-  box-shadow:
-    6px 6px 12px rgba(99, 102, 241, 0.28),
-    -6px -6px 12px var(--neu-shadow-light);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+  border: none;
 }
 
 .neu-btn-primary:hover {
-  filter: brightness(1.06);
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
+  transform: translateY(-1px);
 }
 
 .neu-btn-primary:active {
-  box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
 }
 
+/* Orange CTA variant (tertiary) */
+.btn-cta-orange {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
+  border: none;
+}
+
+.btn-cta-orange:hover {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Google sign-in button */
 .google-signin {
   background: var(--google-background);
   color: var(--google-foreground);

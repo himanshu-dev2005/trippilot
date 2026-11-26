@@ -3,20 +3,23 @@ export function BrandLogo({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const textSize = size === 'sm' ? 'text-lg' : 'text-xl';
 
   return (
-    <span className="inline-flex shrink-0 items-center gap-3 whitespace-nowrap">
+    <span className="inline-flex shrink-0 items-center gap-2.5 whitespace-nowrap">
+      {/* TripPilot compass/map-pin icon in brand teal */}
       <span
-        className={`neu-raised-sm flex ${iconSize} shrink-0 items-center justify-center rounded-xl text-primary`}
+        className={`flex ${iconSize} shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-md`}
       >
-        <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
           <path
-            d="M12 2.5C7.858 2.5 4.5 5.858 4.5 10c0 5.6 7.5 11.5 7.5 11.5S19.5 15.6 19.5 10c0-4.142-3.358-7.5-7.5-7.5Z"
+            d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7Z"
             fill="currentColor"
+            opacity="0.9"
           />
-          <circle cx="12" cy="10" r="2.5" className="fill-background" />
+          <circle cx="12" cy="9" r="2.5" fill="white" />
         </svg>
       </span>
-      <span className={`font-display ${textSize} font-bold tracking-tight text-foreground`}>
-        TripPilot
+      <span className={`font-display ${textSize} font-bold tracking-tight`}>
+        <span className="text-primary">Trip</span>
+        <span className="text-foreground">Pilot</span>
       </span>
     </span>
   );
