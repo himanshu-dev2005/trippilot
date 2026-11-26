@@ -914,45 +914,30 @@ function Index() {
 
   return (
     <main className="min-h-screen w-full bg-background pb-20">
-      {/* Screenshot 1: Full-Bleed Hero Banner with Script Subtitle + Giant Serif Title + Primary Explore Button */}
-      <section className="no-print relative h-[440px] w-full overflow-hidden lg:h-[500px]">
+      {/* Full-Bleed Hero Banner with Build Custom Travel Plans Search Bar Directly On Hero Image */}
+      <section id="search-plans" className="no-print relative min-h-[500px] w-full overflow-hidden py-14 lg:min-h-[560px] lg:py-20">
         <img
           src={CIRCUIT_IMAGES.hero}
           alt="Ancient rock fortress at sunset"
-          className="h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/45" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-          <span className="font-script text-2xl font-semibold text-[#7C5CFF] drop-shadow sm:text-3xl">
-            Chasing Sunsets and Legends in
-          </span>
-          <h1
-            className="mt-0.5 text-5xl font-extrabold tracking-tight text-white drop-shadow-xl sm:text-7xl lg:text-8xl"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            India &amp; Beyond
-          </h1>
-          <a
-            href="#search-plans"
-            className="neu-btn-primary mt-5 inline-flex items-center justify-center rounded-lg px-7 py-2.5 text-sm font-semibold shadow-lg"
-          >
-            Explore
-          </a>
-        </div>
-      </section>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/65" />
 
-      {/* Screenshot 2: Search Plans — Build Custom Travel Plans */}
-      <section id="search-plans" className="no-print bg-white py-12 dark:bg-slate-950">
-        <div className="mx-auto max-w-5xl px-5">
-          <div className="mb-7 text-center">
-            <span className="font-script text-2xl font-semibold text-[#7C5CFF]">Search Plans</span>
-            <h2 className="mt-0.5 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+        <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center justify-center px-5">
+          <div className="mb-7 text-center text-white">
+            <span className="font-script text-2xl font-semibold text-[#c4b5fd] drop-shadow sm:text-3xl">
+              Search Plans
+            </span>
+            <h1 className="mt-1 font-display text-4xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-5xl lg:text-6xl">
               Build Custom Travel Plans
-            </h2>
+            </h1>
+            <p className="mt-2 text-sm text-white/85 sm:text-base">
+              Enter your destination, days, and budget — get a route-ordered itinerary in seconds.
+            </p>
           </div>
 
-          <form onSubmit={handleGenerate} className="flex flex-col items-center gap-5">
-            <div className="flex w-full flex-col items-stretch gap-2 rounded-xl border border-border bg-white p-2 shadow-md dark:bg-slate-900 md:flex-row md:items-center">
+          <form onSubmit={handleGenerate} className="flex w-full flex-col items-center gap-4">
+            <div className="flex w-full flex-col items-stretch gap-2 rounded-xl border border-white/20 bg-white p-2 text-zinc-900 shadow-2xl md:flex-row md:items-center">
               {/* Destination */}
               <div className="flex flex-[2] items-center gap-2 rounded-lg px-3 py-1.5">
                 <MapPin className="size-4 shrink-0 text-muted-foreground" />
