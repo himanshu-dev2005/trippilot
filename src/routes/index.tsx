@@ -924,15 +924,15 @@ function Index() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/65" />
 
         <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center justify-center px-5">
-          <div className="mb-7 text-center text-white">
-            <span className="font-script text-2xl font-semibold text-[#c4b5fd] drop-shadow sm:text-3xl">
-              Search Plans
+          <div className="mb-8 text-center text-white">
+            <span className="inline-block rounded-full border border-white/25 bg-white/10 px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-white/95 backdrop-blur-sm">
+              AI Route &amp; Budget Planner
             </span>
-            <h1 className="mt-1 font-display text-4xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-5xl lg:text-6xl">
+            <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-5xl lg:text-6xl">
               Build Custom Travel Plans
             </h1>
-            <p className="mt-2 text-sm text-white/85 sm:text-base">
-              Enter your destination, days, and budget — get a route-ordered itinerary in seconds.
+            <p className="mx-auto mt-3 max-w-xl text-sm text-white/85 sm:text-base">
+              Enter your destination, days, and budget — get a geographically sequenced itinerary with live Google Maps pins and weather.
             </p>
           </div>
 
@@ -1228,10 +1228,10 @@ function Index() {
           <section className="bg-[#F3F0FF] py-14 dark:bg-slate-900/60">
             <div className="mx-auto max-w-6xl px-5 lg:px-10">
               <div className="mb-8">
-                <span className="font-script text-2xl font-semibold text-[#6C3FE4]">
-                  Fresh &amp; Fabulous Getaways
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6C3FE4]">
+                  Featured Circuits
                 </span>
-                <h2 className="mt-0.5 font-display text-3xl font-extrabold text-foreground">
+                <h2 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-foreground">
                   Hot Picks
                 </h2>
               </div>
@@ -1314,8 +1314,10 @@ function Index() {
           <section className="bg-white py-14 dark:bg-slate-950">
             <div className="mx-auto max-w-6xl px-5 lg:px-10">
               <div className="mb-8">
-                <span className="font-script text-2xl font-semibold text-[#6C3FE4]">Trip Ideas</span>
-                <h2 className="mt-0.5 font-display text-3xl font-extrabold text-foreground">
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#6C3FE4]">
+                  Curated Escapes
+                </span>
+                <h2 className="mt-1 font-display text-3xl font-extrabold tracking-tight text-foreground">
                   Top Destinations
                 </h2>
               </div>
@@ -1359,8 +1361,10 @@ function Index() {
           <section className="relative overflow-hidden bg-[#1E103C] py-16 text-white">
             <div className="mx-auto max-w-6xl px-5 lg:px-10">
               <div className="mb-8 text-center">
-                <span className="font-script text-2xl font-semibold text-white">Explore your</span>
-                <h2 className="mt-0.5 font-display text-3xl font-black uppercase tracking-wide text-[#7C5CFF] sm:text-4xl">
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#c4b5fd]">
+                  Outdoors &amp; Trails
+                </span>
+                <h2 className="mt-1.5 font-display text-3xl font-extrabold uppercase tracking-wide text-white sm:text-4xl">
                   Wildlife &amp; Nature
                 </h2>
               </div>
@@ -1834,6 +1838,7 @@ function Index() {
                                       name={stop.name}
                                       category={stop.category}
                                       destination={trip.destination}
+                                      coordinates={stop.coordinates}
                                       {...(stop.photoReference
                                         ? { photoReference: stop.photoReference }
                                         : {})}
