@@ -1331,7 +1331,7 @@ function Index() {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-muted-foreground">Transport</span>
-                    <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+                    <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-background p-1">
                       {TRANSPORT_OPTIONS.map(({ mode, label, icon: Icon }) => {
                         const active = transportMode === mode;
                         return (
@@ -1339,10 +1339,10 @@ function Index() {
                             key={mode}
                             type="button"
                             onClick={() => setTransportMode(mode)}
-                            className={`flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-xs font-semibold ${active ? 'bg-[#7C5CFF] text-white' : 'text-muted-foreground'
+                            className={`flex h-7 flex-1 min-w-[72px] items-center justify-center gap-1 rounded-md px-2 text-xs font-semibold ${active ? 'bg-[#7C5CFF] text-white' : 'text-muted-foreground'
                               }`}
                           >
-                            <Icon className="size-3" />
+                            <Icon className="size-3 shrink-0" />
                             {label}
                           </button>
                         );
@@ -1921,7 +1921,7 @@ function Index() {
                     </button>
                   </div>
 
-                  <div className="neu-inset flex items-center gap-1 rounded-xl p-1">
+                  <div className="neu-inset flex flex-wrap items-center gap-1 rounded-xl p-1">
                     {TRANSPORT_OPTIONS.map(({ mode, label, icon: Icon }) => {
                       const active = trip.transportMode === mode;
                       return (
@@ -2000,7 +2000,7 @@ function Index() {
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
                     <Gauge className="size-3.5 text-primary" /> Pace:
                   </span>
-                  <div className="neu-inset flex items-center gap-1 rounded-xl p-1">
+                  <div className="neu-inset flex flex-wrap items-center gap-1 rounded-xl p-1">
                     {(['relaxed', 'balanced', 'packed'] as const).map((mode) => (
                       <button
                         key={mode}
@@ -2559,7 +2559,7 @@ function Index() {
                       value={customPlaceQuery}
                       onChange={(e) => setCustomPlaceQuery(e.target.value)}
                       placeholder={`Add any café, monument, or market in ${trip.destination}...`}
-                      className="neu-inset h-10 min-w-[200px] flex-1 rounded-xl px-4 text-sm text-foreground placeholder:text-outline focus:outline-none"
+                      className="neu-inset h-10 w-full min-w-0 flex-1 rounded-xl px-4 text-sm text-foreground placeholder:text-outline focus:outline-none sm:min-w-[200px]"
                     />
                     <select
                       aria-label="Target day"
