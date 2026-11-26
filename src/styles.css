@@ -8,9 +8,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * TripPilot — Exact trippilot.com Visual System
- * Spring Green (#38d67a) CTAs, crisp white & soft mint (#ebfbf0) surfaces,
- * deep jungle green (#0b3d24) feature bands, Poppins + Caveat + Playfair Display.
+ * TripPilot — Brand Logo Color System
+ * Vibrant Violet (#6C3FE4 / #7C5CFF), crisp White (#ffffff),
+ * Soft Lavender (#F3F0FF), Deep Royal Indigo (#1E103C).
  */
 
 @theme inline {
@@ -77,136 +77,136 @@
 
 :root {
   --google-background: #f8fafc;
-  --google-foreground: #0f172a;
-  --google-border: #e2e8f0;
+  --google-foreground: #09090b;
+  --google-border: #e4e4e7;
   --radius: 0.5rem;
 
   --background: #ffffff;
-  --foreground: #111827;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #111827;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #111827;
+  --popover-foreground: #09090b;
 
-  /* Exact trippilot.com spring green */
-  --primary: #22c55e;
-  --primary-foreground: #052e16;
-  --primary-container: #dcfce7;
-  --primary-fixed: #ebfbf0;
+  /* Exact TripPilot Logo Violet */
+  --primary: #6C3FE4;
+  --primary-foreground: #ffffff;
+  --primary-container: #7C5CFF;
+  --primary-fixed: #F3F0FF;
 
-  --tertiary: #0b3d24;
+  --tertiary: #1E103C;
   --tertiary-foreground: #ffffff;
-  --tertiary-container: #14532d;
-  --tertiary-fixed: #0b3d24;
-  --tertiary-fixed-foreground: #bbf7d0;
+  --tertiary-container: #2D185B;
+  --tertiary-fixed: #1E103C;
+  --tertiary-fixed-foreground: #DDD6FE;
 
-  --secondary: #f3f4f6;
-  --secondary-foreground: #1f2937;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --accent: #ebfbf0;
-  --accent-foreground: #15803d;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #F3F0FF;
+  --accent-foreground: #5B21B6;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #d1d5db;
-  --ring: #38d67a;
+  --border: #e4e4e7;
+  --input: #d4d4d8;
+  --ring: #6C3FE4;
 
-  --surface-lowest: #f9fafb;
-  --surface-low: #ebfbf0;
-  --surface-high: #e5e7eb;
-  --outline: #9ca3af;
+  --surface-lowest: #fafafa;
+  --surface-low: #F3F0FF;
+  --surface-high: #e4e4e7;
+  --outline: #71717a;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.16);
+  --shadow-sm: 0 1px 3px rgba(9, 9, 11, 0.06);
+  --shadow-md: 0 4px 12px rgba(108, 63, 228, 0.08);
+  --shadow-lg: 0 10px 25px rgba(108, 63, 228, 0.12);
+  --shadow-xl: 0 20px 40px rgba(9, 9, 11, 0.16);
 
   --neu-shadow-dark: transparent;
   --neu-shadow-light: transparent;
   --neu-inset-dark: transparent;
   --neu-inset-light: transparent;
 
-  --chart-1: #38d67a;
-  --chart-2: #0ea5e9;
-  --chart-3: #f97316;
-  --chart-4: #a855f7;
-  --chart-5: #f59e0b;
+  --chart-1: #6C3FE4;
+  --chart-2: #7C5CFF;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #0ea5e9;
 
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #111827;
-  --sidebar-primary: #38d67a;
-  --sidebar-primary-foreground: #052e16;
-  --sidebar-accent: #ebfbf0;
-  --sidebar-accent-foreground: #15803d;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #38d67a;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #6C3FE4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #F3F0FF;
+  --sidebar-accent-foreground: #5B21B6;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #6C3FE4;
 }
 
 .dark {
-  --google-background: #1e293b;
-  --google-foreground: #f1f5f9;
-  --google-border: #334155;
+  --google-background: #18181b;
+  --google-foreground: #fafafa;
+  --google-border: #27272a;
 
-  --background: #0b1116;
-  --foreground: #f1f5f9;
-  --card: #131c24;
-  --card-foreground: #f1f5f9;
-  --popover: #131c24;
-  --popover-foreground: #f1f5f9;
+  --background: #0b0914;
+  --foreground: #fafafa;
+  --card: #141122;
+  --card-foreground: #fafafa;
+  --popover: #141122;
+  --popover-foreground: #fafafa;
 
-  --primary: #38d67a;
-  --primary-foreground: #052e16;
-  --primary-container: #14532d;
-  --primary-fixed: #052e16;
+  --primary: #7C5CFF;
+  --primary-foreground: #ffffff;
+  --primary-container: #6C3FE4;
+  --primary-fixed: #1E103C;
 
-  --tertiary: #14532d;
+  --tertiary: #2D185B;
   --tertiary-foreground: #ffffff;
-  --tertiary-container: #0b3d24;
-  --tertiary-fixed: #0b3d24;
-  --tertiary-fixed-foreground: #bbf7d0;
+  --tertiary-container: #1E103C;
+  --tertiary-fixed: #1E103C;
+  --tertiary-fixed-foreground: #DDD6FE;
 
-  --secondary: #1e293b;
-  --secondary-foreground: #cbd5e1;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #14532d;
-  --accent-foreground: #86efac;
+  --secondary: #1b172c;
+  --secondary-foreground: #e4e4e7;
+  --muted: #1b172c;
+  --muted-foreground: #a1a1aa;
+  --accent: #2D185B;
+  --accent-foreground: #DDD6FE;
   --destructive: #f87171;
   --destructive-foreground: #450a0a;
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.12);
-  --ring: #38d67a;
+  --ring: #7C5CFF;
 
-  --surface-lowest: #090e13;
-  --surface-low: #0f171d;
-  --surface-high: #1e293b;
-  --outline: #64748b;
+  --surface-lowest: #08060f;
+  --surface-low: #120e1f;
+  --surface-high: #1e1833;
+  --outline: #71717a;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.45);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.55);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
 
   --neu-shadow-dark: transparent;
   --neu-shadow-light: transparent;
   --neu-inset-dark: transparent;
   --neu-inset-light: transparent;
 
-  --chart-1: #38d67a;
-  --chart-2: #38bdf8;
-  --chart-3: #fb923c;
-  --chart-4: #c084fc;
-  --chart-5: #fbbf24;
+  --chart-1: #7C5CFF;
+  --chart-2: #a78bfa;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #38bdf8;
 
-  --sidebar: #131c24;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #38d67a;
-  --sidebar-primary-foreground: #052e16;
-  --sidebar-accent: #14532d;
-  --sidebar-accent-foreground: #86efac;
+  --sidebar: #141122;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #7C5CFF;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2D185B;
+  --sidebar-accent-foreground: #DDD6FE;
   --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #38d67a;
+  --sidebar-ring: #7C5CFF;
 }
 
 @layer base {
@@ -251,16 +251,16 @@
   border: 1px solid var(--border);
 }
 
-/* Primary CTA — trippilot.com Spring Green */
+/* Primary CTA — TripPilot Logo Violet */
 .neu-btn-primary {
-  background-color: #38d67a;
-  color: #052e16;
+  background-color: #6C3FE4;
+  color: #ffffff;
   font-weight: 600;
   border: none;
   transition: background-color 0.15s ease, transform 0.15s ease;
 }
 .neu-btn-primary:hover {
-  background-color: #28c76a;
+  background-color: #5B2FD4;
   transform: translateY(-1px);
 }
 .neu-btn-primary:active {

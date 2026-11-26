@@ -865,7 +865,7 @@ function Index() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/45" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-          <span className="font-script text-2xl font-semibold text-[#38d67a] drop-shadow sm:text-3xl">
+          <span className="font-script text-2xl font-semibold text-[#7C5CFF] drop-shadow sm:text-3xl">
             Chasing Sunsets and Legends in
           </span>
           <h1
@@ -887,7 +887,7 @@ function Index() {
       <section id="search-plans" className="no-print bg-white py-12 dark:bg-slate-950">
         <div className="mx-auto max-w-5xl px-5">
           <div className="mb-7 text-center">
-            <span className="font-script text-2xl font-semibold text-[#38d67a]">Search Plans</span>
+            <span className="font-script text-2xl font-semibold text-[#7C5CFF]">Search Plans</span>
             <h2 className="mt-0.5 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
               Build Custom Travel Plans
             </h2>
@@ -967,7 +967,7 @@ function Index() {
                   setNumberOfDays(3);
                   setBudget(6000);
                 }}
-                className="hidden rounded-lg bg-[#ebfbf0] px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-green-100 md:inline-block"
+                className="hidden rounded-lg bg-[#F3F0FF] px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-violet-100 md:inline-block"
               >
                 Clear All
               </button>
@@ -1010,11 +1010,10 @@ function Index() {
                         type="button"
                         aria-pressed={active}
                         onClick={() => toggleInterest(style.label)}
-                        className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                          active
-                            ? 'border-[#38d67a] bg-[#38d67a] text-zinc-950'
-                            : 'border-border bg-white text-foreground hover:border-[#38d67a] dark:bg-slate-800'
-                        }`}
+                        className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${active
+                          ? 'border-[#7C5CFF] bg-[#7C5CFF] text-white'
+                          : 'border-border bg-white text-foreground hover:border-[#7C5CFF] dark:bg-slate-800'
+                          }`}
                       >
                         {style.short}
                       </button>
@@ -1071,9 +1070,8 @@ function Index() {
                             key={mode}
                             type="button"
                             onClick={() => setTransportMode(mode)}
-                            className={`flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-xs font-semibold ${
-                              active ? 'bg-[#38d67a] text-zinc-950' : 'text-muted-foreground'
-                            }`}
+                            className={`flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-xs font-semibold ${active ? 'bg-[#7C5CFF] text-white' : 'text-muted-foreground'
+                              }`}
                           >
                             <Icon className="size-3" />
                             {label}
@@ -1115,7 +1113,7 @@ function Index() {
           {notice && (
             <div
               role="status"
-              className="mt-4 rounded-lg border border-green-500/25 bg-[#ebfbf0] px-4 py-3 text-center text-sm font-medium text-green-900"
+              className="mt-4 rounded-lg border border-[#6C3FE4]/25 bg-[#F3F0FF] px-4 py-3 text-center text-sm font-medium text-[#1E103C]"
             >
               {notice}
             </div>
@@ -1135,7 +1133,7 @@ function Index() {
         <section className="no-print mx-auto max-w-7xl px-5 pt-6 lg:px-10">
           <div className="flex items-center justify-between pb-3">
             <h2 className="text-sm font-bold text-foreground">Your Saved Trips</h2>
-            <Link to="/trips" className="text-xs font-semibold text-green-700 hover:underline">
+            <Link to="/trips" className="text-xs font-semibold text-[#6C3FE4] hover:underline">
               Manage all →
             </Link>
           </div>
@@ -1148,7 +1146,7 @@ function Index() {
                 <button
                   type="button"
                   onClick={() => handleLoadSavedTrip(saved)}
-                  className="font-semibold text-foreground hover:text-green-600"
+                  className="font-semibold text-foreground hover:text-[#6C3FE4]"
                 >
                   {saved.destination} · {saved.numberOfDays}d · ₹{saved.budget.toLocaleString('en-IN')}
                 </button>
@@ -1172,10 +1170,10 @@ function Index() {
       {!trip && !loading && (
         <div className="flex flex-col">
           {/* Screenshot 3: Hot Picks (Mint section, 2 large horizontal cards with 3 mini thumbnails + EXPLORE) */}
-          <section className="bg-[#ebfbf0] py-14 dark:bg-slate-900/60">
+          <section className="bg-[#F3F0FF] py-14 dark:bg-slate-900/60">
             <div className="mx-auto max-w-6xl px-5 lg:px-10">
               <div className="mb-8">
-                <span className="font-script text-2xl font-semibold text-[#28c76a]">
+                <span className="font-script text-2xl font-semibold text-[#6C3FE4]">
                   Fresh &amp; Fabulous Getaways
                 </span>
                 <h2 className="mt-0.5 font-display text-3xl font-extrabold text-foreground">
@@ -1207,7 +1205,7 @@ function Index() {
                             {c.city}
                           </span>
                           <h3 className="text-lg font-bold leading-snug">{c.subtitle}</h3>
-                          <span className="mt-1.5 inline-block rounded bg-[#38d67a] px-2.5 py-0.5 text-[11px] font-semibold text-zinc-950">
+                          <span className="mt-1.5 inline-block rounded bg-[#7C5CFF] px-2.5 py-0.5 text-[11px] font-semibold text-white">
                             {c.days} Days · ₹{c.budget.toLocaleString('en-IN')}
                           </span>
                         </div>
@@ -1253,7 +1251,7 @@ function Index() {
           <section className="bg-white py-14 dark:bg-slate-950">
             <div className="mx-auto max-w-6xl px-5 lg:px-10">
               <div className="mb-8">
-                <span className="font-script text-2xl font-semibold text-[#28c76a]">Trip Ideas</span>
+                <span className="font-script text-2xl font-semibold text-[#6C3FE4]">Trip Ideas</span>
                 <h2 className="mt-0.5 font-display text-3xl font-extrabold text-foreground">
                   Top Destinations
                 </h2>
@@ -1291,11 +1289,11 @@ function Index() {
           </section>
 
           {/* Screenshot 5: Explore your WILDLIFE & NATURE (Deep Jungle Green Band) */}
-          <section className="relative overflow-hidden bg-[#0b3d24] py-16 text-white">
+          <section className="relative overflow-hidden bg-[#1E103C] py-16 text-white">
             <div className="mx-auto max-w-6xl px-5 lg:px-10">
               <div className="mb-8 text-center">
                 <span className="font-script text-2xl font-semibold text-white">Explore your</span>
-                <h2 className="mt-0.5 font-display text-3xl font-black uppercase tracking-wide text-[#38d67a] sm:text-4xl">
+                <h2 className="mt-0.5 font-display text-3xl font-black uppercase tracking-wide text-[#7C5CFF] sm:text-4xl">
                   Wildlife &amp; Nature
                 </h2>
               </div>
