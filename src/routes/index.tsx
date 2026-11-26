@@ -187,13 +187,12 @@ function PlanningProgressView({ destination }: { destination: string }) {
           return (
             <div
               key={s.label}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all ${
-                isCurrent
-                  ? 'neu-raised text-foreground font-semibold'
-                  : isDone
-                    ? 'neu-inset-sm text-muted-foreground'
-                    : 'text-muted-foreground/60'
-              }`}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all ${isCurrent
+                ? 'neu-raised text-foreground font-semibold'
+                : isDone
+                  ? 'neu-inset-sm text-muted-foreground'
+                  : 'text-muted-foreground/60'
+                }`}
             >
               <Icon className={`size-4 shrink-0 ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`} />
               <span className="flex-1 text-left">{s.label}</span>
@@ -381,7 +380,7 @@ function Index() {
         .then((res) => {
           if (res.trip) handleLoadSavedTrip(res.trip);
         })
-        .catch(() => {});
+        .catch(() => { });
       return;
     }
 
@@ -433,7 +432,7 @@ function Index() {
     }
     void getSavedTripsFromMongo()
       .then((res) => setSavedTrips(res.trips))
-      .catch(() => {});
+      .catch(() => { });
     void getMongoProfile()
       .then(({ profile }) => {
         if (!profile) return;
@@ -443,7 +442,7 @@ function Index() {
         setTransportMode(profile.defaultTransportMode);
         if (profile.defaultInterests.length) setInterests(profile.defaultInterests);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [user]);
 
   function toggleFavourite(
@@ -469,7 +468,7 @@ function Index() {
           lat: stop.coordinates.lat,
           lng: stop.coordinates.lng,
         },
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }
 
@@ -717,9 +716,9 @@ function Index() {
         d.dayNumber !== dayNumber
           ? d
           : {
-              ...d,
-              stops: d.stops.map((s) => (s.attractionId === attractionId ? { ...s, ...patch } : s)),
-            },
+            ...d,
+            stops: d.stops.map((s) => (s.attractionId === attractionId ? { ...s, ...patch } : s)),
+          },
       ),
     });
   }
@@ -848,7 +847,7 @@ function Index() {
   const totalTransitCost = trip ? trip.itinerary.reduce((s, d) => s + d.transitCost, 0) : 0;
   const groupTotalCost = trip
     ? totalActivityCost * trip.travelers +
-      (trip.transportMode === 'cab' ? totalTransitCost : totalTransitCost * trip.travelers)
+    (trip.transportMode === 'cab' ? totalTransitCost : totalTransitCost * trip.travelers)
     : 0;
   const costPerPerson = trip ? Math.round(groupTotalCost / Math.max(1, trip.travelers)) : 0;
   const budgetUsedPct =
@@ -856,54 +855,40 @@ function Index() {
 
   return (
     <main className="min-h-screen w-full bg-background pb-20">
-      {/* 1. Full-Bleed Hero Banner (matching screenshot) */}
-      <section className="no-print relative h-[420px] w-full overflow-hidden lg:h-[480px]">
+      {/* Bold Editorial Hero + Integrated Planner */}
+      <section className="no-print relative border-b border-border bg-zinc-950 text-white">
         <img
-          src={CIRCUIT_IMAGES.udaipur}
-          alt="Discover iconic destinations"
-          className="h-full w-full object-cover"
+          src={CIRCUIT_IMAGES.hero}
+          alt="India architectural heritage"
+          className="absolute inset-0 h-full w-full object-cover opacity-40"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/30 to-black/55" />
-        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
-          <span className="mb-1 text-sm font-medium italic tracking-wide text-white/90 md:text-base">
-            Explore Iconic Destinations
-          </span>
-          <h1
-            className="text-5xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-6xl lg:text-7xl"
-            style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-          >
-            TripPilot
-          </h1>
-          <a
-            href="#planner-bar"
-            className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-green-600"
-          >
-            Explore
-          </a>
-        </div>
-      </section>
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/60 via-zinc-950/50 to-zinc-950/90" />
 
-      {/* 2. Build Custom Travel Plans — Clean Centered Search Bar */}
-      <section id="planner-bar" className="no-print bg-white py-12 dark:bg-slate-900">
-        <div className="mx-auto max-w-5xl px-5">
-          <div className="mb-7 text-center">
-            <span className="text-xs font-semibold italic text-primary">Custom AI Planner</span>
-            <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Build Custom Travel Plans
-            </h2>
+        <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 lg:px-10 lg:py-24">
+          <div className="max-w-3xl">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+              Route-Optimized Travel Planning
+            </p>
+            <h1 className="font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-white sm:text-5xl lg:text-6xl">
+              Every stop, route, and rupee—planned in seconds.
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-300">
+              Enter your destination, trip length, and budget. Get a geographically sequenced day-by-day itinerary with live weather and realistic local transit.
+            </p>
           </div>
 
-          <form onSubmit={handleGenerate} className="flex flex-col items-center gap-4">
-            <div className="flex w-full flex-col items-stretch gap-2 rounded-xl border border-border bg-white p-2 shadow-lg dark:bg-slate-800 md:flex-row md:items-center">
+          {/* Crisp Architectural Search / Planner Bar */}
+          <form onSubmit={handleGenerate} className="mt-10 flex flex-col gap-3">
+            <div className="flex w-full flex-col items-stretch gap-2 rounded-xl border border-white/15 bg-white p-2 text-zinc-950 shadow-2xl md:flex-row md:items-center">
               {/* Destination */}
-              <div className="flex flex-[2] items-center gap-2 rounded-lg px-3 py-1.5">
-                <Compass className="size-4 shrink-0 text-muted-foreground" />
+              <div className="flex flex-[2] items-center gap-2.5 rounded-lg px-3 py-1.5">
+                <Compass className="size-4 shrink-0 text-zinc-500" />
                 <CityAutocomplete
                   id="destination"
                   value={destination}
                   onChange={setDestination}
-                  placeholder="Where do you want to go? (e.g. Dehradun, Jaipur, Goa)"
-                  inputClassName="h-10 text-sm font-medium"
+                  placeholder="Where are you going? (e.g. Dehradun, Jaipur, Goa)"
+                  inputClassName="h-10 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400"
                 />
                 <button
                   type="button"
@@ -911,21 +896,21 @@ function Index() {
                   disabled={locatingCity}
                   title="Use my current location"
                   aria-label="Use my current location"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
                 >
                   {locatingCity ? (
-                    <LoaderCircle className="size-3.5 animate-spin" />
+                    <LoaderCircle className="size-4 animate-spin" />
                   ) : (
-                    <LocateFixed className="size-3.5" />
+                    <LocateFixed className="size-4" />
                   )}
                 </button>
               </div>
 
-              <div className="hidden h-7 w-px bg-border md:block" />
+              <div className="hidden h-8 w-px bg-zinc-200 md:block" />
 
               {/* Days */}
               <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 md:w-36">
-                <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                <Calendar className="size-4 shrink-0 text-zinc-500" />
                 <input
                   id="days-input"
                   type="number"
@@ -936,17 +921,17 @@ function Index() {
                     setNumberOfDays(Math.min(14, Math.max(1, Number(e.target.value) || 1)))
                   }
                   aria-label="Days"
-                  className="w-10 bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                  className="w-10 bg-transparent font-mono text-sm font-bold tabular-nums text-zinc-950 focus:outline-none"
                 />
-                <span className="text-xs text-muted-foreground">days</span>
+                <span className="text-xs font-medium text-zinc-500">days</span>
               </div>
 
-              <div className="hidden h-7 w-px bg-border md:block" />
+              <div className="hidden h-8 w-px bg-zinc-200 md:block" />
 
               {/* Budget */}
-              <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 md:w-40">
-                <Wallet className="size-4 shrink-0 text-muted-foreground" />
-                <span className="font-mono text-sm font-semibold text-primary">₹</span>
+              <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 md:w-44">
+                <Wallet className="size-4 shrink-0 text-zinc-500" />
+                <span className="font-mono text-sm font-bold text-zinc-950">₹</span>
                 <input
                   id="budget"
                   type="number"
@@ -956,40 +941,44 @@ function Index() {
                   onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
                   placeholder="6000"
                   aria-label="Budget"
-                  className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                  className="w-full bg-transparent font-mono text-sm font-bold tabular-nums text-zinc-950 focus:outline-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading || !destination.trim()}
-                className="neu-btn-primary inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-7 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-6 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <LoaderCircle className="size-4 animate-spin" />
                 ) : (
-                  <Zap className="size-4 fill-current" />
+                  <Zap className="size-4" />
                 )}
-                <span>{loading ? 'Planning…' : 'Plan Trip'}</span>
+                <span>{loading ? 'Generating…' : 'Generate Itinerary'}</span>
               </button>
             </div>
 
-            {/* Customize Options Toggle Pill */}
-            <button
-              type="button"
-              onClick={() => setShowOptions((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-green-600"
-            >
-              <SlidersHorizontal className="size-3.5" />
-              {showOptions ? 'Hide Extra Options' : 'Customize Style, Travelers & Dates'}
-            </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowOptions((v) => !v)}
+                className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 transition-colors hover:text-white"
+              >
+                <SlidersHorizontal className="size-3.5" />
+                {showOptions ? 'Hide options' : 'Style, travelers, dates & transport'}
+              </button>
+              <span className="text-xs text-zinc-400">
+                Instant route optimization · Live Open-Meteo weather
+              </span>
+            </div>
 
             {/* Extra Options Drawer */}
             {showOptions && (
-              <div className="mt-2 w-full rounded-xl border border-border bg-surface-lowest p-5 text-left shadow-sm">
+              <div className="mt-2 rounded-xl border border-white/15 bg-zinc-900/95 p-5 text-white backdrop-blur-md">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Travel Style:
+                  <span className="mr-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    Style
                   </span>
                   {TRAVEL_STYLES.map((style) => {
                     const active = interests.includes(style.label);
@@ -999,10 +988,10 @@ function Index() {
                         type="button"
                         aria-pressed={active}
                         onClick={() => toggleInterest(style.label)}
-                        className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                        className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${
                           active
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-border bg-white text-foreground hover:border-primary dark:bg-slate-800'
+                            ? 'border-white bg-white text-zinc-950'
+                            : 'border-white/15 bg-transparent text-zinc-300 hover:border-white/40 hover:text-white'
                         }`}
                       >
                         {style.short}
@@ -1012,8 +1001,8 @@ function Index() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="travelers" className="text-xs font-semibold text-muted-foreground">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="travelers" className="text-xs font-medium text-zinc-400">
                       Travelers
                     </label>
                     <input
@@ -1023,11 +1012,11 @@ function Index() {
                       max={20}
                       value={travelers}
                       onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
-                      className="h-9 rounded-lg border border-border bg-background px-3 font-mono text-sm text-foreground"
+                      className="h-9 rounded-lg border border-white/15 bg-zinc-950 px-3 font-mono text-sm text-white"
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="startDate" className="text-xs font-semibold text-muted-foreground">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="startDate" className="text-xs font-medium text-zinc-400">
                       Start date
                     </label>
                     <input
@@ -1035,11 +1024,11 @@ function Index() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
+                      className="h-9 rounded-lg border border-white/15 bg-zinc-950 px-3 text-sm text-white"
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor="startPoint" className="text-xs font-semibold text-muted-foreground">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="startPoint" className="text-xs font-medium text-zinc-400">
                       Starting hotel / area
                     </label>
                     <input
@@ -1047,12 +1036,12 @@ function Index() {
                       value={startPointQuery}
                       onChange={(e) => setStartPointQuery(e.target.value)}
                       placeholder="e.g. Rajpur Road, Baga..."
-                      className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
+                      className="h-9 rounded-lg border border-white/15 bg-zinc-950 px-3 text-sm text-white placeholder:text-zinc-500"
                     />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-semibold text-muted-foreground">Transport</span>
-                    <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-background p-0.5">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-zinc-400">Transport</span>
+                    <div className="flex h-9 items-center gap-1 rounded-lg border border-white/15 bg-zinc-950 p-0.5">
                       {TRANSPORT_OPTIONS.map(({ mode, label, icon: Icon }) => {
                         const active = transportMode === mode;
                         return (
@@ -1061,7 +1050,7 @@ function Index() {
                             type="button"
                             onClick={() => setTransportMode(mode)}
                             className={`flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-xs font-semibold ${
-                              active ? 'bg-primary text-white' : 'text-muted-foreground'
+                              active ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'
                             }`}
                           >
                             <Icon className="size-3" />
@@ -1076,8 +1065,8 @@ function Index() {
             )}
 
             {needsGeminiKey && (
-              <div className="w-full rounded-xl border border-amber-300 bg-amber-50 p-4 text-left dark:bg-amber-950/30">
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-300">
+              <div className="rounded-xl border border-amber-400/30 bg-amber-950/40 p-4 text-left">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
                   <KeyRound className="size-4" />
                   <span>Optional: Paste a Gemini API Key</span>
                 </div>
@@ -1086,7 +1075,7 @@ function Index() {
                   value={customGeminiKey}
                   onChange={(e) => setCustomGeminiKey(e.target.value)}
                   placeholder="Paste Gemini API key (AIza...) if you want custom LLM prose"
-                  className="mt-2 h-10 w-full rounded-lg border border-border bg-white px-3 font-mono text-xs text-foreground"
+                  className="mt-2 h-10 w-full rounded-lg border border-white/15 bg-zinc-950 px-3 font-mono text-xs text-white"
                 />
               </div>
             )}
@@ -1096,7 +1085,7 @@ function Index() {
             <div
               id="planner-error"
               role="alert"
-              className="mt-4 rounded-lg border border-destructive/25 bg-destructive/10 px-4 py-3 text-center text-sm font-medium text-destructive"
+              className="mt-4 rounded-lg border border-red-500/40 bg-red-950/60 px-4 py-3 text-sm font-medium text-red-200"
             >
               {error}
             </div>
@@ -1104,7 +1093,7 @@ function Index() {
           {notice && (
             <div
               role="status"
-              className="mt-4 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-center text-sm font-medium text-green-700 dark:text-green-300"
+              className="mt-4 rounded-lg border border-emerald-500/40 bg-emerald-950/60 px-4 py-3 text-sm font-medium text-emerald-200"
             >
               {notice}
             </div>
@@ -1114,30 +1103,32 @@ function Index() {
 
       {/* Loading View */}
       {loading && (
-        <div id="planning-progress" className="mx-auto max-w-5xl px-5 py-8">
+        <div id="planning-progress" className="mx-auto max-w-5xl px-6 py-10">
           <PlanningProgressView destination={destination || 'your trip'} />
         </div>
       )}
 
       {/* Saved Trips Quick Strip */}
       {savedTrips.length > 0 && !loading && (
-        <section className="no-print mx-auto max-w-7xl px-5 pt-4 lg:px-10">
+        <section className="no-print mx-auto max-w-6xl px-6 pt-8 lg:px-10">
           <div className="flex items-center justify-between pb-3">
-            <h2 className="text-sm font-bold text-foreground">Your Saved Trips</h2>
-            <Link to="/trips" className="text-xs font-semibold text-primary hover:underline">
-              Manage all →
+            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Saved Itineraries
+            </h2>
+            <Link to="/trips" className="text-xs font-semibold text-foreground hover:underline">
+              View all →
             </Link>
           </div>
           <div className="flex flex-wrap gap-2.5">
             {savedTrips.slice(0, 5).map((saved) => (
               <div
                 key={saved._id}
-                className="flex items-center gap-2 rounded-lg border border-border bg-white px-3.5 py-2 text-xs shadow-sm dark:bg-slate-800"
+                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-xs"
               >
                 <button
                   type="button"
                   onClick={() => handleLoadSavedTrip(saved)}
-                  className="font-semibold text-foreground hover:text-primary"
+                  className="font-semibold text-foreground hover:underline"
                 >
                   {saved.destination} · {saved.numberOfDays}d · ₹{saved.budget.toLocaleString('en-IN')}
                 </button>
@@ -1157,274 +1148,117 @@ function Index() {
         </section>
       )}
 
-      {/* 3. Photography-First Discovery Sections (shown before a trip is generated) */}
+      {/* Bold Architectural Pre-Trip Showcase (shown before a trip is generated) */}
       {!trip && !loading && (
-        <div className="flex flex-col">
-          {/* Hot Picks (Soft mint-tinted section, 2-column horizontal photo cards) */}
-          <section className="bg-[#f3fbf6] py-12 dark:bg-slate-900/60">
-            <div className="mx-auto max-w-7xl px-5 lg:px-10">
-              <div className="mb-7 text-center">
-                <span className="text-xs font-semibold italic text-primary">Handcrafted Routes</span>
-                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">Hot Picks</h2>
+        <>
+          {/* 3-Column Structural Value Strip */}
+          <section className="border-b border-border bg-background py-12">
+            <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-6 md:grid-cols-3 lg:px-10">
+              <div className="border-t-2 border-foreground pt-4">
+                <span className="font-mono text-xs font-semibold text-muted-foreground">01</span>
+                <h2 className="mt-2 font-display text-base font-bold text-foreground">
+                  Geographically Sequenced
+                </h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  Stops are clustered by neighborhood and ordered to cut backtracking across the city.
+                </p>
               </div>
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {FEATURED_CIRCUITS.slice(0, 2).map((c) => (
-                  <div
-                    key={c.city}
-                    onClick={() => void handlePlanCircuit(c)}
-                    className="dest-card group relative h-64 cursor-pointer rounded-xl"
-                  >
-                    <img src={c.image} alt={c.title} loading="lazy" />
-                    <div className="dest-card-overlay justify-between p-6">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <span className="text-xs font-medium text-green-300">{c.region}</span>
-                          <h3 className="text-xl font-bold text-white">{c.title}</h3>
-                          <p className="mt-1 text-xs text-white/85">{c.subtitle}</p>
-                        </div>
-                        <span className="rounded bg-black/50 px-2.5 py-1 text-xs font-semibold text-white">
-                          {c.days} Days · ₹{c.budget.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                      <div className="flex items-end justify-between">
-                        <div className="flex gap-2">
-                          {FEATURED_CIRCUITS.slice(2, 5).map((thumb) => (
-                            <img
-                              key={thumb.city}
-                              src={thumb.image}
-                              alt={thumb.title}
-                              className="h-11 w-14 rounded border border-white/60 object-cover"
-                            />
-                          ))}
-                        </div>
-                        <span className="rounded-md bg-primary px-4 py-1.5 text-xs font-semibold text-white shadow">
-                          View Plan
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="border-t-2 border-foreground pt-4">
+                <span className="font-mono text-xs font-semibold text-muted-foreground">02</span>
+                <h2 className="mt-2 font-display text-base font-bold text-foreground">
+                  Weather-Aware Routes
+                </h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  Live daily forecasts flag rain risk and swap outdoor landmarks for indoor alternatives.
+                </p>
               </div>
+              <div className="border-t-2 border-foreground pt-4">
+                <span className="font-mono text-xs font-semibold text-muted-foreground">03</span>
+                <h2 className="mt-2 font-display text-base font-bold text-foreground">
+                  Transparent Cost Breakdown
+                </h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  Realistic entry tickets and local transit estimates calibrated to your per-person budget.
+                </p>
+              </div>
+            </div>
+          </section>
 
-              <div className="mt-7 text-center">
+          {/* Single Clean Editorial Grid — 6 Distinct Real Photographs */}
+          <section className="bg-background py-14">
+            <div className="mx-auto max-w-6xl px-6 lg:px-10">
+              <div className="mb-8 flex items-end justify-between border-b border-border pb-4">
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Curated Circuits
+                  </span>
+                  <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+                    Ready-to-Plan Destinations
+                  </h2>
+                </div>
                 <Link
                   to="/explore"
-                  className="inline-block rounded-md bg-primary px-6 py-2 text-xs font-semibold text-white shadow hover:bg-green-600"
+                  className="text-sm font-semibold text-foreground transition-colors hover:text-primary"
                 >
-                  View All Hot Picks
+                  All destinations →
                 </Link>
               </div>
-            </div>
-          </section>
 
-          {/* Beach & Coast Destinations (4-column portrait cards) */}
-          <section className="bg-white py-12 dark:bg-slate-950">
-            <div className="mx-auto max-w-7xl px-5 lg:px-10">
-              <div className="mb-7 text-center">
-                <span className="text-xs font-semibold italic text-primary">Top Escapes</span>
-                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">
-                  Popular Destinations
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {FEATURED_CIRCUITS.slice(2, 6).map((c) => (
-                  <div
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {FEATURED_CIRCUITS.slice(0, 6).map((c) => (
+                  <button
                     key={c.city}
+                    type="button"
                     onClick={() => void handlePlanCircuit(c)}
-                    className="dest-card h-80 rounded-xl"
+                    className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left transition-all hover:border-foreground/40 hover:shadow-lg"
                   >
-                    <img src={c.image} alt={c.title} loading="lazy" />
-                    <div className="dest-card-overlay justify-between p-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-white">{c.title}</h3>
-                        <p className="text-xs text-white/85">{c.region}</p>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="rounded bg-primary px-3 py-1 text-xs font-semibold text-white">
-                          Explore
-                        </span>
-                        <span className="text-xs font-semibold text-white/90">
-                          ₹{c.budget.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Full-Bleed Dark Jungle / Nature Section (matching Wildlife Safaris band) */}
-          <section className="relative overflow-hidden bg-[#0a2e1f] py-14 text-white">
-            <img
-              src={CIRCUIT_IMAGES.kerala}
-              alt="Nature and wildlife escapes"
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
-            />
-            <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-10">
-              <div className="mb-8 text-center">
-                <span className="text-xs font-semibold italic text-green-400">Explore Your</span>
-                <h2 className="mt-1 font-display text-3xl font-extrabold uppercase tracking-wide text-white sm:text-4xl">
-                  Nature &amp; Backwaters
-                </h2>
-              </div>
-
-              <div className="mx-auto grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-3">
-                {[FEATURED_CIRCUITS[3], FEATURED_CIRCUITS[4], FEATURED_CIRCUITS[5]]
-                  .filter((c): c is FeaturedCircuit => Boolean(c))
-                  .map((c) => (
-                    <div
-                      key={c.city}
-                      onClick={() => void handlePlanCircuit(c)}
-                      className="dest-card h-56 rounded-xl border border-white/15"
-                    >
-                      <img src={c.image} alt={c.title} loading="lazy" />
-                      <div className="dest-card-overlay p-4">
-                        <h3 className="text-base font-bold text-white">{c.title}</h3>
-                        <span className="mt-2 inline-block w-fit rounded bg-primary px-3 py-1 text-xs font-semibold text-white">
-                          Explore
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Full-Bleed Dark Adventure Section (matching ADVENTURE band) */}
-          <section className="relative overflow-hidden bg-[#182230] py-14 text-white">
-            <img
-              src={CIRCUIT_IMAGES.ladakh}
-              alt="Mountain adventures"
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30"
-            />
-            <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-10">
-              <div className="mb-8 text-center">
-                <span className="text-xs font-semibold italic text-white/80">Time to go for</span>
-                <h2 className="mt-1 font-display text-4xl font-black uppercase tracking-wider text-primary sm:text-5xl">
-                  ADVENTURE
-                </h2>
-              </div>
-
-              <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
-                {FEATURED_CIRCUITS.filter((c) => c.regionGroup === 'North & Himalayas')
-                  .slice(0, 3)
-                  .map((c) => (
-                    <div
-                      key={c.city}
-                      onClick={() => void handlePlanCircuit(c)}
-                      className="group cursor-pointer rounded-md bg-white p-2 shadow-xl transition-transform hover:-translate-y-1"
-                    >
-                      <div className="relative h-44 overflow-hidden">
-                        <img
-                          src={c.image}
-                          alt={c.title}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                          <span className="text-sm font-bold text-white">{c.title}</span>
-                          <span className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-white">
-                            Explore
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Best Selling Experiences (Split white feature card) */}
-          <section className="bg-[#f3fbf6] py-12 dark:bg-slate-900/60">
-            <div className="mx-auto max-w-6xl px-5 lg:px-10">
-              <div className="mb-7 text-center">
-                <span className="text-xs font-semibold italic text-primary">Curated Classic</span>
-                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">
-                  Best Selling Experiences
-                </h2>
-              </div>
-
-              <div className="grid overflow-hidden rounded-2xl bg-white shadow-lg dark:bg-slate-800 md:grid-cols-2">
-                <div className="flex flex-col justify-center p-8 lg:p-12">
-                  <span className="text-xs font-semibold text-primary">4 Days · Rajasthan</span>
-                  <h3 className="mt-2 font-display text-2xl font-bold text-foreground">
-                    Royal Jaipur Heritage
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    Amber Fort at sunrise, Hawa Mahal, traditional Rajasthani thalis, and sunset views over Nahargarh — sequenced into an effortless 4-day route.
-                  </p>
-                  <div className="mt-6">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const jaipur = FEATURED_CIRCUITS.find((c) => c.city === 'Jaipur');
-                        if (jaipur) void handlePlanCircuit(jaipur);
-                      }}
-                      className="rounded-md bg-primary px-6 py-2.5 text-xs font-semibold text-white shadow hover:bg-green-600"
-                    >
-                      Plan This Trip
-                    </button>
-                  </div>
-                </div>
-                <div className="h-72 md:h-auto">
-                  <img
-                    src={CIRCUIT_IMAGES.jaipur}
-                    alt="Jaipur Heritage"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Spiritual & Cultural Journeys (4-column white cards) */}
-          <section className="bg-white py-12 dark:bg-slate-950">
-            <div className="mx-auto max-w-7xl px-5 lg:px-10">
-              <div className="mb-7 text-center">
-                <span className="text-xs font-semibold italic text-primary">Don't Miss Out</span>
-                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">
-                  Spiritual &amp; Heritage Journeys
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {FEATURED_CIRCUITS.slice(0, 4).map((c) => (
-                  <div
-                    key={c.city}
-                    onClick={() => void handlePlanCircuit(c)}
-                    className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:bg-slate-800"
-                  >
-                    <div className="h-44 overflow-hidden">
+                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
                       <img
                         src={c.image}
                         alt={c.title}
+                        loading="lazy"
+                        onError={(e) => {
+                          const img = e.currentTarget;
+                          if (img.src !== c.fallbackImage) {
+                            img.src = c.fallbackImage;
+                          }
+                        }}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
+                      <span className="absolute left-3 top-3 rounded-md bg-zinc-950/80 px-2.5 py-1 font-mono text-[11px] font-medium text-white backdrop-blur-sm">
+                        {c.region}
+                      </span>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-display text-base font-bold text-foreground">{c.title}</h3>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.subtitle}</p>
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {c.days} days · ₹{c.budget.toLocaleString('en-IN')}
-                        </span>
-                        <span className="rounded bg-primary px-3 py-1 text-[11px] font-semibold text-white">
-                          Plan
+                    <div className="flex flex-1 flex-col justify-between gap-3 p-5">
+                      <div>
+                        <div className="flex items-baseline justify-between gap-2">
+                          <h3 className="font-display text-lg font-bold text-foreground">
+                            {c.title}
+                          </h3>
+                          <span className="font-mono text-xs font-semibold text-foreground">
+                            ₹{c.budget.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                          {c.subtitle}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-border pt-3 text-xs font-semibold">
+                        <span className="text-muted-foreground">{c.days} days</span>
+                        <span className="text-foreground transition-transform group-hover:translate-x-1">
+                          Generate route →
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
           </section>
-        </div>
+        </>
       )}
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 pt-8 lg:px-10">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 pt-8 lg:px-10">
 
         {/* Active Itinerary Dashboard (Stitch Itineraries Dashboard + Budget Collaboration) */}
         {trip && !loading && (
@@ -1584,9 +1418,8 @@ function Index() {
                       Remaining
                     </span>
                     <p
-                      className={`mt-1 font-display text-2xl font-bold ${
-                        trip.remainingBudget < 0 ? 'text-destructive' : 'text-foreground'
-                      }`}
+                      className={`mt-1 font-display text-2xl font-bold ${trip.remainingBudget < 0 ? 'text-destructive' : 'text-foreground'
+                        }`}
                     >
                       ₹{trip.remainingBudget.toLocaleString('en-IN')}
                     </p>
@@ -1627,11 +1460,10 @@ function Index() {
                           key={mode}
                           type="button"
                           onClick={() => handleLiveTransportChange(mode)}
-                          className={`flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-all ${
-                            active
-                              ? 'bg-primary text-primary-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-all ${active
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                         >
                           <Icon className="size-3.5" />
                           {label}
@@ -1654,9 +1486,8 @@ function Index() {
                 </div>
                 <div className="neu-inset-sm h-3.5 w-full overflow-hidden rounded-full p-0.5">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      trip.remainingBudget < 0 ? 'bg-destructive' : 'bg-primary'
-                    }`}
+                    className={`h-full rounded-full transition-all duration-500 ${trip.remainingBudget < 0 ? 'bg-destructive' : 'bg-primary'
+                      }`}
                     style={{ width: `${budgetUsedPct}%` }}
                   />
                 </div>
@@ -1721,11 +1552,10 @@ function Index() {
               <button
                 type="button"
                 onClick={() => setActiveDayTab('all')}
-                className={`shrink-0 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${
-                  activeDayTab === 'all'
-                    ? 'neu-btn-primary'
-                    : 'neu-raised-sm text-muted-foreground hover:text-foreground'
-                }`}
+                className={`shrink-0 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${activeDayTab === 'all'
+                  ? 'neu-btn-primary'
+                  : 'neu-raised-sm text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 All Days
               </button>
@@ -1736,11 +1566,10 @@ function Index() {
                     key={day.dayNumber}
                     type="button"
                     onClick={() => setActiveDayTab(day.dayNumber)}
-                    className={`shrink-0 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${
-                      active
-                        ? 'neu-btn-primary'
-                        : 'neu-raised-sm text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`shrink-0 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${active
+                      ? 'neu-btn-primary'
+                      : 'neu-raised-sm text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     Day {day.dayNumber} ({day.stops.length})
                   </button>
@@ -1771,13 +1600,12 @@ function Index() {
                               {day.date}
                             </span>
                             <span
-                              className={`text-xs font-semibold ${
-                                energy.level === 'Intense'
-                                  ? 'text-rose-500'
-                                  : energy.level === 'Moderate'
-                                    ? 'text-amber-500'
-                                    : 'text-emerald-600'
-                              }`}
+                              className={`text-xs font-semibold ${energy.level === 'Intense'
+                                ? 'text-rose-500'
+                                : energy.level === 'Moderate'
+                                  ? 'text-amber-500'
+                                  : 'text-emerald-600'
+                                }`}
                             >
                               {energy.level} pace ({energy.visitHours}h)
                             </span>
@@ -1864,9 +1692,8 @@ function Index() {
                                     setDetailStop(stop);
                                   }}
                                   onMouseEnter={() => setSelectedPlaceName(stop.name)}
-                                  className={`neu-raised flex w-full cursor-pointer flex-col gap-5 rounded-2xl p-5 transition-all md:flex-row md:items-center ${
-                                    isSelected ? 'ring-2 ring-primary/40' : ''
-                                  }`}
+                                  className={`neu-raised flex w-full cursor-pointer flex-col gap-5 rounded-2xl p-5 transition-all md:flex-row md:items-center ${isSelected ? 'ring-2 ring-primary/40' : ''
+                                    }`}
                                 >
                                   <div className="relative shrink-0">
                                     <StopPhoto
@@ -1896,11 +1723,10 @@ function Index() {
                                     </div>
 
                                     <h4
-                                      className={`font-display text-lg font-semibold ${
-                                        stop.visited
-                                          ? 'line-through text-muted-foreground'
-                                          : 'text-foreground'
-                                      }`}
+                                      className={`font-display text-lg font-semibold ${stop.visited
+                                        ? 'line-through text-muted-foreground'
+                                        : 'text-foreground'
+                                        }`}
                                     >
                                       {stop.name}
                                     </h4>
@@ -1996,11 +1822,10 @@ function Index() {
                                           className="neu-raised-sm flex size-8 items-center justify-center rounded-lg"
                                         >
                                           <Heart
-                                            className={`size-3.5 ${
-                                              isFav
-                                                ? 'fill-rose-500 text-rose-500'
-                                                : 'text-muted-foreground'
-                                            }`}
+                                            className={`size-3.5 ${isFav
+                                              ? 'fill-rose-500 text-rose-500'
+                                              : 'text-muted-foreground'
+                                              }`}
                                           />
                                         </button>
                                         <button

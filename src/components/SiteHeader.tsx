@@ -108,11 +108,11 @@ export function SiteHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-white/90 backdrop-blur-xl dark:bg-slate-900/90 shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 lg:px-10">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 lg:px-10">
         <Link
           to="/"
-          className="shrink-0 whitespace-nowrap transition-opacity hover:opacity-90"
+          className="shrink-0 whitespace-nowrap transition-opacity hover:opacity-85"
           onClick={() => setOpen(false)}
         >
           <BrandLogo />
@@ -125,13 +125,13 @@ export function SiteHeader() {
               to={l.to}
               activeProps={{
                 className:
-                  "text-primary font-semibold bg-accent rounded-lg px-3.5 py-2 text-sm",
+                  "text-foreground font-semibold bg-muted rounded-lg px-3.5 py-2 text-sm",
               }}
               inactiveProps={{
                 className:
-                  "text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted px-3.5 py-2 rounded-lg",
+                  "text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 px-3.5 py-2 rounded-lg",
               }}
-              className="shrink-0 whitespace-nowrap transition-all"
+              className="shrink-0 whitespace-nowrap transition-colors"
             >
               {l.label}
             </Link>
@@ -143,7 +143,7 @@ export function SiteHeader() {
             type="button"
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
             onClick={toggleTheme}
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             {darkMode ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4" />}
           </button>
@@ -163,27 +163,27 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <nav className="border-t border-border bg-background px-5 py-3 md:hidden">
+        <nav className="border-t border-border bg-background px-6 py-3 md:hidden">
           <div className="flex flex-col gap-1">
             {navLinks.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                activeProps={{ className: "text-primary font-semibold bg-accent rounded-lg px-3.5 py-2.5" }}
-                inactiveProps={{ className: "text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg px-3.5 py-2.5" }}
-                className="text-sm transition-all"
+                activeProps={{ className: "text-foreground font-semibold bg-muted rounded-lg px-3.5 py-2.5" }}
+                inactiveProps={{ className: "text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-lg px-3.5 py-2.5" }}
+                className="text-sm transition-colors"
               >
                 {l.label}
               </Link>
             ))}
-            <div className="mt-2 pt-2 border-t border-border">{accountAction}</div>
+            <div className="mt-2 border-t border-border pt-2">{accountAction}</div>
           </div>
         </nav>
       )}
 
       {error && (
-        <p role="alert" className="px-5 pb-2 text-sm text-destructive">
+        <p role="alert" className="px-6 pb-2 text-sm text-destructive">
           {error}
         </p>
       )}

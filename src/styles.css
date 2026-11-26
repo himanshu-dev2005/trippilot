@@ -8,14 +8,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * TripPilot — Travel Photography-First Design
- * Dark navy header, vivid green CTAs, full-bleed destination imagery
- * Fonts: Poppins / Plus Jakarta Sans
+ * TripPilot — Bold Editorial Travel Design System
+ * High-contrast obsidian (#09090b) & pure white (#ffffff),
+ * crisp 1px zinc borders, sharp Emerald (#059669) accent.
  */
 
 @theme inline {
-  --font-display: "Poppins", "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-sans: "Poppins", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   --font-mono: "DM Mono", monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -74,140 +74,138 @@
 }
 
 :root {
-  --google-background: #f8fafc;
-  --google-foreground: #0f172a;
-  --google-border: #e2e8f0;
-  --radius: 0.5rem;
+  --google-background: #fafafa;
+  --google-foreground: #09090b;
+  --google-border: #e4e4e7;
+  --radius: 0.625rem;
 
-  /* Light mode — clean white base */
+  /* Bold Editorial Light Tokens */
   --background: #ffffff;
-  --foreground: #111827;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #111827;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #111827;
+  --popover-foreground: #09090b;
 
-  /* Primary: vivid green — exact match to screenshot CTAs */
-  --primary: #22c55e;
+  /* Primary: crisp emerald-700 / obsidian contrast */
+  --primary: #059669;
   --primary-foreground: #ffffff;
-  --primary-container: #dcfce7;
-  --primary-fixed: #f0fdf4;
+  --primary-container: #09090b;
+  --primary-fixed: #ecfdf5;
 
-  /* Tertiary: deep navy — header / dark sections */
-  --tertiary: #0f172a;
+  --tertiary: #09090b;
   --tertiary-foreground: #ffffff;
-  --tertiary-container: #1e293b;
-  --tertiary-fixed: #0f172a;
-  --tertiary-fixed-foreground: #94a3b8;
+  --tertiary-container: #27272a;
+  --tertiary-fixed: #f4f4f5;
+  --tertiary-fixed-foreground: #18181b;
 
-  --secondary: #f8fafc;
-  --secondary-foreground: #374151;
-  --muted: #f1f5f9;
-  --muted-foreground: #6b7280;
-  --accent: #dcfce7;
-  --accent-foreground: #15803d;
-  --destructive: #ef4444;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --accent: #f4f4f5;
+  --accent-foreground: #09090b;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --ring: #22c55e;
+  --border: #e4e4e7;
+  --input: #d4d4d8;
+  --ring: #09090b;
 
-  --surface-lowest: #f9fafb;
-  --surface-low: #f3f4f6;
-  --surface-high: #e5e7eb;
-  --outline: #9ca3af;
+  --surface-lowest: #fafafa;
+  --surface-low: #f4f4f5;
+  --surface-high: #e4e4e7;
+  --outline: #71717a;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-lg: 0 10px 25px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08);
-  --shadow-xl: 0 25px 50px rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.1);
+  --shadow-sm: 0 1px 2px rgba(9, 9, 11, 0.04);
+  --shadow-md: 0 4px 12px rgba(9, 9, 11, 0.06);
+  --shadow-lg: 0 12px 28px rgba(9, 9, 11, 0.09);
+  --shadow-xl: 0 24px 48px rgba(9, 9, 11, 0.14);
 
-  /* Legacy compat — neutral, non-neomorphic */
-  --neu-shadow-dark: rgba(0,0,0,0.0);
-  --neu-shadow-light: rgba(255,255,255,0.0);
-  --neu-inset-dark: rgba(0,0,0,0.0);
-  --neu-inset-light: rgba(255,255,255,0.0);
+  --neu-shadow-dark: transparent;
+  --neu-shadow-light: transparent;
+  --neu-inset-dark: transparent;
+  --neu-inset-light: transparent;
 
-  --chart-1: #22c55e;
-  --chart-2: #0ea5e9;
-  --chart-3: #f97316;
-  --chart-4: #a855f7;
-  --chart-5: #f59e0b;
+  --chart-1: #09090b;
+  --chart-2: #059669;
+  --chart-3: #2563eb;
+  --chart-4: #d97706;
+  --chart-5: #71717a;
 
-  --sidebar: #f1f5f9;
-  --sidebar-foreground: #111827;
-  --sidebar-primary: #22c55e;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #09090b;
+  --sidebar-primary: #09090b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #dcfce7;
-  --sidebar-accent-foreground: #15803d;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #22c55e;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #09090b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #09090b;
 }
 
 .dark {
-  --google-background: #1e293b;
-  --google-foreground: #f1f5f9;
-  --google-border: #334155;
+  --google-background: #18181b;
+  --google-foreground: #fafafa;
+  --google-border: #27272a;
 
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card: #1e293b;
-  --card-foreground: #f1f5f9;
-  --popover: #1e293b;
-  --popover-foreground: #f1f5f9;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #111113;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
 
-  --primary: #4ade80;
-  --primary-foreground: #052e16;
-  --primary-container: #14532d;
-  --primary-fixed: #052e16;
+  --primary: #10b981;
+  --primary-foreground: #022c22;
+  --primary-container: #fafafa;
+  --primary-fixed: #064e3b;
 
-  --tertiary: #334155;
-  --tertiary-foreground: #f1f5f9;
-  --tertiary-container: #1e293b;
-  --tertiary-fixed: #0f172a;
-  --tertiary-fixed-foreground: #94a3b8;
+  --tertiary: #fafafa;
+  --tertiary-foreground: #09090b;
+  --tertiary-container: #27272a;
+  --tertiary-fixed: #18181b;
+  --tertiary-fixed-foreground: #e4e4e7;
 
-  --secondary: #1e293b;
-  --secondary-foreground: #cbd5e1;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #14532d;
-  --accent-foreground: #86efac;
-  --destructive: #f87171;
-  --destructive-foreground: #450a0a;
-  --border: rgba(255,255,255,0.08);
-  --input: rgba(255,255,255,0.10);
-  --ring: #4ade80;
+  --secondary: #18181b;
+  --secondary-foreground: #e4e4e7;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #27272a;
+  --input: #3f3f46;
+  --ring: #fafafa;
 
-  --surface-lowest: #090e1a;
-  --surface-low: #111827;
-  --surface-high: #1e293b;
-  --outline: #64748b;
+  --surface-lowest: #09090b;
+  --surface-low: #111113;
+  --surface-high: #18181b;
+  --outline: #71717a;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.25);
-  --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
-  --shadow-xl: 0 25px 50px rgba(0,0,0,0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.55);
 
-  --neu-shadow-dark: rgba(0,0,0,0.0);
-  --neu-shadow-light: rgba(255,255,255,0.0);
-  --neu-inset-dark: rgba(0,0,0,0.0);
-  --neu-inset-light: rgba(255,255,255,0.0);
+  --neu-shadow-dark: transparent;
+  --neu-shadow-light: transparent;
+  --neu-inset-dark: transparent;
+  --neu-inset-light: transparent;
 
-  --chart-1: #4ade80;
-  --chart-2: #38bdf8;
-  --chart-3: #fb923c;
-  --chart-4: #c084fc;
-  --chart-5: #fbbf24;
+  --chart-1: #fafafa;
+  --chart-2: #10b981;
+  --chart-3: #60a5fa;
+  --chart-4: #fbbf24;
+  --chart-5: #a1a1aa;
 
-  --sidebar: #1e293b;
-  --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #4ade80;
-  --sidebar-primary-foreground: #052e16;
-  --sidebar-accent: #14532d;
-  --sidebar-accent-foreground: #86efac;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: #4ade80;
+  --sidebar: #111113;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fafafa;
+  --sidebar-primary-foreground: #09090b;
+  --sidebar-accent: #18181b;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #27272a;
+  --sidebar-ring: #fafafa;
 }
 
 @layer base {
@@ -216,24 +214,27 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
   }
 }
 
 /* ================================================================
-   Card & Surface utilities — clean shadow style (no neomorphism)
+   Architectural Surfaces & Bold Buttons
    ================================================================ */
 .neu-raised {
   background-color: var(--card);
-  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 .neu-raised-lg {
   background-color: var(--card);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
 }
 .neu-raised-sm {
   background-color: var(--card);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 .neu-inset {
   background-color: var(--surface-lowest);
@@ -248,80 +249,31 @@
   border: 1px solid var(--border);
 }
 
-/* ================================================================
-   Primary CTA — vivid green (matches screenshot buttons exactly)
-   ================================================================ */
+/* Primary CTA — Bold Obsidian Black in Light Mode, Crisp White in Dark Mode */
 .neu-btn-primary {
-  background-color: #22c55e;
+  background-color: #09090b;
   color: #ffffff;
   font-weight: 600;
-  border: none;
-  transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  border: 1px solid #09090b;
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
 .neu-btn-primary:hover {
-  background-color: #16a34a;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+  background-color: #27272a;
+  border-color: #27272a;
 }
 .neu-btn-primary:active {
-  background-color: #15803d;
-  transform: translateY(0);
+  transform: scale(0.99);
+}
+.dark .neu-btn-primary {
+  background-color: #fafafa;
+  color: #09090b;
+  border-color: #fafafa;
+}
+.dark .neu-btn-primary:hover {
+  background-color: #e4e4e7;
+  border-color: #e4e4e7;
 }
 
-/* ================================================================
-   Destination card — full image overlay style (matches screenshot)
-   ================================================================ */
-.dest-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 0.75rem;
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-.dest-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-xl);
-}
-.dest-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s;
-}
-.dest-card:hover img {
-  transform: scale(1.07);
-}
-.dest-card-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 1rem;
-}
-
-/* ================================================================
-   Section banner — full-bleed image with text overlay
-   ================================================================ */
-.section-banner {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-}
-.section-banner-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  text-align: center;
-}
-
-/* Google sign-in */
 .google-signin {
   background: var(--google-background);
   color: var(--google-foreground);
