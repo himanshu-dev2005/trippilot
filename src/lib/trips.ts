@@ -808,6 +808,57 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
         setPhotoCache(cacheKey, best.url);
         return { dataUrl: best.url };
       }
+
+      // 4) Optional Pexels / Unsplash API fallback (free email-signup keys, no Google Cloud Console)
+      const pexelsKey = process.env['PEXELS_API_KEY'];
+      if (pexelsKey) {
+        try {
+          const pexRes = await fetch(
+            `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&per_page=2`,
+            {
+              headers: { Authorization: pexelsKey },
+              signal: AbortSignal.timeout(4000),
+            },
+          );
+          if (pexelsKey && pexRes.ok) {
+            const pexJson = (await pexRes.json()) as {
+              photos?: Array<{ src?: { large?: string; medium?: string } }>;
+            };
+            const url = pexJson.photos?.[0]?.src?.large || pexJson.photos?.[0]?.src?.medium;
+            if (url) {
+              setPhotoCache(cacheKey, url);
+              return { dataUrl: url };
+            }
+          }
+        } catch {
+          // Ignore Pexels failure
+        }
+      }
+
+      const unsplashKey = process.env['UNSPLASH_ACCESS_KEY'];
+      if (unsplashKey) {
+        try {
+          const unsRes = await fetch(
+            `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=2`,
+            {
+              headers: { Authorization: `Client-ID ${unsplashKey}` },
+              signal: AbortSignal.timeout(4000),
+            },
+          );
+          if (unsRes.ok) {
+            const unsJson = (await unsRes.json()) as {
+              results?: Array<{ urls?: { regular?: string; small?: string } }>;
+            };
+            const url = unsJson.results?.[0]?.urls?.regular || unsJson.results?.[0]?.urls?.small;
+            if (url) {
+              setPhotoCache(cacheKey, url);
+              return { dataUrl: url };
+            }
+          }
+        } catch {
+          // Ignore Unsplash failure
+        }
+      }
     }
 
     setPhotoCache(cacheKey, null);
