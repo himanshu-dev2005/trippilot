@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Compass, Mountain, Utensils, Landmark, ShoppingBag } from 'lucide-react';
 import { fetchPlacePhotoDataUrl } from '@/lib/trips';
+import { getFallbackStopImage } from '@/lib/circuit-media';
+
+const CLIENT_PHOTO_CACHE = new Map<string, string | null>();
 
 export function StopPhoto({
   name,
@@ -15,11 +17,26 @@ export function StopPhoto({
   photoReference?: string;
   className?: string;
 }) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const cacheKey = `${photoReference ?? ''}::${name.trim().toLowerCase()}::${(destination ?? '').trim().toLowerCase()}`;
+  const cachedInitial = CLIENT_PHOTO_CACHE.has(cacheKey) ? CLIENT_PHOTO_CACHE.get(cacheKey)! : undefined;
+
+  const [dataUrl, setDataUrl] = useState<string | null>(cachedInitial ?? null);
+  const [loading, setLoading] = useState<boolean>(cachedInitial === undefined);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
+    if (CLIENT_PHOTO_CACHE.has(cacheKey)) {
+      setDataUrl(CLIENT_PHOTO_CACHE.get(cacheKey) ?? null);
+      setLoading(false);
+      setImgError(false);
+      return;
+    }
+
     let active = true;
+    setLoading(true);
+    setImgError(false);
     setDataUrl(null);
+
     void fetchPlacePhotoDataUrl({
       data: {
         ...(photoReference ? { photoReference } : {}),
@@ -28,52 +45,59 @@ export function StopPhoto({
       },
     })
       .then((res) => {
-        if (active && res.dataUrl) setDataUrl(res.dataUrl);
+        if (!active) return;
+        const resolved = res.dataUrl ?? null;
+        CLIENT_PHOTO_CACHE.set(cacheKey, resolved);
+        setDataUrl(resolved);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!active) return;
+        CLIENT_PHOTO_CACHE.set(cacheKey, null);
+        setDataUrl(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
     return () => {
       active = false;
     };
-  }, [photoReference, name, destination]);
+  }, [cacheKey, photoReference, name, destination]);
 
-  const sizeClass = className ?? 'h-24 w-24 shrink-0 rounded-md sm:h-28 sm:w-28';
+  const sizeClass = className ?? 'h-24 w-24 shrink-0 rounded-lg sm:h-28 sm:w-28';
+  const fallbackSrc = getFallbackStopImage(destination, category);
 
-  if (dataUrl) {
+  if (loading) {
     return (
-      <img
-        src={dataUrl}
-        alt={name}
-        loading="lazy"
-        referrerPolicy="no-referrer"
-        onError={() => setDataUrl(null)}
-        className={`${sizeClass} bg-muted object-cover`}
-      />
+      <div
+        aria-label={`Loading photo of ${name}`}
+        className={`${sizeClass} relative overflow-hidden bg-muted`}
+      >
+        <div className="h-full w-full animate-pulse bg-muted-foreground/10" />
+      </div>
     );
   }
 
-  const lower = category.toLowerCase();
-  let Icon = Compass;
-  let gradient = 'from-emerald-800 to-teal-700';
-  if (lower.includes('nature') || lower.includes('park') || lower.includes('adventure')) {
-    Icon = Mountain;
-    gradient = 'from-teal-800 to-emerald-600';
-  } else if (lower.includes('food') || lower.includes('cafe')) {
-    Icon = Utensils;
-    gradient = 'from-amber-800 to-orange-600';
-  } else if (lower.includes('history') || lower.includes('culture') || lower.includes('museum')) {
-    Icon = Landmark;
-    gradient = 'from-stone-800 to-amber-700';
-  } else if (lower.includes('shop')) {
-    Icon = ShoppingBag;
-    gradient = 'from-indigo-800 to-purple-600';
-  }
+  const effectiveSrc = !imgError && dataUrl ? dataUrl : fallbackSrc;
+  const isFallback = !dataUrl || imgError;
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center bg-gradient-to-br ${gradient} p-2 text-white ${sizeClass}`}
-    >
-      <Icon className="size-6 opacity-90" />
-      <span className="mt-1 truncate text-[10px] font-mono uppercase opacity-90">{category}</span>
+    <div className={`${sizeClass} relative overflow-hidden bg-muted`}>
+      <img
+        src={effectiveSrc}
+        alt={name}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => {
+          if (!imgError) {
+            setImgError(true);
+          }
+        }}
+        className="h-full w-full object-cover transition-opacity duration-200"
+      />
+      {isFallback && (
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+      )}
     </div>
   );
 }

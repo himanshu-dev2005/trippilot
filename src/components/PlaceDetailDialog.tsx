@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { StopPhoto } from '@/components/StopPhoto';
 import { fetchPlaceDetails, type PlaceDetailsPayload } from '@/lib/trips';
 import {
+  formatTime24,
   getIndiaPracticalAlerts,
   getStopTimingInsight,
   type Stop,
@@ -82,32 +83,25 @@ export function PlaceDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
-          <div className="flex flex-wrap items-center gap-2 pr-6">
-            <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-xs font-medium text-primary">
-              {stop.startTime}
-            </span>
-            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-              {stop.category}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {stop.isOutdoor ? 'Outdoor' : 'Indoor'}
-            </span>
+          <div className="flex flex-wrap items-center gap-2 pr-6 text-xs text-muted-foreground">
+            <span className="font-mono font-medium tabular-nums text-primary">{stop.startTime}</span>
+            <span aria-hidden="true">·</span>
+            <span>{stop.category}</span>
+            <span aria-hidden="true">·</span>
+            <span>{stop.isOutdoor ? 'Outdoor' : 'Indoor'}</span>
             {timingInsight && (
-              <span
-                className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-                  timingInsight === 'Golden Hour'
-                    ? 'bg-amber-500/15 text-amber-600'
-                    : 'bg-orange-500/15 text-orange-600'
-                }`}
-              >
-                {timingInsight}
-              </span>
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="font-medium text-amber-600 dark:text-amber-400">
+                  {timingInsight}
+                </span>
+              </>
             )}
           </div>
-          <DialogTitle className="mt-1 font-display text-2xl">{stop.name}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="mt-1 font-display text-2xl font-medium">{stop.name}</DialogTitle>
+          <DialogDescription className="tabular-nums">
             {destination} · {stop.duration}h recommended visit ·{' '}
-            {stop.cost === 0 ? 'Free entry' : `Est. ₹${stop.cost}`}
+            {stop.cost === 0 ? 'Free entry' : `Est. ₹${stop.cost.toLocaleString('en-IN')}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -116,12 +110,12 @@ export function PlaceDetailDialog({
           category={stop.category}
           destination={destination}
           {...(stop.photoReference ? { photoReference: stop.photoReference } : {})}
-          className="h-52 w-full rounded-lg"
+          className="h-56 w-full rounded-lg"
         />
 
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground tabular-nums">
           <span className="inline-flex items-center gap-1 font-medium text-foreground">
-            <Star className="size-4 fill-amber-400 text-amber-400" />
+            <Star className="size-4 fill-amber-500 text-amber-500" />
             {effectiveRating.toFixed(1)}
             {details?.userRatingCount ? (
               <span className="text-xs font-normal text-muted-foreground">
@@ -129,10 +123,9 @@ export function PlaceDetailDialog({
               </span>
             ) : null}
           </span>
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1.5">
             <Clock className="size-4 text-primary" />
-            Open {String(stop.openingHours.open).padStart(2, '0')}:00 –{' '}
-            {String(stop.openingHours.close).padStart(2, '0')}:00
+            Open {formatTime24(stop.openingHours.open)} – {formatTime24(stop.openingHours.close)}
           </span>
         </div>
 
@@ -157,8 +150,8 @@ export function PlaceDetailDialog({
             )}
 
             {details?.openingHoursText && details.openingHoursText.length > 0 && (
-              <div className="rounded-lg border border-border bg-muted/40 p-3">
-                <p className="text-xs font-medium text-foreground">Opening Hours</p>
+              <div className="border-t border-border pt-3">
+                <p className="text-xs font-medium text-foreground">Opening hours</p>
                 <ul className="mt-1.5 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
                   {details.openingHoursText.map((line) => (
                     <li key={line}>{line}</li>
@@ -170,15 +163,12 @@ export function PlaceDetailDialog({
         )}
 
         {practicalAlerts.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="space-y-1.5 border-t border-border pt-3 text-xs text-amber-700 dark:text-amber-400">
             {practicalAlerts.map((alertText) => (
-              <span
-                key={alertText}
-                className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2.5 py-1 text-xs text-amber-700 dark:text-amber-400"
-              >
+              <p key={alertText} className="flex items-center gap-1.5">
                 <AlertTriangle className="size-3.5 shrink-0" />
-                {alertText}
-              </span>
+                <span>{alertText}</span>
+              </p>
             ))}
           </div>
         )}

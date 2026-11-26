@@ -738,6 +738,41 @@ export function moveStopBetweenDays(params: {
   return { itinerary: nextItinerary, totalCost, remainingBudget: totalBudget - totalCost };
 }
 
+/** Recalculate travel times, transit costs, and totals when the user switches transport mode. */
+export function recalculateItineraryTransport(params: {
+  destination: string;
+  currentItinerary: ItineraryDay[];
+  totalBudget: number;
+  transportMode: TransportMode;
+  startPoint?: StartPoint;
+}): OptimizationResult {
+  const { destination, currentItinerary, totalBudget, transportMode, startPoint } = params;
+  const nextItinerary = currentItinerary.map((day) => {
+    const rebuilt = buildTimedDay(
+      day.stops,
+      destination,
+      day.dayNumber,
+      day.date,
+      day.hasRainAlert,
+      day.weatherSummary,
+      transportMode,
+      startPoint,
+    );
+    return {
+      ...day,
+      ...rebuilt,
+      stops: rebuilt.stops.map((st, idx) => ({
+        ...st,
+        ...(day.stops[idx]?.userNote !== undefined ? { userNote: day.stops[idx]!.userNote } : {}),
+        ...(day.stops[idx]?.visited !== undefined ? { visited: day.stops[idx]!.visited } : {}),
+        ...(day.stops[idx]?.votes !== undefined ? { votes: day.stops[idx]!.votes } : {}),
+      })),
+    };
+  });
+  const totalCost = nextItinerary.reduce((s, d) => s + d.totalCost, 0);
+  return { itinerary: nextItinerary, totalCost, remainingBudget: totalBudget - totalCost };
+}
+
 export type ChecklistItem = {
   id: string;
   label: string;
@@ -974,17 +1009,20 @@ export function generateOfflinePocketPassHtml(params: {
 }
 
 const KNOWN_INDIAN_CITIES = [
-  'Agra', 'Ahmedabad', 'Alleppey', 'Amritsar', 'Ballari', 'Bangalore', 'Belagavi',
+  'Agra', 'Ahmedabad', 'Alleppey', 'Amritsar', 'Ayodhya', 'Ballari', 'Bangalore', 'Belagavi',
   'Belgaum', 'Bellary', 'Bengaluru', 'Bhopal', 'Bidar', 'Bijapur', 'Chamarajanagar',
-  'Chennai', 'Chikballapur', 'Chikkaballapur', 'Chikmagalur', 'Chitradurga', 'Coorg',
-  'Dandeli', 'Darjeeling', 'Davanagere', 'Dehradun', 'Delhi', 'Dharwad', 'Gadag',
-  'Gangtok', 'Goa', 'Gulbarga', 'Guwahati', 'Hampi', 'Hassan', 'Haveri', 'Hospet',
-  'Hyderabad', 'Jaipur', 'Jaisalmer', 'Jodhpur', 'Kalaburagi', 'Kanyakumari', 'Karwar',
-  'Kochi', 'Kodagu', 'Kolkata', 'Kolar', 'Koppal', 'Leh', 'Lucknow', 'Madurai',
-  'Manali', 'Mandya', 'Mangalore', 'Mangaluru', 'Mumbai', 'Munnar', 'Mussoorie',
-  'Mysore', 'Mysuru', 'Nainital', 'Ooty', 'Pondicherry', 'Pune', 'Pushkar', 'Raichur',
+  'Chandigarh', 'Chennai', 'Chikballapur', 'Chikkaballapur', 'Chikmagalur', 'Chitradurga',
+  'Coorg', 'Dandeli', 'Darjeeling', 'Davanagere', 'Dehradun', 'Delhi', 'Dharamshala',
+  'Dharwad', 'Gadag', 'Gangtok', 'Goa', 'Gokarna', 'Gulbarga', 'Guwahati', 'Hampi',
+  'Haridwar', 'Hassan', 'Haveri', 'Hospet', 'Hyderabad', 'Jaipur', 'Jaisalmer', 'Jodhpur',
+  'Kalaburagi', 'Kanyakumari', 'Karwar', 'Kochi', 'Kodaikanal', 'Kodagu', 'Kolkata',
+  'Kolar', 'Koppal', 'Kovalam', 'Leh', 'Lucknow', 'Madurai', 'Manali', 'Mandya',
+  'Mangalore', 'Mangaluru', 'Mumbai', 'Munnar', 'Mussoorie', 'Mysore', 'Mysuru',
+  'Nainital', 'Navi Mumbai', 'New Delhi', 'New Digha', 'New Jalpaiguri', 'New Raipur',
+  'New Tehri', 'New Town', 'Ooty', 'Pondicherry', 'Pune', 'Pushkar', 'Raichur',
   'Ramanagara', 'Ramnagaram', 'Rishikesh', 'Shillong', 'Shimla', 'Shimoga', 'Shivamogga',
-  'Srinagar', 'Tumakuru', 'Tumkur', 'Udaipur', 'Udupi', 'Varanasi', 'Vijayapura',
+  'Srinagar', 'Tumakuru', 'Tumkur', 'Udaipur', 'Udupi', 'Varanasi', 'Varkala', 'Vijayapura',
+  'Wayanad',
 ];
 
 function levenshtein(a: string, b: string): number {

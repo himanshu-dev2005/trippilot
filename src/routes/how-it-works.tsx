@@ -1,37 +1,42 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { CloudRain, Compass, Database, MapPin, Route as RouteIcon, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CloudRain, Database, MapPin, Route as RouteIcon, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const STAGES = [
   {
+    index: '01',
     icon: MapPin,
-    title: '1. Geographic Day Grouping',
+    title: 'Geographic Day Grouping',
     description:
-      'Attractions are grouped into day-wise geographic clusters so each day covers a coherent neighborhood instead of zig-zagging across the city.',
+      'Attractions are grouped into day-wise neighborhood clusters so each day explores a coherent area instead of zig-zagging across the city.',
   },
   {
+    index: '02',
     icon: RouteIcon,
-    title: '2. Daily Route Optimization',
+    title: 'Daily Route Optimization',
     description:
-      'Within each day, stops are ordered to minimize travel distance and transit time, optionally starting and ending at your hotel.',
+      'Within each day, stops are sequenced using nearest-neighbour and 2-opt refinement to minimize travel distance and transit time, optionally anchored at your hotel.',
   },
   {
+    index: '03',
     icon: ShieldCheck,
-    title: '3. Time, Opening Hours & Budget Fitting',
+    title: 'Opening Hours & Budget Fitting',
     description:
-      'Every stop is scheduled against attraction opening hours, daily sightseeing windows, and your total budget including transit costs.',
+      'Every stop is scheduled against real opening windows, sightseeing duration, and your rupee budget—accounting for both tickets and local transit.',
   },
   {
+    index: '04',
     icon: CloudRain,
-    title: '4. Live Weather Adaptation',
+    title: 'Live Weather Adaptation',
     description:
-      'OpenWeather 5-day forecasts detect rain on specific trip days and let you swap outdoor stops for indoor alternatives without disturbing other days.',
+      'Daily forecasts flag rain alerts automatically so you can swap outdoor parks and forts for indoor museums, palaces, or temples in one click.',
   },
   {
+    index: '05',
     icon: Database,
-    title: '5. MongoDB Persistence & Sharing',
+    title: 'Saved Trips, Exports & Group Sharing',
     description:
-      'User accounts, preferences, favourites, and editable itineraries are persisted in MongoDB with HTTP-only cookie sessions and shareable trip links.',
+      'Save trips to your account, share links for group voting, export stops to Calendar (.ics), or download a self-contained Offline Pocket Pass.',
   },
 ];
 
@@ -42,32 +47,43 @@ export const Route = createFileRoute('/how-it-works')({
 
 function HowItWorksPage() {
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <div className="flex items-center gap-2 text-primary">
-        <Compass className="size-5" />
-        <span className="font-mono text-xs uppercase">Architecture &amp; Workflow</span>
+    <main className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
+      <div className="border-b border-border pb-8">
+        <p className="text-xs font-medium text-primary">Planning Architecture</p>
+        <h1 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">
+          How TripPilot builds your route
+        </h1>
+        <p className="mt-3 max-w-2xl text-base text-muted-foreground">
+          Every itinerary combines verified Indian coordinates, multi-stage route optimization, live weather forecasts, and interactive editing.
+        </p>
       </div>
-      <h1 className="mt-2 font-display text-4xl">How TripPilot Plans Your Trip</h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        TripPilot combines real-time attraction discovery, multi-stage route and constraint planning, weather forecasting, and MongoDB persistence.
-      </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+      <div className="mt-10 grid gap-6 sm:grid-cols-2">
         {STAGES.map((stage) => {
           const Icon = stage.icon;
           return (
             <article key={stage.title} className="rounded-xl border border-border bg-card p-6">
-              <Icon className="size-6 text-primary" />
-              <h2 className="mt-3 font-display text-xl">{stage.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{stage.description}</p>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-primary">{stage.index}</span>
+                <Icon className="size-5 text-muted-foreground" />
+              </div>
+              <h2 className="mt-3 font-display text-xl font-medium text-foreground">
+                {stage.title}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {stage.description}
+              </p>
             </article>
           );
         })}
       </div>
 
-      <div className="mt-10 text-center">
-        <Button asChild size="lg">
-          <Link to="/">Start Planning a Trip</Link>
+      <div className="mt-12 flex justify-center">
+        <Button asChild size="lg" className="gap-2 rounded-xl">
+          <Link to="/">
+            Start planning a trip
+            <ArrowRight className="size-4" />
+          </Link>
         </Button>
       </div>
     </main>

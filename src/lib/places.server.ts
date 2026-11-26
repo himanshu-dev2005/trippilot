@@ -330,6 +330,78 @@ const VERIFIED_DEHRADUN_ATTRACTIONS: AttractionCandidate[] = [
   },
 ];
 
+const VERIFIED_CURATED_CITIES: Record<string, { center: Coordinates; attractions: AttractionCandidate[] }> = {
+  'new delhi': {
+    center: { lat: 28.6139, lng: 77.209 },
+    attractions: [
+      { attractionId: 'del-humayun', name: "Humayun's Tomb", coordinates: { lat: 28.5933, lng: 77.2507 }, category: 'History', isOutdoor: true, rating: 4.7, duration: 2, cost: 40, openingHours: { open: 6, close: 18 }, note: 'UNESCO Mughal garden-tomb; morning light over the red sandstone facade is unforgettable.' },
+      { attractionId: 'del-qutub', name: 'Qutub Minar', coordinates: { lat: 28.5245, lng: 77.1855 }, category: 'History', isOutdoor: true, rating: 4.6, duration: 2, cost: 40, openingHours: { open: 7, close: 21 }, note: '73-metre victory tower and Iron Pillar in Mehrauli Archaeological Park.' },
+      { attractionId: 'del-india-gate', name: 'India Gate', coordinates: { lat: 28.6129, lng: 77.2295 }, category: 'Sightseeing', isOutdoor: true, rating: 4.6, duration: 1.5, cost: 0, openingHours: { open: 6, close: 22 }, note: 'Iconic war memorial along Kartavya Path; lively at sunset.' },
+      { attractionId: 'del-red-fort', name: 'Red Fort', coordinates: { lat: 28.6562, lng: 77.241 }, category: 'History', isOutdoor: true, rating: 4.5, duration: 2.5, cost: 50, openingHours: { open: 9.5, close: 16.5 }, note: 'Shah Jahan’s 17th-century citadel in Old Delhi (closed Mondays).' },
+      { attractionId: 'del-national-museum', name: 'National Museum, New Delhi', coordinates: { lat: 28.6118, lng: 77.2193 }, category: 'Museum', isOutdoor: false, rating: 4.6, duration: 2.5, cost: 20, openingHours: { open: 10, close: 18 }, note: 'Indus Valley, Buddhist, and Mughal galleries (closed Mondays); great indoor stop.' },
+      { attractionId: 'del-lodhi', name: 'Lodhi Gardens', coordinates: { lat: 28.5931, lng: 77.2197 }, category: 'Nature', isOutdoor: true, rating: 4.7, duration: 1.5, cost: 0, openingHours: { open: 6, close: 20 }, note: '15th-century Sayyid and Lodhi tombs set inside lush walking lawns.' },
+      { attractionId: 'del-lotus', name: 'Lotus Temple', coordinates: { lat: 28.5535, lng: 77.2588 }, category: 'Culture', isOutdoor: false, rating: 4.6, duration: 1.5, cost: 0, openingHours: { open: 9, close: 17 }, note: 'Marble Baháʼí House of Worship (closed Mondays); quiet contemplation hall.' },
+      { attractionId: 'del-chandni-chowk', name: 'Chandni Chowk', coordinates: { lat: 28.6506, lng: 77.2303 }, category: 'Food', isOutdoor: true, rating: 4.5, duration: 2, cost: 350, openingHours: { open: 10, close: 20 }, note: 'Historic spice bazaar and Old Delhi street-food trail near Jama Masjid.' },
+      { attractionId: 'del-bangla-sahib', name: 'Gurudwara Bangla Sahib', coordinates: { lat: 28.6264, lng: 77.2091 }, category: 'Culture', isOutdoor: false, rating: 4.8, duration: 1.5, cost: 0, openingHours: { open: 5, close: 22 }, note: 'Golden-domed Sikh shrine with a tranquil sarovar pond and community langar.' },
+      { attractionId: 'del-khan-market', name: 'Khan Market', coordinates: { lat: 28.6001, lng: 77.227 }, category: 'Shopping', isOutdoor: false, rating: 4.4, duration: 1.5, cost: 400, openingHours: { open: 10, close: 22 }, note: 'Independent bookshops, cafés, and boutiques near Lodhi Gardens.' },
+      { attractionId: 'del-akshardham', name: 'Swaminarayan Akshardham', coordinates: { lat: 28.6127, lng: 77.2773 }, category: 'Culture', isOutdoor: false, rating: 4.7, duration: 2.5, cost: 0, openingHours: { open: 10, close: 18.5 }, note: 'Intricately carved sandstone temple complex (closed Mondays; phones stored in lockers).' },
+      { attractionId: 'del-sunder-nursery', name: 'Sunder Nursery', coordinates: { lat: 28.5973, lng: 77.2454 }, category: 'Nature', isOutdoor: true, rating: 4.7, duration: 1.5, cost: 50, openingHours: { open: 7, close: 20 }, note: '90-acre heritage park right across from Humayun’s Tomb with Mughal pavilions.' },
+    ],
+  },
+  varanasi: {
+    center: { lat: 25.3176, lng: 83.0059 },
+    attractions: [
+      { attractionId: 'vns-dashashwamedh', name: 'Dashashwamedh Ghat', coordinates: { lat: 25.3068, lng: 83.0104 }, category: 'Culture', isOutdoor: true, rating: 4.8, duration: 2, cost: 0, openingHours: { open: 5, close: 21 }, note: 'Principal river ghat famous for sunrise boat rides and the evening Ganga Aarti.' },
+      { attractionId: 'vns-kashi-vishwanath', name: 'Kashi Vishwanath Temple', coordinates: { lat: 25.3109, lng: 83.0107 }, category: 'Culture', isOutdoor: false, rating: 4.8, duration: 2, cost: 0, openingHours: { open: 4, close: 22 }, note: 'Gold-spired Jyotirlinga shrine connected directly to the riverfront corridor.' },
+      { attractionId: 'vns-assi-ghat', name: 'Assi Ghat', coordinates: { lat: 25.2892, lng: 83.0067 }, category: 'Culture', isOutdoor: true, rating: 4.7, duration: 1.5, cost: 0, openingHours: { open: 5, close: 21 }, note: 'Southernmost ghat known for Subah-e-Banaras dawn music and riverside cafés.' },
+      { attractionId: 'vns-sarnath', name: 'Sarnath', coordinates: { lat: 25.3763, lng: 83.0227 }, category: 'History', isOutdoor: true, rating: 4.7, duration: 2.5, cost: 40, openingHours: { open: 6, close: 18 }, note: 'Dhamek Stupa and archaeological park where Buddha delivered his first sermon.' },
+      { attractionId: 'vns-sarnath-museum', name: 'Sarnath Archaeological Museum', coordinates: { lat: 25.3788, lng: 83.0218 }, category: 'Museum', isOutdoor: false, rating: 4.6, duration: 1.5, cost: 20, openingHours: { open: 9, close: 17 }, note: 'Houses the original Mauryan Lion Capital of Ashoka (closed Fridays).' },
+      { attractionId: 'vns-ramnagar-fort', name: 'Ramnagar Fort', coordinates: { lat: 25.2699, lng: 83.0247 }, category: 'History', isOutdoor: false, rating: 4.3, duration: 2, cost: 50, openingHours: { open: 10, close: 17 }, note: '18th-century sandstone fort and museum on the eastern bank of the Ganges.' },
+      { attractionId: 'vns-bhu-temple', name: 'New Vishwanath Temple', coordinates: { lat: 25.2657, lng: 82.9895 }, category: 'Culture', isOutdoor: false, rating: 4.7, duration: 1.5, cost: 0, openingHours: { open: 5, close: 20 }, note: 'Peaceful marble spire temple inside Banaras Hindu University campus.' },
+      { attractionId: 'vns-bharat-kala', name: 'Bharat Kala Bhavan', coordinates: { lat: 25.2683, lng: 82.9963 }, category: 'Museum', isOutdoor: false, rating: 4.5, duration: 1.5, cost: 20, openingHours: { open: 10.5, close: 16.5 }, note: 'Fine collection of miniature paintings, textiles, and ancient Banaras sculptures.' },
+      { attractionId: 'vns-blue-lassi', name: 'Kachori Gali & Local Cafés', coordinates: { lat: 25.3102, lng: 83.0112 }, category: 'Food', isOutdoor: false, rating: 4.6, duration: 1.5, cost: 250, openingHours: { open: 8, close: 21 }, note: 'Historic narrow lane near the ghats for Banarasi kachori, malaiyyo, and clay-cup lassi.' },
+    ],
+  },
+  udaipur: {
+    center: { lat: 24.5854, lng: 73.7125 },
+    attractions: [
+      { attractionId: 'udr-city-palace', name: 'City Palace, Udaipur', coordinates: { lat: 24.5764, lng: 73.6835 }, category: 'History', isOutdoor: false, rating: 4.7, duration: 2.5, cost: 400, openingHours: { open: 9.5, close: 17.5 }, note: 'Hilltop Mewar palace complex overlooking Lake Pichola with mirror courtyards.' },
+      { attractionId: 'udr-pichola', name: 'Lake Pichola', coordinates: { lat: 24.572, lng: 73.679 }, category: 'Nature', isOutdoor: true, rating: 4.8, duration: 2, cost: 500, openingHours: { open: 9, close: 18 }, note: 'Late-afternoon boat ride past Jag Mandir and Lake Palace.' },
+      { attractionId: 'udr-jagdish', name: 'Jagdish Temple', coordinates: { lat: 24.5797, lng: 73.6837 }, category: 'Culture', isOutdoor: false, rating: 4.6, duration: 1, cost: 0, openingHours: { open: 5, close: 21 }, note: '17th-century Indo-Aryan carved temple steps from City Palace.' },
+      { attractionId: 'udr-saheliyon', name: 'Saheliyon-ki-Bari', coordinates: { lat: 24.6031, lng: 73.6852 }, category: 'Nature', isOutdoor: true, rating: 4.4, duration: 1.5, cost: 50, openingHours: { open: 9, close: 19 }, note: 'Royal courtyard garden with lotus pools and gravity-fed marble fountains.' },
+      { attractionId: 'udr-bagore', name: 'Bagore Ki Haveli', coordinates: { lat: 24.5798, lng: 73.6808 }, category: 'Museum', isOutdoor: false, rating: 4.6, duration: 1.5, cost: 100, openingHours: { open: 9.5, close: 17.5 }, note: '18th-century waterfront haveli museum right on Gangaur Ghat.' },
+      { attractionId: 'udr-sajjangarh', name: 'Monsoon Palace', coordinates: { lat: 24.5936, lng: 73.6391 }, category: 'Sightseeing', isOutdoor: true, rating: 4.4, duration: 2, cost: 150, openingHours: { open: 9, close: 18 }, note: 'Aravalli hilltop palace with panoramic views over Udaipur’s lakes at sunset.' },
+      { attractionId: 'udr-fateh-sagar', name: 'Fateh Sagar Lake', coordinates: { lat: 24.6005, lng: 73.6731 }, category: 'Nature', isOutdoor: true, rating: 4.6, duration: 1.5, cost: 0, openingHours: { open: 6, close: 21 }, note: 'Breezy lakeside promenade beloved for evening walks and kulhad coffee.' },
+      { attractionId: 'udr-hathi-pol', name: 'Hathi Pol Bazaar', coordinates: { lat: 24.5859, lng: 73.6854 }, category: 'Shopping', isOutdoor: false, rating: 4.4, duration: 1.5, cost: 300, openingHours: { open: 10, close: 20 }, note: 'Traditional market for Pichwai miniature paintings, mojris, and textiles.' },
+    ],
+  },
+  alleppey: {
+    center: { lat: 9.4981, lng: 76.3388 },
+    attractions: [
+      { attractionId: 'alp-backwaters', name: 'Alappuzha Backwaters', coordinates: { lat: 9.4956, lng: 76.3519 }, category: 'Nature', isOutdoor: true, rating: 4.8, duration: 3, cost: 1200, openingHours: { open: 7, close: 18 }, note: 'Cruise narrow palm-canopied canals on a shikara or traditional kettuvallam boat.' },
+      { attractionId: 'alp-beach', name: 'Alappuzha Beach', coordinates: { lat: 9.4926, lng: 76.3183 }, category: 'Nature', isOutdoor: true, rating: 4.5, duration: 2, cost: 0, openingHours: { open: 6, close: 20 }, note: '150-year-old sea pier stretching into the Arabian Sea; best at golden hour.' },
+      { attractionId: 'alp-lighthouse', name: 'Alappuzha Lighthouse', coordinates: { lat: 9.4908, lng: 76.3227 }, category: 'History', isOutdoor: false, rating: 4.5, duration: 1, cost: 50, openingHours: { open: 9, close: 17.5 }, note: '1862 coastal lighthouse with sweeping views of the sea and coconut groves.' },
+      { attractionId: 'alp-marari', name: 'Marari Beach', coordinates: { lat: 9.6009, lng: 76.2981 }, category: 'Nature', isOutdoor: true, rating: 4.7, duration: 2.5, cost: 0, openingHours: { open: 6, close: 19 }, note: 'Quiet fishing-village shoreline north of Alleppey with calm turquoise surf.' },
+      { attractionId: 'alp-revi-museum', name: 'Revi Karunakaran Memorial Museum', coordinates: { lat: 9.5015, lng: 76.3304 }, category: 'Museum', isOutdoor: false, rating: 4.6, duration: 1.5, cost: 150, openingHours: { open: 9, close: 17 }, note: 'Curated Swarovski crystal, ivory, and Kerala heritage collection (closed Mondays).' },
+      { attractionId: 'alp-ambalapuzha', name: 'Ambalappuzha Sree Krishna Swamy Temple', coordinates: { lat: 9.3834, lng: 76.3652 }, category: 'Culture', isOutdoor: false, rating: 4.7, duration: 1.5, cost: 0, openingHours: { open: 5, close: 19.5 }, note: 'Classic Kerala-style temple famous for its sweet milk payasam offering.' },
+      { attractionId: 'alp-pathiramanal', name: 'Pathiramanal Island', coordinates: { lat: 9.6186, lng: 76.3847 }, category: 'Nature', isOutdoor: true, rating: 4.5, duration: 2, cost: 300, openingHours: { open: 7, close: 17 }, note: 'Tranquil bird-watching island in the middle of Vembanad Lake.' },
+      { attractionId: 'alp-toddy-food', name: 'Kuttanad Local Seafood & Sadhya', coordinates: { lat: 9.4988, lng: 76.3422 }, category: 'Food', isOutdoor: false, rating: 4.6, duration: 1.5, cost: 450, openingHours: { open: 11, close: 21 }, note: 'Taste karimeen pollichathu (banana-leaf pearl spot fish) and appam stew.' },
+    ],
+  },
+  leh: {
+    center: { lat: 34.1526, lng: 77.5771 },
+    attractions: [
+      { attractionId: 'leh-shanti-stupa', name: 'Shanti Stupa', coordinates: { lat: 34.1737, lng: 77.575 }, category: 'Culture', isOutdoor: true, rating: 4.8, duration: 1.5, cost: 0, openingHours: { open: 6, close: 20 }, note: 'White-domed hilltop stupa with sweeping sunrise and sunset panoramas over Leh.' },
+      { attractionId: 'leh-palace', name: 'Leh Palace', coordinates: { lat: 34.1659, lng: 77.5861 }, category: 'History', isOutdoor: false, rating: 4.5, duration: 1.5, cost: 25, openingHours: { open: 7, close: 16 }, note: 'Nine-storey 17th-century royal palace towering above Leh Old Town.' },
+      { attractionId: 'leh-thiksey', name: 'Thiksey Monastery', coordinates: { lat: 34.0558, lng: 77.6669 }, category: 'Culture', isOutdoor: false, rating: 4.8, duration: 2, cost: 50, openingHours: { open: 7, close: 19 }, note: 'Tiered 12-storey hilltop gompa housing the 15-metre Maitreya Buddha statue.' },
+      { attractionId: 'leh-hemis', name: 'Hemis Monastery', coordinates: { lat: 33.9125, lng: 77.7031 }, category: 'Culture', isOutdoor: false, rating: 4.7, duration: 2, cost: 50, openingHours: { open: 8, close: 18 }, note: 'Largest and richest Drukpa monastery in Ladakh with an excellent museum.' },
+      { attractionId: 'leh-hall-of-fame', name: 'Hall of Fame, Leh', coordinates: { lat: 34.1422, lng: 77.5471 }, category: 'Museum', isOutdoor: false, rating: 4.8, duration: 1.5, cost: 100, openingHours: { open: 9, close: 19 }, note: 'Indian Army museum honoring Ladakh’s history, culture, and high-altitude heritage.' },
+      { attractionId: 'leh-sangam', name: 'Indus and Zanskar Confluence', coordinates: { lat: 34.1653, lng: 77.3315 }, category: 'Nature', isOutdoor: true, rating: 4.7, duration: 1.5, cost: 0, openingHours: { open: 7, close: 18 }, note: 'Dramatic meeting of emerald Zanskar and blue Indus rivers at Nimmu.' },
+      { attractionId: 'leh-market', name: 'Leh Main Bazaar', coordinates: { lat: 34.1642, lng: 77.5848 }, category: 'Shopping', isOutdoor: true, rating: 4.5, duration: 2, cost: 350, openingHours: { open: 10, close: 21 }, note: 'Pedestrian promenade for Ladakhi apricots, pashmina, thukpa, and Tibetan cafés.' },
+    ],
+  },
+};
+
 function getCuratedDestinationAttractions(
   destination: string,
   interests: string[],
@@ -340,6 +412,12 @@ function getCuratedDestinationAttractions(
       center: { lat: 30.3165, lng: 78.0322 },
       attractions: VERIFIED_DEHRADUN_ATTRACTIONS,
     };
+  }
+  if (norm === 'delhi' || norm === 'new delhi') {
+    return VERIFIED_CURATED_CITIES['new delhi']!;
+  }
+  if (VERIFIED_CURATED_CITIES[norm]) {
+    return VERIFIED_CURATED_CITIES[norm]!;
   }
 
   const dest = destinations.find(
@@ -379,11 +457,21 @@ export async function discoverAttractions(params: {
   const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
   const lovableKey = process.env['LOVABLE_API_KEY'];
 
-  // Serve verified curated data first for cities with grounded coordinates (Dehradun, Goa, Jaipur, Manali)
+  // Serve verified curated data first for cities with grounded coordinates
   const curated = getCuratedDestinationAttractions(params.destination, params.interests);
-  const isGroundedStaticCity = ['dehradun', 'goa', 'jaipur', 'manali'].includes(
-    params.destination.trim().toLowerCase(),
-  );
+  const normDest = params.destination.trim().toLowerCase();
+  const isGroundedStaticCity = [
+    'dehradun',
+    'goa',
+    'jaipur',
+    'manali',
+    'new delhi',
+    'delhi',
+    'varanasi',
+    'udaipur',
+    'alleppey',
+    'leh',
+  ].includes(normDest);
   if (curated && isGroundedStaticCity) {
     const enriched = googleKey
       ? await enrichWithGooglePhotos(curated.attractions, params.destination, googleKey)
