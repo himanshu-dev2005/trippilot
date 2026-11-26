@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUp, Compass, Mail, MapPin } from "lucide-react";
+import { ArrowUp, Compass, Mail, MapPin, PhoneCall, Sparkles } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 const POPULAR_CITIES = [
@@ -13,19 +13,44 @@ const POPULAR_CITIES = [
   "Goa",
 ];
 
+const QUICK_PRESETS = [
+  { label: "3d Dehradun · ₹5,000", city: "Dehradun", days: 3, budget: 5000 },
+  { label: "4d Jaipur · ₹8,000", city: "Jaipur", days: 4, budget: 8000 },
+  { label: "4d Goa · ₹9,500", city: "Goa", days: 4, budget: 9500 },
+  { label: "5d Kerala · ₹10,000", city: "Alleppey", days: 5, budget: 10000 },
+];
+
 export function SiteFooter() {
   return (
     <footer className="mt-20 w-full border-t border-border bg-[#F8F7FF] pt-14 pb-10 dark:bg-[#0e0b1a]">
       <div className="mx-auto max-w-7xl px-5 lg:px-10">
         <div className="grid gap-10 md:grid-cols-12">
-          {/* Brand Column */}
+          {/* Brand Column + Quick Trip Presets */}
           <div className="md:col-span-4">
             <Link to="/" className="inline-block">
               <BrandLogo />
             </Link>
             <p className="mt-4 max-w-xs text-xs leading-relaxed text-muted-foreground">
-              Custom day-by-day itineraries sequenced by geography, powered by Gemini AI, live local weather, and realistic INR budgets.
+              Custom day-by-day itineraries sequenced by geography, with live local weather, route maps, and realistic INR budgets.
             </p>
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {QUICK_PRESETS.map((preset) => (
+                <Link
+                  key={preset.city}
+                  to="/"
+                  search={{
+                    city: preset.city,
+                    days: preset.days,
+                    budget: preset.budget,
+                    auto: "1",
+                  } as never}
+                  className="inline-flex items-center gap-1 rounded-full border border-[#6C3FE4]/25 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#6C3FE4] transition-colors hover:bg-[#6C3FE4] hover:text-white dark:bg-[#141122]"
+                >
+                  <Sparkles className="size-2.5" />
+                  {preset.label}
+                </Link>
+              ))}
+            </div>
             <div className="mt-5 flex items-center gap-3">
               <Link
                 to="/"
@@ -98,19 +123,30 @@ export function SiteFooter() {
             </ul>
           </div>
 
-          {/* Contact & Scroll to Top */}
+          {/* Support, Helplines & Scroll to Top */}
           <div className="flex flex-col items-start justify-between gap-4 md:col-span-2 md:items-end">
-            <div className="md:text-right">
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#6C3FE4]">
-                Support
-              </h3>
-              <a
-                href="mailto:hello@trippilot.com"
-                className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-[#6C3FE4]"
-              >
-                <Mail className="size-3.5 text-[#6C3FE4]" />
-                hello@trippilot.com
-              </a>
+            <div className="space-y-3 md:text-right">
+              <div>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#6C3FE4]">
+                  Support
+                </h3>
+                <a
+                  href="mailto:hello@trippilot.vercel.app"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-[#6C3FE4]"
+                >
+                  <Mail className="size-3.5 text-[#6C3FE4]" />
+                  hello@trippilot.vercel.app
+                </a>
+              </div>
+              <div>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#6C3FE4]">
+                  India Helplines
+                </h3>
+                <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <PhoneCall className="size-3 text-[#6C3FE4]" />
+                  <span>Emergency: <strong className="font-mono text-foreground">112</strong> · Tourist: <strong className="font-mono text-foreground">1363</strong></span>
+                </p>
+              </div>
             </div>
             <button
               type="button"
