@@ -1,4 +1,4 @@
-import heroSigiriyaImg from '@/assets/images/hero_sigiriya.jpg';
+import heroSigiriyaImg from '../../heroimg.jpg';
 import jaipurFallback from '@/assets/images/circuit_jaipur_1795697908494.jpg';
 import varanasiFallback from '@/assets/images/circuit_varanasi_1795697909580.jpg';
 import keralaFallback from '@/assets/images/circuit_kerala_1795697913226.jpg';

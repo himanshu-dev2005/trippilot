@@ -1062,3 +1062,35 @@ export function resolveCitySpelling(input: string): { city: string; correctedFro
   }
   return { city: trimmed };
 }
+
+/** Re-sequence each day's stops to catch morning/sunset Golden Hour outdoors and avoid midday heat/crowds. */
+export function applyGoldenHourMode(params: {
+  destination: string;
+  currentItinerary: ItineraryDay[];
+  totalBudget: number;
+  transportMode?: TransportMode;
+  startPoint?: StartPoint;
+}): OptimizationResult {
+  const { destination, currentItinerary, totalBudget, transportMode = 'cab', startPoint } = params;
+  const nextItinerary = currentItinerary.map((day) => {
+    if (day.stops.length <= 1) return day;
+    const outdoor = day.stops.filter((s) => s.isOutdoor);
+    const indoor = day.stops.filter((s) => !s.isOutdoor);
+    const ordered: Stop[] = [];
+    if (outdoor.length > 0) ordered.push(outdoor[0]!);
+    ordered.push(...indoor);
+    if (outdoor.length > 1) ordered.push(...outdoor.slice(1));
+    return buildTimedDay(
+      ordered,
+      destination,
+      day.dayNumber,
+      day.date,
+      day.hasRainAlert,
+      day.weatherSummary,
+      transportMode,
+      startPoint,
+    );
+  });
+  const totalCost = nextItinerary.reduce((s, d) => s + d.totalCost, 0);
+  return { itinerary: nextItinerary, totalCost, remainingBudget: totalBudget - totalCost };
+}

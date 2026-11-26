@@ -44,6 +44,7 @@ const GenerateSchema = z.object({
   travelers: z.number().int().min(1).max(20).default(1),
   interests: z.array(z.string()).default([]),
   startDate: z.string().optional(),
+  arrivalTime: z.string().optional(),
   transportMode: TransportSchema,
   startPointQuery: z.string().optional(),
   geminiApiKey: z.string().optional(),
@@ -142,6 +143,19 @@ export const generateOptimizedTrip = createServerFn({ method: 'POST' })
           ? estimateTravel(rawStop.coordinates, nextStop.coordinates, data.transportMode)
           : null;
 
+        let computedStartTime = rawStop.startTime || `${String(9 + stopIdx * 3).padStart(2, '0')}:00`;
+        if (dayNumber === 1 && data.arrivalTime && /^\d{2}:\d{2}$/.test(data.arrivalTime)) {
+          const [ah, am] = data.arrivalTime.split(':').map(Number);
+          const baseMins = (ah ?? 9) * 60 + (am ?? 0);
+          const offsetMins = aiDay.stops
+            .slice(0, stopIdx)
+            .reduce((acc, prev) => acc + (Number(prev.duration) || 2) * 60 + 25, 0);
+          const totalMins = Math.min(21 * 60, baseMins + offsetMins);
+          const hh = String(Math.floor(totalMins / 60)).padStart(2, '0');
+          const mm = String(totalMins % 60).padStart(2, '0');
+          computedStartTime = `${hh}:${mm}`;
+        }
+
         const stopObj: Stop = {
           attractionId:
             rawStop.attractionId ||
@@ -156,7 +170,7 @@ export const generateOptimizedTrip = createServerFn({ method: 'POST' })
           openingHours: rawStop.openingHours ?? { open: 9, close: 19 },
           ...(rawStop.note ? { note: rawStop.note } : {}),
           ...(rawStop.location ? { userNote: rawStop.location } : {}),
-          startTime: rawStop.startTime || `${String(9 + stopIdx * 3).padStart(2, '0')}:00`,
+          startTime: computedStartTime,
           travelToNext,
           weatherStatus: hasRainAlert && (rawStop.isOutdoor ?? true) ? 'rain' : 'clear',
           instagramSearchUrl: buildInstagramSearchUrl(rawStop.name, aiResult.destination),

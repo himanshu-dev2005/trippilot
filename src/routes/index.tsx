@@ -60,6 +60,7 @@ import {
 import { getMongoProfile, toggleMongoFavourite } from '@/lib/profile';
 import {
   addStopToDay,
+  applyGoldenHourMode,
   findRouteFoodSuggestions,
   formatTime24,
   generateIcsCalendar,
@@ -87,6 +88,7 @@ import { DestinationMap } from '@/components/DestinationMap';
 import { BudgetBreakdownChart } from '@/components/BudgetBreakdownChart';
 import { StopPhoto } from '@/components/StopPhoto';
 import { PlaceDetailDialog } from '@/components/PlaceDetailDialog';
+import { GroupExpenseSplitter } from '@/components/GroupExpenseSplitter';
 
 const TRAVEL_STYLES = [
   { label: 'Adventure & Treks', short: 'Adventure' },
@@ -251,6 +253,7 @@ function Index() {
   const [budget, setBudget] = useState(6000);
   const [travelers, setTravelers] = useState(1);
   const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [arrivalTime, setArrivalTime] = useState('');
   const [transportMode, setTransportMode] = useState<TransportMode>('cab');
   const [startPointQuery, setStartPointQuery] = useState('');
   const [interests, setInterests] = useState<string[]>(['Culture & Heritage', 'Adventure & Treks']);
@@ -312,6 +315,7 @@ function Index() {
             travelers: Math.max(1, Number(travelers) || 1),
             interests: targetInterests,
             startDate,
+            ...(arrivalTime ? { arrivalTime } : {}),
             transportMode: targetTransport,
             ...(startPointQuery.trim() ? { startPointQuery: startPointQuery.trim() } : {}),
             ...(customGeminiKey.trim() ? { geminiApiKey: customGeminiKey.trim() } : {}),
@@ -559,6 +563,24 @@ function Index() {
     const nextCount = Math.min(20, Math.max(1, trip.travelers + delta));
     setTravelers(nextCount);
     setTrip({ ...trip, travelers: nextCount });
+  }
+
+  function handleGoldenHourMode() {
+    if (!trip) return;
+    const res = applyGoldenHourMode({
+      destination: trip.destination,
+      currentItinerary: trip.itinerary,
+      totalBudget: trip.budget,
+      transportMode: trip.transportMode,
+      ...(trip.startPoint ? { startPoint: trip.startPoint } : {}),
+    });
+    setTrip({
+      ...trip,
+      itinerary: res.itinerary,
+      totalCost: res.totalCost,
+      remainingBudget: res.remainingBudget,
+    });
+    setNotice('Re-sequenced stops for Golden Hour viewpoints and midday indoor crowd avoidance.');
   }
 
   async function handleRegenerateDay(dayNumber: number) {
@@ -1085,14 +1107,26 @@ function Index() {
                     />
                   </div>
                   <div className="flex flex-col gap-1">
+                    <label htmlFor="arrivalTime" className="text-xs font-semibold text-muted-foreground">
+                      Arrival time (Day 1 anchor)
+                    </label>
+                    <input
+                      id="arrivalTime"
+                      type="time"
+                      value={arrivalTime}
+                      onChange={(e) => setArrivalTime(e.target.value)}
+                      className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
                     <label htmlFor="startPoint" className="text-xs font-semibold text-muted-foreground">
-                      Starting hotel / area
+                      Arrival station / hotel
                     </label>
                     <input
                       id="startPoint"
                       value={startPointQuery}
                       onChange={(e) => setStartPointQuery(e.target.value)}
-                      placeholder="e.g. Rajpur Road, Baga..."
+                      placeholder="e.g. Railway Station, Airport..."
                       className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                     />
                   </div>
@@ -1444,6 +1478,15 @@ function Index() {
 
                 <button
                   type="button"
+                  onClick={handleGoldenHourMode}
+                  className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
+                >
+                  <Sun className="size-4 text-amber-500" />
+                  <span>Golden Hour Mode</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleExportIcs}
                   className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
                 >
@@ -1736,23 +1779,28 @@ function Index() {
                       </div>
 
                       {foodSuggestions.length > 0 && (
-                        <div className="no-print neu-inset-sm flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3 text-xs">
-                          <span className="inline-flex items-center gap-2 text-foreground">
+                        <div className="no-print neu-inset-sm flex flex-col gap-2 rounded-xl px-4 py-3 text-xs">
+                          <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
                             <Utensils className="size-3.5 shrink-0 text-primary" />
-                            <span>
-                              Eat along route near <strong>{foodSuggestions[0]!.afterStopName}</strong>:{' '}
-                              <strong>{foodSuggestions[0]!.candidate.name}</strong> ({foodSuggestions[0]!.detourKm} km detour)
-                            </span>
+                            Local Food &amp; Chai Stops Along Day {day.dayNumber} Route
                           </span>
-                          <button
-                            type="button"
-                            className="font-semibold text-primary hover:underline"
-                            onClick={() =>
-                              handleQuickAddCandidate(foodSuggestions[0]!.candidate, day.dayNumber)
-                            }
-                          >
-                            + Add stop
-                          </button>
+                          <div className="flex flex-col gap-1.5">
+                            {foodSuggestions.slice(0, 3).map((sug) => (
+                              <div key={sug.candidate.attractionId} className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-muted-foreground">
+                                  Near <strong className="text-foreground">{sug.afterStopName}</strong>:{' '}
+                                  <strong className="text-foreground">{sug.candidate.name}</strong> · ₹{sug.candidate.cost} ({sug.detourKm} km detour)
+                                </span>
+                                <button
+                                  type="button"
+                                  className="font-semibold text-primary hover:underline"
+                                  onClick={() => handleQuickAddCandidate(sug.candidate, day.dayNumber)}
+                                >
+                                  + Add to Day {day.dayNumber}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
 
@@ -2175,6 +2223,9 @@ function Index() {
 
                 {/* Expense Breakdown Chart */}
                 <BudgetBreakdownChart itinerary={trip.itinerary} />
+
+                {/* Group Split-Bill & Expense Tracker */}
+                <GroupExpenseSplitter destination={trip.destination} travelers={trip.travelers} />
 
                 {/* Shared Packing Checklist Card */}
                 <div className="neu-raised flex flex-col gap-4 rounded-2xl p-6">
