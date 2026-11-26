@@ -455,7 +455,8 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
     const googleKey =
       process.env['GOOGLE_PLACES_API_KEY'] ||
       process.env['GOOGLE_MAPS_API_KEY'] ||
-      process.env['GOOGLE_API_KEY'];
+      process.env['GOOGLE_API_KEY'] ||
+      process.env['VITE_GOOGLE_MAPS_API_KEY'];
 
     async function fetchGoogleMediaUri(photoName: string): Promise<string | null> {
       if (!googleKey) return null;
@@ -620,9 +621,8 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
               sum.thumbnail.height,
             )
           ) {
-            const upscaled = sum.thumbnail.source.replace(/\/\d+px-/, '/800px-');
-            setPhotoCache(cacheKey, upscaled);
-            return { dataUrl: upscaled };
+            setPhotoCache(cacheKey, sum.thumbnail.source);
+            return { dataUrl: sum.thumbnail.source };
           }
         } catch {
           // Continue
@@ -679,7 +679,7 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
       if (candidateUrls.length === 0) {
         try {
           const commonsQuery = destination ? `${placeName} ${destination}` : placeName;
-          const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(commonsQuery)}&gsrlimit=8&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=640&format=json`;
+          const commonsUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(commonsQuery)}&gsrlimit=8&prop=imageinfo&iiprop=url|size|mime&iiurlwidth=500&format=json`;
           const commonsRes = await fetch(commonsUrl, {
             headers: { 'User-Agent': 'TripPilot/1.0 (https://trippilot.app)' },
             signal: AbortSignal.timeout(4000),
@@ -710,7 +710,7 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
               if (!url) continue;
               if (isBadPhotoCandidate(url, page.title ?? '', info.width, info.height)) continue;
               const score = scoreTitleRelevance(page.title ?? '', placeName, destination);
-              if (score >= 5) {
+              if (score >= 3) {
                 candidateUrls.push({ url, score });
               }
             }
@@ -756,7 +756,8 @@ export const fetchPlaceDetails = createServerFn({ method: 'GET' })
     const googleKey =
       process.env['GOOGLE_PLACES_API_KEY'] ||
       process.env['GOOGLE_MAPS_API_KEY'] ||
-      process.env['GOOGLE_API_KEY'];
+      process.env['GOOGLE_API_KEY'] ||
+      process.env['VITE_GOOGLE_MAPS_API_KEY'];
     const query = [data.placeName, data.destination].filter(Boolean).join(', ');
 
     let address: string | null = null;
