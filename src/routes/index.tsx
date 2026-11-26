@@ -43,6 +43,14 @@ import {
   KeyRound,
   Bot,
   Users,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Instagram,
+  Youtube,
+  Building2,
+  ShieldAlert,
+  Gauge,
 } from 'lucide-react';
 import {
   adjustTripWeather,
@@ -61,6 +69,7 @@ import { getMongoProfile, toggleMongoFavourite } from '@/lib/profile';
 import {
   addStopToDay,
   applyGoldenHourMode,
+  buildInstagramSearchUrl,
   findRouteFoodSuggestions,
   formatTime24,
   generateIcsCalendar,
@@ -274,6 +283,9 @@ function Index() {
   const [checkedPacking, setCheckedPacking] = useState<Record<string, boolean>>({});
   const [customPlaceQuery, setCustomPlaceQuery] = useState('');
   const [customPlaceDay, setCustomPlaceDay] = useState(1);
+  const [collapsedDays, setCollapsedDays] = useState<Record<number, boolean>>({});
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [paceMode, setPaceMode] = useState<'relaxed' | 'balanced' | 'packed'>('balanced');
 
   const [savedTrips, setSavedTrips] = useState<TripRecord[]>([]);
   const [favourites, setFavourites] = useState<string[]>([]);
@@ -580,6 +592,79 @@ function Index() {
       remainingBudget: res.remainingBudget,
     });
     setNotice('Re-sequenced stops for Golden Hour viewpoints and midday indoor crowd avoidance.');
+  }
+
+  function handlePaceChange(mode: 'relaxed' | 'balanced' | 'packed') {
+    setPaceMode(mode);
+    if (!trip) return;
+    const targetPerDay = mode === 'relaxed' ? 2 : mode === 'balanced' ? 4 : 6;
+    const usedIds = new Set<string>();
+    const nextDays = trip.itinerary.map((day) => {
+      let stops = [...day.stops];
+      if (stops.length > targetPerDay) {
+        stops = stops.slice(0, targetPerDay);
+      } else if (stops.length < targetPerDay) {
+        const currentIds = new Set(stops.map((s) => s.attractionId));
+        const extras = trip.candidates.filter(
+          (c) => !currentIds.has(c.attractionId) && !usedIds.has(c.attractionId),
+        );
+        for (const extra of extras) {
+          if (stops.length >= targetPerDay) break;
+          stops.push({
+            ...extra,
+            startTime: `${String(9 + stops.length * 2).padStart(2, '0')}:30`,
+            travelToNext: null,
+            weatherStatus: day.hasRainAlert && extra.isOutdoor ? 'rain' : 'clear',
+            instagramSearchUrl: buildInstagramSearchUrl(extra.name, trip.destination),
+          });
+        }
+      }
+      stops.forEach((s) => usedIds.add(s.attractionId));
+      return { ...day, stops };
+    });
+
+    const res = recalculateItineraryTransport({
+      destination: trip.destination,
+      currentItinerary: nextDays,
+      totalBudget: trip.budget,
+      transportMode: trip.transportMode,
+      ...(trip.startPoint ? { startPoint: trip.startPoint } : {}),
+    });
+    setTrip({
+      ...trip,
+      itinerary: res.itinerary,
+      totalCost: res.totalCost,
+      remainingBudget: res.remainingBudget,
+    });
+    setNotice(`Switched trip pace to ${mode} (${targetPerDay} stops/day target).`);
+  }
+
+  async function handleCopyWhatsApp() {
+    if (!trip) return;
+    const lines: string[] = [
+      `*${trip.destination} — ${trip.numberOfDays}-Day TripPilot Itinerary*`,
+      `Budget: ₹${trip.budget.toLocaleString('en-IN')}/person · Est: ₹${costPerPerson.toLocaleString('en-IN')}/person`,
+      '',
+    ];
+    for (const day of trip.itinerary) {
+      lines.push(`*Day ${day.dayNumber}* (${day.date}) · ₹${day.totalCost.toLocaleString('en-IN')}`);
+      day.stops.forEach((s, idx) => {
+        lines.push(`${idx + 1}. ${s.startTime} — ${s.name} (${s.duration}h, ₹${s.cost})`);
+      });
+      if (day.stops.length > 0) {
+        const dirUrl = `https://www.google.com/maps/dir/${day.stops
+          .map((s) => encodeURIComponent(`${s.name}, ${trip.destination}`))
+          .join('/')}`;
+        lines.push(`Route: ${dirUrl}`);
+      }
+      lines.push('');
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      setNotice('Copied full itinerary formatted for WhatsApp!');
+    } catch {
+      setError('Could not access clipboard. Please copy manually.');
+    }
   }
 
   async function handleRegenerateDay(dayNumber: number) {
@@ -1466,39 +1551,70 @@ function Index() {
 
                 <button
                   type="button"
+                  onClick={() => void handleCopyWhatsApp()}
+                  className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
+                >
+                  <Copy className="size-4 text-primary" />
+                  <span>Copy for WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleGoldenHourMode}
                   className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
                 >
                   <Sun className="size-4 text-amber-500" />
-                  <span>Golden Hour Mode</span>
+                  <span>Golden Hour</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleExportIcs}
-                  className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
-                >
-                  <CalendarPlus className="size-4 text-primary" />
-                  <span>Calendar</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportOfflinePass}
-                  className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
-                >
-                  <WifiOff className="size-4 text-primary" />
-                  <span>Offline Pass</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
-                >
-                  <Download className="size-4 text-primary" />
-                  <span>PDF</span>
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setExportMenuOpen((v) => !v)}
+                    className="neu-raised-sm flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
+                  >
+                    <Download className="size-4 text-primary" />
+                    <span>Export</span>
+                    <ChevronDown className="size-3.5" />
+                  </button>
+                  {exportMenuOpen && (
+                    <div className="absolute right-0 top-12 z-30 w-48 rounded-xl border border-border bg-card p-1.5 shadow-xl">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          handleExportIcs();
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted"
+                      >
+                        <CalendarPlus className="size-4 text-primary" />
+                        Calendar (.ics)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          handleExportOfflinePass();
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted"
+                      >
+                        <WifiOff className="size-4 text-primary" />
+                        Offline Pocket Pass
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExportMenuOpen(false);
+                          window.print();
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-semibold text-foreground hover:bg-muted"
+                      >
+                        <Download className="size-4 text-primary" />
+                        Print / Save PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1685,6 +1801,29 @@ function Index() {
                     {busyAction === 'budget' ? 'Re-planning…' : 'Apply budget'}
                   </button>
                 </div>
+
+                {/* Trip Pace Switcher */}
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                    <Gauge className="size-3.5 text-primary" /> Pace:
+                  </span>
+                  <div className="neu-inset flex items-center gap-1 rounded-xl p-1">
+                    {(['relaxed', 'balanced', 'packed'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => handlePaceChange(mode)}
+                        className={`rounded-lg px-3 py-1 text-xs font-semibold capitalize transition-all ${
+                          paceMode === mode
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1753,18 +1892,56 @@ function Index() {
                           </p>
                         </div>
 
-                        <button
-                          type="button"
-                          disabled={busyAction === `regen-${day.dayNumber}`}
-                          onClick={() => void handleRegenerateDay(day.dayNumber)}
-                          className="no-print neu-raised-sm flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold text-primary transition-all disabled:opacity-50"
-                        >
-                          <RefreshCw
-                            className={`size-3.5 ${busyAction === `regen-${day.dayNumber}` ? 'animate-spin' : ''}`}
-                          />
-                          <span>Re-order Day</span>
-                        </button>
+                        <div className="no-print flex flex-wrap items-center gap-2">
+                          {day.stops.length > 0 && (
+                            <a
+                              href={`https://www.google.com/maps/dir/${day.stops
+                                .map((s) => encodeURIComponent(`${s.name}, ${trip.destination}`))
+                                .join('/')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="neu-raised-sm flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-foreground transition-all hover:text-primary"
+                            >
+                              <Navigation className="size-3.5 text-primary" />
+                              <span>Route in Maps</span>
+                              <ExternalLink className="size-3 opacity-60" />
+                            </a>
+                          )}
+
+                          <button
+                            type="button"
+                            disabled={busyAction === `regen-${day.dayNumber}`}
+                            onClick={() => void handleRegenerateDay(day.dayNumber)}
+                            className="neu-raised-sm flex items-center gap-1.5 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-primary transition-all disabled:opacity-50"
+                          >
+                            <RefreshCw
+                              className={`size-3.5 ${busyAction === `regen-${day.dayNumber}` ? 'animate-spin' : ''}`}
+                            />
+                            <span>Re-order</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            aria-label={collapsedDays[day.dayNumber] ? `Expand Day ${day.dayNumber}` : `Collapse Day ${day.dayNumber}`}
+                            onClick={() =>
+                              setCollapsedDays((prev) => ({
+                                ...prev,
+                                [day.dayNumber]: !prev[day.dayNumber],
+                              }))
+                            }
+                            className="neu-raised-sm flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground"
+                          >
+                            {collapsedDays[day.dayNumber] ? (
+                              <ChevronDown className="size-4" />
+                            ) : (
+                              <ChevronUp className="size-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
+
+                      {!collapsedDays[day.dayNumber] && (
+                        <>
 
                       {foodSuggestions.length > 0 && (
                         <div className="no-print neu-inset-sm flex flex-col gap-2 rounded-xl px-4 py-3 text-xs">
@@ -2016,6 +2193,8 @@ function Index() {
                           })}
                         </div>
                       )}
+                        </>
+                      )}
                     </div>
                   );
                 })}
@@ -2148,8 +2327,8 @@ function Index() {
                   </div>
                 )}
 
-                {/* Route Overview Map Card */}
-                <div className="no-print">
+                {/* Route Overview Map Card (Sticky on Desktop) */}
+                <div id="trip-map" className="no-print lg:sticky lg:top-20">
                   <DestinationMap
                     city={trip.destination}
                     center={trip.center}
@@ -2157,6 +2336,104 @@ function Index() {
                     selectedPlaceName={selectedPlaceName}
                     onSelectPlace={setSelectedPlaceName}
                   />
+                </div>
+
+                {/* Best Areas to Stay Card */}
+                {(() => {
+                  const allCoords = trip.itinerary.flatMap((d) => d.stops.map((s) => s.coordinates));
+                  const avgLat = allCoords.length
+                    ? allCoords.reduce((s, c) => s + c.lat, 0) / allCoords.length
+                    : trip.center.lat;
+                  const avgLng = allCoords.length
+                    ? allCoords.reduce((s, c) => s + c.lng, 0) / allCoords.length
+                    : trip.center.lng;
+                  const hotelsUrl = `https://www.google.com/maps/search/hotels+near+${avgLat.toFixed(4)},${avgLng.toFixed(4)}`;
+                  return (
+                    <div className="no-print neu-raised flex flex-col gap-3 rounded-2xl p-6">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="size-4 text-primary" />
+                        <h3 className="font-display text-lg font-semibold text-foreground">
+                          Best Area to Stay
+                        </h3>
+                      </div>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        Stay near the geographic center of your {trip.itinerary.reduce((s, d) => s + d.stops.length, 0)} planned stops in{' '}
+                        <strong className="text-foreground">{trip.destination}</strong> ({avgLat.toFixed(3)}, {avgLng.toFixed(3)}) to minimize daily cab/auto commute.
+                      </p>
+                      <a
+                        href={hotelsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="neu-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold"
+                      >
+                        <span>Find Stays Near Route Center</span>
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    </div>
+                  );
+                })()}
+
+                {/* Destination Reels & Social Inspiration Card */}
+                <div className="no-print neu-raised flex flex-col gap-3 rounded-2xl p-6">
+                  <div className="flex items-center gap-2">
+                    <Instagram className="size-4 text-primary" />
+                    <h3 className="font-display text-lg font-semibold text-foreground">
+                      Reels &amp; Photo Spots
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Preview real traveler reels, viewpoints, and food vlogs for {trip.destination}:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`https://www.instagram.com/explore/tags/${trip.destination.toLowerCase().replace(/[^a-z0-9]/g, '')}travel/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
+                    >
+                      <Instagram className="size-3.5 text-pink-500" />
+                      #{trip.destination.replace(/\s+/g, '')}Travel
+                    </a>
+                    <a
+                      href={`https://www.instagram.com/explore/tags/${trip.destination.toLowerCase().replace(/[^a-z0-9]/g, '')}diaries/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
+                    >
+                      <Instagram className="size-3.5 text-pink-500" />
+                      #{trip.destination.replace(/\s+/g, '')}Diaries
+                    </a>
+                    <a
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${trip.destination} travel itinerary vlog`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
+                    >
+                      <Youtube className="size-3.5 text-red-500" />
+                      YouTube Vlogs
+                    </a>
+                  </div>
+                </div>
+
+                {/* Local Essentials & Helplines Card */}
+                <div className="neu-raised flex flex-col gap-3 rounded-2xl p-6">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="size-4 text-primary" />
+                    <h3 className="font-display text-lg font-semibold text-foreground">
+                      Local Essentials
+                    </h3>
+                  </div>
+                  <ul className="space-y-2 text-xs text-muted-foreground">
+                    <li>
+                      <strong className="text-foreground">Payments:</strong> Carry ₹500–₹1,000 cash for temple lockers, street stalls, and remote viewpoints where UPI/signal drops.
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Local Transit:</strong> Compare Uber/Ola vs local auto/shared cab rates before boarding.
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Emergency Helplines:</strong> National Emergency <span className="font-mono font-semibold text-foreground">112</span> · Tourist Helpline <span className="font-mono font-semibold text-foreground">1363</span>.
+                    </li>
+                  </ul>
                 </div>
 
                 {/* Trip Completion Card (Stitch style) */}
@@ -2251,13 +2528,22 @@ function Index() {
       </div>
 
       {trip && (
-        <PlaceDetailDialog
-          stop={detailStop}
-          destination={trip.destination}
-          open={Boolean(detailStop)}
-          onOpenChange={(open) => {
-            if (!open) setDetailStop(null);
-          }}
+        <>
+          <a
+            href="#trip-map"
+            className="no-print fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full bg-[#6C3FE4] px-4 py-2.5 text-xs font-semibold text-white shadow-xl md:hidden"
+          >
+            <MapPin className="size-3.5" />
+            <span>Map · ₹{costPerPerson.toLocaleString('en-IN')}</span>
+          </a>
+
+          <PlaceDetailDialog
+            stop={detailStop}
+            destination={trip.destination}
+            open={Boolean(detailStop)}
+            onOpenChange={(open) => {
+              if (!open) setDetailStop(null);
+            }}
           isFavourite={
             detailStop ? favourites.includes(`${trip.destination}::${detailStop.name}`) : false
           }
@@ -2265,6 +2551,7 @@ function Index() {
             if (detailStop) toggleFavourite(trip.destination, detailStop);
           }}
         />
+        </>
       )}
     </main>
   );
