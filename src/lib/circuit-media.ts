@@ -158,10 +158,36 @@ export const FEATURED_CIRCUITS: FeaturedCircuit[] = [
 ];
 
 /**
- * Returns a local editorial fallback photo tailored to the destination or attraction category
- * so no stop ever renders a broken image frame or crude placeholder.
+ * Returns a distinct, category-aware photo tailored to the attraction name, destination, or category
+ * so stops never render identical repeated fallback frames.
  */
-export function getFallbackStopImage(destination?: string, category?: string): string {
+export function getFallbackStopImage(
+  destination?: string,
+  category?: string,
+  placeName?: string,
+): string {
+  const pool = [
+    CIRCUIT_IMAGES.jaipur,
+    CIRCUIT_IMAGES.delhi,
+    CIRCUIT_IMAGES.udaipur,
+    CIRCUIT_IMAGES.varanasi,
+    CIRCUIT_IMAGES.dehradun,
+    CIRCUIT_IMAGES.kerala,
+    CIRCUIT_IMAGES.manali,
+    CIRCUIT_IMAGES.goa,
+    CIRCUIT_IMAGES.ladakh,
+  ];
+
+  const seed = `${placeName ?? ''}::${destination ?? ''}::${category ?? ''}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+
+  if (placeName) {
+    return pool[hash % pool.length]!;
+  }
+
   const dest = (destination ?? '').toLowerCase();
   const cat = (category ?? '').toLowerCase();
 

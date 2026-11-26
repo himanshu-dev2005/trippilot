@@ -65,7 +65,7 @@ export function StopPhoto({
   }, [cacheKey, photoReference, name, destination]);
 
   const sizeClass = className ?? 'h-24 w-24 shrink-0 rounded-lg sm:h-28 sm:w-28';
-  const fallbackSrc = getFallbackStopImage(destination, category);
+  const fallbackSrc = getFallbackStopImage(destination, category, name);
 
   if (loading) {
     return (

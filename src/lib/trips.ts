@@ -464,10 +464,7 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
         const metaRes = await fetch(metaUrl, { signal: AbortSignal.timeout(4500) });
         if (metaRes.ok) {
           const payload = (await metaRes.json()) as { photoUri?: string };
-          if (payload.photoUri) {
-            const embedded = await fetchImageAsDataUrl(payload.photoUri);
-            return embedded || payload.photoUri;
-          }
+          if (payload.photoUri) return payload.photoUri;
         }
       } else {
         const legacyUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&photoreference=${encodeURIComponent(photoName)}&key=${encodeURIComponent(googleKey)}`;
@@ -533,6 +530,28 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
         // Fall through to Google Custom Search / Wikipedia fallback
       }
 
+      // 1a) Google Maps Places API (Legacy Text Search + Photo) fallback if Places API New isn't enabled
+      try {
+        const legacySearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(searchQuery)}&key=${encodeURIComponent(googleKey)}`;
+        const legacyRes = await fetch(legacySearchUrl, { signal: AbortSignal.timeout(4500) });
+        if (legacyRes.ok) {
+          const legacyJson = (await legacyRes.json()) as {
+            results?: Array<{ photos?: Array<{ photo_reference?: string }> }>;
+          };
+          const ref = legacyJson.results?.[0]?.photos?.[0]?.photo_reference;
+          if (ref) {
+            const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${encodeURIComponent(ref)}&key=${encodeURIComponent(googleKey)}`;
+            const embedded = await fetchImageAsDataUrl(photoUrl);
+            if (embedded) {
+              setPhotoCache(cacheKey, embedded);
+              return { dataUrl: embedded };
+            }
+          }
+        }
+      } catch {
+        // Fall through to Google Custom Search / Wikipedia
+      }
+
       // 1b) Official Google Custom Search Image API (when GOOGLE_CSE_ID / GOOGLE_SEARCH_CX is configured)
       const cseId = process.env['GOOGLE_CSE_ID'] || process.env['GOOGLE_SEARCH_CX'];
       if (cseId) {
@@ -552,11 +571,8 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
               if (isBadPhotoCandidate(item.link, item.title ?? '', item.image?.width, item.image?.height)) {
                 continue;
               }
-              const embedded = await fetchImageAsDataUrl(item.link);
-              if (embedded) {
-                setPhotoCache(cacheKey, embedded);
-                return { dataUrl: embedded };
-              }
+              setPhotoCache(cacheKey, item.link);
+              return { dataUrl: item.link };
             }
           }
         } catch {
@@ -604,14 +620,9 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
               sum.thumbnail.height,
             )
           ) {
-            const upscaled = sum.thumbnail.source.replace(/\/\d+px-/, '/640px-');
-            const dataUri =
-              (await fetchImageAsDataUrl(upscaled)) ||
-              (await fetchImageAsDataUrl(sum.thumbnail.source));
-            if (dataUri) {
-              setPhotoCache(cacheKey, dataUri);
-              return { dataUrl: dataUri };
-            }
+            const upscaled = sum.thumbnail.source.replace(/\/\d+px-/, '/800px-');
+            setPhotoCache(cacheKey, upscaled);
+            return { dataUrl: upscaled };
           }
         } catch {
           // Continue
@@ -710,12 +721,10 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
       }
 
       candidateUrls.sort((a, b) => b.score - a.score);
-      for (const candidate of candidateUrls.slice(0, 3)) {
-        const dataUri = await fetchImageAsDataUrl(candidate.url);
-        if (dataUri) {
-          setPhotoCache(cacheKey, dataUri);
-          return { dataUrl: dataUri };
-        }
+      const best = candidateUrls[0];
+      if (best?.url) {
+        setPhotoCache(cacheKey, best.url);
+        return { dataUrl: best.url };
       }
     }
 
