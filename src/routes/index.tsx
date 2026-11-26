@@ -51,6 +51,14 @@ import {
   Building2,
   ShieldAlert,
   Gauge,
+  Lock,
+  Unlock,
+  Bike,
+  Bus,
+  Flame,
+  Mountain,
+  Accessibility,
+  Smartphone,
 } from 'lucide-react';
 import {
   adjustTripWeather,
@@ -68,14 +76,19 @@ import {
 import { getMongoProfile, toggleMongoFavourite } from '@/lib/profile';
 import {
   addStopToDay,
+  applyAdaptationProfile,
   applyGoldenHourMode,
+  applyRunningLateRipple,
+  buildBudgetTiers,
   buildInstagramSearchUrl,
   findRouteFoodSuggestions,
   formatTime24,
   generateIcsCalendar,
   generateOfflinePocketPassHtml,
   generatePackingChecklist,
+  getDateAwareAlerts,
   getDayEnergyScore,
+  getHighwayPitstops,
   getIndiaPracticalAlerts,
   getStopTimingInsight,
   moveStopBetweenDays,
@@ -83,6 +96,7 @@ import {
   removeStopFromDay,
   reorderStopInDay,
   TRANSPORT_CONFIG,
+  type AdaptationProfile,
   type AttractionCandidate,
   type Coordinates,
   type ItineraryDay,
@@ -95,6 +109,7 @@ import { useAccount } from '@/components/AuthProvider';
 import { CityAutocomplete } from '@/components/CityAutocomplete';
 import { DestinationMap } from '@/components/DestinationMap';
 import { BudgetBreakdownChart } from '@/components/BudgetBreakdownChart';
+import { StopPhoto } from '@/components/StopPhoto';
 import { PlaceDetailDialog } from '@/components/PlaceDetailDialog';
 import { GroupExpenseSplitter } from '@/components/GroupExpenseSplitter';
 
@@ -111,9 +126,18 @@ const TRAVEL_STYLES = [
 
 const TRANSPORT_OPTIONS: Array<{ mode: TransportMode; label: string; icon: typeof Car }> = [
   { mode: 'cab', label: 'Cab / Auto', icon: Car },
-  { mode: 'transit', label: 'Transit', icon: TrainFront },
-  { mode: 'walking', label: 'Walking', icon: Footprints },
+  { mode: 'transit', label: 'Metro+Auto', icon: TrainFront },
+  { mode: 'scooter', label: 'Scooter', icon: Bike },
+  { mode: 'tempo', label: 'Tempo', icon: Bus },
+  { mode: 'walking', label: 'Walk', icon: Footprints },
 ];
+
+const HERO_PRESETS = [
+  { label: 'Weekend Heritage', city: 'Jaipur', days: 3, budget: 6000, interests: ['History & Forts', 'Culture & Heritage'] },
+  { label: 'Budget Backpacker', city: 'Dehradun', days: 3, budget: 3500, interests: ['Nature & Parks', 'Adventure & Treks'] },
+  { label: 'Coastal Scooter', city: 'Goa', days: 4, budget: 7500, interests: ['Nature & Parks', 'Food & Cafés'] },
+  { label: 'Golden Triangle', city: 'New Delhi', days: 4, budget: 9000, interests: ['History & Forts', 'Food & Cafés'] },
+] as const;
 
 const FAVOURITES_KEY = 'trippilot:favourites';
 
@@ -286,6 +310,11 @@ function Index() {
   const [collapsedDays, setCollapsedDays] = useState<Record<number, boolean>>({});
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [paceMode, setPaceMode] = useState<'relaxed' | 'balanced' | 'packed'>('balanced');
+  const [sidebarTab, setSidebarTab] = useState<'route' | 'budget' | 'checklist'>('route');
+  const [mapExpanded, setMapExpanded] = useState(false);
+  const [briefExpanded, setBriefExpanded] = useState(false);
+  const [liveCompanion, setLiveCompanion] = useState(false);
+  const [dragStop, setDragStop] = useState<{ dayNumber: number; index: number } | null>(null);
 
   const [savedTrips, setSavedTrips] = useState<TripRecord[]>([]);
   const [favourites, setFavourites] = useState<string[]>([]);
@@ -574,6 +603,58 @@ function Index() {
     const nextCount = Math.min(20, Math.max(1, trip.travelers + delta));
     setTravelers(nextCount);
     setTrip({ ...trip, travelers: nextCount });
+  }
+
+  function handleToggleLockStop(dayNumber: number, attractionId: string) {
+    if (!trip) return;
+    setTrip({
+      ...trip,
+      itinerary: trip.itinerary.map((d) =>
+        d.dayNumber === dayNumber
+          ? {
+              ...d,
+              stops: d.stops.map((s) =>
+                s.attractionId === attractionId ? { ...s, locked: !s.locked } : s,
+              ),
+            }
+          : d,
+      ),
+    });
+  }
+
+  function handleRunningLate(dayNumber: number) {
+    if (!trip) return;
+    setTrip({
+      ...trip,
+      itinerary: trip.itinerary.map((d) =>
+        d.dayNumber === dayNumber ? applyRunningLateRipple(d, 45) : d,
+      ),
+    });
+    setNotice(`Shifted unlocked Day ${dayNumber} stops by +45 min and checked closing times.`);
+  }
+
+  function handleAdaptationProfile(profile: AdaptationProfile) {
+    if (!trip) return;
+    const res = applyAdaptationProfile({
+      destination: trip.destination,
+      currentItinerary: trip.itinerary,
+      profile,
+      totalBudget: trip.budget,
+      transportMode: trip.transportMode,
+      ...(trip.startPoint ? { startPoint: trip.startPoint } : {}),
+    });
+    setTrip({
+      ...trip,
+      itinerary: res.itinerary,
+      totalCost: res.totalCost,
+      remainingBudget: res.remainingBudget,
+    });
+    const labels: Record<AdaptationProfile, string> = {
+      heatwave: 'Heatwave Mode: outdoor stops scheduled early morning & sunset.',
+      altitude: 'Altitude Acclimatization Mode: low-exertion Days 1–2 with hydration alerts.',
+      senior: 'Senior / Stroller-Friendly Mode: steep treks & climbs filtered out.',
+    };
+    setNotice(labels[profile]);
   }
 
   function handleGoldenHourMode() {
@@ -967,6 +1048,7 @@ function Index() {
         lng: s.coordinates.lng,
         cost: s.cost,
         startTime: s.startTime,
+        dayNumber: day.dayNumber,
         ...(s.travelToNext ? { travelMinutesToNext: s.travelToNext.minutes } : {}),
         ...(s.note ? { note: s.note } : {}),
       })),
@@ -1052,7 +1134,7 @@ function Index() {
 
               {/* Days */}
               <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 md:w-32">
-                <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                <Calendar className="size-4 shrink-0 text-zinc-500" />
                 <input
                   id="days-input"
                   type="number"
@@ -1063,17 +1145,17 @@ function Index() {
                     setNumberOfDays(Math.min(14, Math.max(1, Number(e.target.value) || 1)))
                   }
                   aria-label="Days"
-                  className="w-10 bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                  className="w-10 bg-transparent font-mono text-sm font-semibold tabular-nums text-zinc-900 focus:outline-none"
                 />
-                <span className="text-xs text-muted-foreground">days</span>
+                <span className="text-xs text-zinc-500">days</span>
               </div>
 
-              <div className="hidden h-7 w-px bg-border md:block" />
+              <div className="hidden h-7 w-px bg-zinc-200 md:block" />
 
               {/* Budget */}
               <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 md:w-36">
-                <Wallet className="size-4 shrink-0 text-muted-foreground" />
-                <span className="font-mono text-sm font-semibold text-foreground">₹</span>
+                <Wallet className="size-4 shrink-0 text-zinc-500" />
+                <span className="font-mono text-sm font-semibold text-zinc-900">₹</span>
                 <input
                   id="budget"
                   type="number"
@@ -1083,7 +1165,7 @@ function Index() {
                   onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
                   placeholder="6000"
                   aria-label="Budget"
-                  className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                  className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-zinc-900 focus:outline-none"
                 />
               </div>
 
@@ -1111,6 +1193,31 @@ function Index() {
                 )}
                 <span>{loading ? 'Planning…' : 'Search'}</span>
               </button>
+            </div>
+
+            {/* Quick Preset Chips directly below hero search bar */}
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {HERO_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => {
+                    setDestination(p.city);
+                    setNumberOfDays(p.days);
+                    setBudget(p.budget);
+                    setInterests([...p.interests]);
+                    void runTripGeneration({
+                      destination: p.city,
+                      numberOfDays: p.days,
+                      budget: p.budget,
+                      interests: [...p.interests],
+                    });
+                  }}
+                  className="rounded-full border border-white/25 bg-black/35 px-3.5 py-1 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:border-[#7C5CFF] hover:bg-[#6C3FE4]"
+                >
+                  {p.label}
+                </button>
+              ))}
             </div>
 
             <button
@@ -1551,6 +1658,17 @@ function Index() {
 
                 <button
                   type="button"
+                  onClick={() => setLiveCompanion((v) => !v)}
+                  className={`neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all ${
+                    liveCompanion ? 'bg-[#6C3FE4] text-white' : 'text-foreground hover:text-primary'
+                  }`}
+                >
+                  <Smartphone className="size-4" />
+                  <span>{liveCompanion ? 'Exit Live Mode' : 'Live Companion'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => void handleCopyWhatsApp()}
                   className="neu-raised-sm flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-foreground transition-all hover:text-primary"
                 >
@@ -1618,44 +1736,96 @@ function Index() {
               </div>
             </div>
 
-            {/* Direct Gemini AI Response Card */}
+            {/* Collapsible Direct Gemini AI Trip Brief */}
             {trip.aiResponseText && (
-              <div className="neu-raised flex flex-col gap-4 rounded-2xl p-6 lg:p-8">
+              <div className="neu-raised flex flex-col gap-3 rounded-2xl p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="neu-inset-sm flex size-9 items-center justify-center rounded-xl text-primary">
-                      <Bot className="size-5" />
+                    <div className="neu-inset-sm flex size-8 items-center justify-center rounded-xl text-primary">
+                      <Bot className="size-4" />
                     </div>
                     <div>
-                      <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                        Direct Gemini AI Response
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                        Trip Brief
                       </span>
-                      <h3 className="font-display text-lg font-semibold text-foreground">
-                        Personalized Plan for {trip.destination} ({trip.numberOfDays}d · ₹
-                        {trip.budget.toLocaleString('en-IN')})
+                      <h3 className="font-display text-base font-semibold text-foreground">
+                        {trip.destination} ({trip.numberOfDays}d · ₹{trip.budget.toLocaleString('en-IN')})
                       </h3>
                     </div>
                   </div>
-                  {trip.modelName && (
-                    <span className="neu-inset-sm rounded-full px-3 py-1 font-mono text-xs font-medium text-primary">
-                      {trip.modelName}
+                  <div className="flex items-center gap-2">
+                    {trip.modelName && (
+                      <span className="neu-inset-sm rounded-full px-3 py-1 font-mono text-[11px] font-medium text-primary">
+                        {trip.modelName}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setBriefExpanded((v) => !v)}
+                      className="neu-raised-sm inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-foreground"
+                    >
+                      {briefExpanded ? 'Collapse' : 'Read Brief'}
+                      {briefExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {briefExpanded && (
+                  <>
+                    <div className="neu-inset rounded-xl p-4 text-sm leading-relaxed whitespace-pre-line text-foreground">
+                      {trip.aiResponseText}
+                    </div>
+                    {trip.budgetSummary && (
+                      <div className="neu-inset-sm flex items-start gap-2.5 rounded-xl px-4 py-2.5 text-xs text-muted-foreground">
+                        <Wallet className="mt-0.5 size-4 shrink-0 text-primary" />
+                        <span>
+                          <strong className="font-semibold text-foreground">Budget Fit: </strong>
+                          {trip.budgetSummary}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Mobile Live Companion "Today View" */}
+            {liveCompanion && trip.itinerary[0] && (
+              <div className="neu-raised flex flex-col gap-4 rounded-2xl border-2 border-[#6C3FE4]/40 bg-[#F3F0FF]/50 p-5 dark:bg-[#1E103C]/50">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-[#6C3FE4]">
+                      Live Companion · Today View
                     </span>
+                    <h3 className="font-display text-xl font-bold text-foreground">
+                      Next Up: {trip.itinerary[0].stops[0]?.name ?? trip.destination}
+                    </h3>
+                  </div>
+                  {trip.itinerary[0].stops[0] && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${trip.itinerary[0].stops[0].name}, ${trip.destination}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="neu-btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold"
+                    >
+                      <Navigation className="size-3.5" /> Navigate Now
+                    </a>
                   )}
                 </div>
-
-                <div className="neu-inset rounded-xl p-5 text-sm leading-relaxed whitespace-pre-line text-foreground">
-                  {trip.aiResponseText}
-                </div>
-
-                {trip.budgetSummary && (
-                  <div className="neu-inset-sm flex items-start gap-2.5 rounded-xl px-4 py-3 text-xs text-muted-foreground">
-                    <Wallet className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <span>
-                      <strong className="font-semibold text-foreground">Budget Fit: </strong>
-                      {trip.budgetSummary}
-                    </span>
+                <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
+                  <div className="rounded-xl bg-card p-3">
+                    <strong className="text-foreground">Emergency &amp; Tourist Desk</strong>
+                    <p className="mt-1 text-muted-foreground">Dial <span className="font-mono font-bold text-foreground">112</span> or <span className="font-mono font-bold text-foreground">1363</span></p>
                   </div>
-                )}
+                  <div className="rounded-xl bg-card p-3">
+                    <strong className="text-foreground">Local Etiquette &amp; Tipping</strong>
+                    <p className="mt-1 text-muted-foreground">Remove footwear at temples; 5–10% tip at sit-down dining; confirm auto meter/fare upfront.</p>
+                  </div>
+                  <div className="rounded-xl bg-card p-3">
+                    <strong className="text-foreground">UPI &amp; Cash</strong>
+                    <p className="mt-1 text-muted-foreground">UPI works widely; keep ₹500 cash for monument lockers &amp; street stalls.</p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1846,12 +2016,97 @@ function Index() {
               </div>
             )}
 
-            {/* Showing All Days together */}
+            {/* Sticky Day-Jump Pills + Adaptation Profiles + Budget Tiers + Highway Pitstops */}
+            <div className="no-print sticky top-20 z-20 flex flex-col gap-3 rounded-2xl border border-border/60 bg-background/90 p-3.5 backdrop-blur-md shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveDayTab('all')}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                      activeDayTab === 'all'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    All ({trip.itinerary.length}d)
+                  </button>
+                  {trip.itinerary.map((d) => (
+                    <button
+                      key={d.dayNumber}
+                      type="button"
+                      onClick={() => {
+                        setActiveDayTab(d.dayNumber);
+                        document.getElementById(`day-${d.dayNumber}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+                        activeDayTab === d.dayNumber
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      Day {d.dayNumber}
+                    </button>
+                  ))}
+                </div>
 
-            {/* Main Bento Grid: Left Timeline (8 cols) + Right Widgets (4 cols) */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(
+                    [
+                      { id: 'heatwave', label: 'Heatwave', icon: Flame },
+                      { id: 'altitude', label: 'Altitude', icon: Mountain },
+                      { id: 'senior', label: 'Senior', icon: Accessibility },
+                    ] as const
+                  ).map(({ id, label, icon: Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => handleAdaptationProfile(id)}
+                      className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                    >
+                      <Icon className="size-3" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {(() => {
+                const tiers = buildBudgetTiers(trip.budget, trip.itinerary.length);
+                const pitstops = getHighwayPitstops(trip.destination);
+                return (
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-2.5 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold uppercase tracking-wider text-muted-foreground">Tiers:</span>
+                      {tiers.map((tier) => (
+                        <span
+                          key={tier.tier}
+                          className="rounded-lg bg-muted/60 px-2 py-0.5 font-medium text-foreground tabular-nums"
+                          title={`${tier.stayStyle} · ${tier.transportLabel}`}
+                        >
+                          {tier.tier} ({tier.multiplier}×) ₹{tier.budget.toLocaleString('en-IN')}
+                        </span>
+                      ))}
+                    </div>
+                    {pitstops.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+                        <span className="font-semibold uppercase tracking-wider">Pitstops:</span>
+                        {pitstops.slice(0, 2).map((p) => (
+                          <span key={p.name} className="rounded-lg bg-primary/10 px-2 py-0.5 font-medium text-primary">
+                            {p.name} ({p.detourKm}km)
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Main Bento Grid: Left Timeline + Right Widgets */}
             <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
               {/* Left Column: Day-by-Day Timeline */}
-              <div className="flex flex-col gap-8 lg:col-span-8">
+              <div className={`flex flex-col gap-8 ${mapExpanded ? 'lg:col-span-6' : 'lg:col-span-8'}`}>
                 {displayedDays.map((day) => {
                   const energy = getDayEnergyScore(day);
                   const foodSuggestions = findRouteFoodSuggestions(day, trip.candidates);
@@ -1907,6 +2162,16 @@ function Index() {
                               <ExternalLink className="size-3 opacity-60" />
                             </a>
                           )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleRunningLate(day.dayNumber)}
+                            title="Shift remaining stops +45m and check closing times"
+                            className="neu-raised-sm flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-amber-600 transition-all hover:bg-amber-500/10 dark:text-amber-400"
+                          >
+                            <Clock3 className="size-3.5" />
+                            <span>+45m Late</span>
+                          </button>
 
                           <button
                             type="button"
@@ -2001,39 +2266,91 @@ function Index() {
                                 />
 
                                 <article
+                                  draggable
+                                  onDragStart={() => setDragStop({ dayNumber: day.dayNumber, index: idx })}
+                                  onDragOver={(e) => e.preventDefault()}
+                                  onDrop={() => {
+                                    if (dragStop && dragStop.dayNumber === day.dayNumber && dragStop.index !== idx) {
+                                      handleReorderStop(day.dayNumber, dragStop.index, idx);
+                                    }
+                                    setDragStop(null);
+                                  }}
+                                  onDragEnd={() => setDragStop(null)}
                                   onClick={() => {
                                     setSelectedPlaceName(stop.name);
                                     setDetailStop(stop);
                                   }}
                                   onMouseEnter={() => setSelectedPlaceName(stop.name)}
-                                  className={`neu-raised flex w-full cursor-pointer flex-col gap-3 rounded-2xl p-6 transition-all ${isSelected ? 'ring-2 ring-primary/40' : 'hover:border-primary/40'
+                                  className={`neu-raised flex w-full cursor-pointer flex-col gap-3 rounded-2xl p-4 sm:p-5 transition-all ${isSelected ? 'ring-2 ring-primary/40' : 'hover:border-primary/40'
                                     }`}
                                 >
-                                  <div className="flex min-w-0 flex-1 flex-col justify-between gap-2.5">
+                                  <div className="flex items-start gap-3.5">
+                                    <div
+                                      className="size-22 sm:size-24 shrink-0 overflow-hidden rounded-xl"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <StopPhoto
+                                        name={stop.name}
+                                        category={stop.category}
+                                        destination={trip.destination}
+                                        coordinates={stop.coordinates}
+                                        {...(stop.photoReference ? { photoReference: stop.photoReference } : {})}
+                                        className="size-full"
+                                      />
+                                    </div>
+                                    <div className="flex min-w-0 flex-1 flex-col justify-between gap-2">
                                     <div className="flex flex-wrap items-center justify-between gap-2">
-                                      <div className="flex items-center gap-2.5">
-                                        <span className="flex size-7 items-center justify-center rounded-lg bg-[#F3F0FF] font-mono text-xs font-bold text-[#6C3FE4] dark:bg-[#1E103C] dark:text-[#c4b5fd]">
+                                      <div className="flex items-center gap-2">
+                                        <span className="flex size-6 items-center justify-center rounded-lg bg-[#F3F0FF] font-mono text-xs font-bold text-[#6C3FE4] dark:bg-[#1E103C] dark:text-[#c4b5fd]">
                                           {globalNumber}
                                         </span>
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-primary tabular-nums">
+                                        <span className="text-[11px] font-semibold uppercase tracking-wider text-primary tabular-nums">
                                           {stop.startTime} • {stop.isOutdoor ? 'Outdoor' : 'Indoor'} •{' '}
                                           {stop.duration}h
                                           {timingInsight ? ` • ${timingInsight}` : ''}
                                         </span>
+                                        {stop.locked && (
+                                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                                            <Lock className="size-2.5" />
+                                            Locked
+                                          </span>
+                                        )}
                                       </div>
-                                      <span className="rounded-full bg-tertiary-fixed px-3 py-0.5 text-xs font-semibold text-tertiary-fixed-foreground">
+                                      <span className="rounded-full bg-tertiary-fixed px-2.5 py-0.5 text-[11px] font-semibold text-tertiary-fixed-foreground">
                                         {stop.category}
                                       </span>
                                     </div>
 
                                     <h4
-                                      className={`font-display text-2xl font-extrabold tracking-tight sm:text-3xl ${stop.visited
+                                      className={`font-display text-lg font-bold tracking-tight sm:text-xl ${stop.visited
                                         ? 'line-through text-muted-foreground'
                                         : 'text-foreground'
                                         }`}
                                     >
                                       {stop.name}
                                     </h4>
+
+                                    {(() => {
+                                      const dateAlerts = getDateAwareAlerts(trip.destination, stop.name, day.date);
+                                      if (!stop.lateClosureWarning && dateAlerts.length === 0) return null;
+                                      return (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {stop.lateClosureWarning && (
+                                            <span className="rounded-lg bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+                                              {stop.lateClosureWarning}
+                                            </span>
+                                          )}
+                                          {dateAlerts.map((alertText) => (
+                                            <span
+                                              key={alertText}
+                                              className="rounded-lg bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300"
+                                            >
+                                              {alertText}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      );
+                                    })()}
 
                                     {stop.note && (
                                       <p className="text-sm leading-relaxed text-muted-foreground">
@@ -2105,18 +2422,27 @@ function Index() {
                                           />
                                           Visited
                                         </label>
-                                        <a
-                                          href={stop.instagramSearchUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
+                                        <button
+                                          type="button"
+                                          onClick={() => setDetailStop(stop)}
                                           className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
                                         >
-                                          Photos
-                                          <ExternalLink className="size-3" />
-                                        </a>
+                                          Preview
+                                        </button>
                                       </div>
 
                                       <div className="flex items-center gap-1.5">
+                                        <button
+                                          type="button"
+                                          title={stop.locked ? 'Unlock anchor time' : 'Lock anchor time'}
+                                          aria-label={stop.locked ? 'Unlock anchor time' : 'Lock anchor time'}
+                                          onClick={() => handleToggleLockStop(day.dayNumber, stop.attractionId)}
+                                          className={`neu-raised-sm flex size-8 items-center justify-center rounded-lg ${
+                                            stop.locked ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground hover:text-primary'
+                                          }`}
+                                        >
+                                          {stop.locked ? <Lock className="size-3.5" /> : <Unlock className="size-3.5" />}
+                                        </button>
                                         <button
                                           type="button"
                                           aria-label={
@@ -2187,6 +2513,7 @@ function Index() {
                                       </div>
                                     </div>
                                   </div>
+                                  </div>
                                 </article>
                               </div>
                             );
@@ -2254,273 +2581,301 @@ function Index() {
                 </div>
               </div>
 
-              {/* Right Column: Weather, Map, Progress, Chart & Packing (4 cols) */}
-              <aside className="flex flex-col gap-6 lg:sticky lg:top-24 lg:col-span-4">
-                {/* Weather Widget Card (Stitch style) */}
-                {trip.itinerary.some((d) => d.tempC !== undefined || d.weatherSummary !== 'Clear') && (
-                  <div className="neu-raised flex flex-col gap-4 rounded-2xl p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-outline">
-                          Current Forecast
-                        </span>
-                        <h4 className="font-display text-lg font-semibold text-foreground">
-                          {trip.destination}
-                        </h4>
-                      </div>
-                      <CloudSun className="size-8 text-primary" />
-                    </div>
+              {/* Right Column: Compact 3-Tab Sidebar */}
+              <aside className={`flex flex-col gap-5 lg:sticky lg:top-24 ${mapExpanded ? 'lg:col-span-6' : 'lg:col-span-4'}`}>
+                <div className="no-print neu-raised grid grid-cols-3 gap-1.5 rounded-2xl p-1.5">
+                  {(
+                    [
+                      { id: 'route', label: 'Route & Weather' },
+                      { id: 'budget', label: 'Budget & Split' },
+                      { id: 'checklist', label: 'Checklist' },
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setSidebarTab(tab.id)}
+                      className={`rounded-xl px-2.5 py-2 text-xs font-semibold transition-all ${
+                        sidebarTab === tab.id
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
-                    {trip.itinerary[0] && (
-                      <div className="flex items-baseline justify-between pt-1">
-                        <div>
-                          <span className="font-display text-3xl font-bold text-foreground">
-                            {trip.itinerary[0].tempC !== undefined
-                              ? `${trip.itinerary[0].tempC}°C`
-                              : 'Clear'}
-                          </span>
-                          <p className="text-xs text-muted-foreground">
-                            {trip.itinerary[0].weatherSummary}
-                          </p>
+                {sidebarTab === 'route' && (
+                  <>
+                    {/* Weather Widget Card */}
+                    {trip.itinerary.some((d) => d.tempC !== undefined || d.weatherSummary !== 'Clear') && (
+                      <div className="neu-raised flex flex-col gap-4 rounded-2xl p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs font-semibold uppercase tracking-wider text-outline">
+                              Current Forecast
+                            </span>
+                            <h4 className="font-display text-lg font-semibold text-foreground">
+                              {trip.destination}
+                            </h4>
+                          </div>
+                          <CloudSun className="size-8 text-primary" />
                         </div>
-                        <div className="text-right text-xs text-muted-foreground tabular-nums">
-                          {trip.itinerary[0].humidity !== undefined && (
-                            <p className="flex items-center justify-end gap-1">
-                              <Droplets className="size-3 text-primary" />
-                              Humidity: {trip.itinerary[0].humidity}%
-                            </p>
-                          )}
-                          {trip.itinerary[0].windKmh !== undefined && (
-                            <p className="flex items-center justify-end gap-1">
-                              <Wind className="size-3 text-primary" />
-                              Wind: {trip.itinerary[0].windKmh} km/h
-                            </p>
-                          )}
+
+                        {trip.itinerary[0] && (
+                          <div className="flex items-baseline justify-between pt-1">
+                            <div>
+                              <span className="font-display text-3xl font-bold text-foreground">
+                                {trip.itinerary[0].tempC !== undefined
+                                  ? `${trip.itinerary[0].tempC}°C`
+                                  : 'Clear'}
+                              </span>
+                              <p className="text-xs text-muted-foreground">
+                                {trip.itinerary[0].weatherSummary}
+                              </p>
+                            </div>
+                            <div className="text-right text-xs text-muted-foreground tabular-nums">
+                              {trip.itinerary[0].humidity !== undefined && (
+                                <p className="flex items-center justify-end gap-1">
+                                  <Droplets className="size-3 text-primary" />
+                                  Humidity: {trip.itinerary[0].humidity}%
+                                </p>
+                              )}
+                              {trip.itinerary[0].windKmh !== undefined && (
+                                <p className="flex items-center justify-end gap-1">
+                                  <Wind className="size-3 text-primary" />
+                                  Wind: {trip.itinerary[0].windKmh} km/h
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          {trip.itinerary.map((day) => {
+                            const cond = (day.weatherCondition || '').toLowerCase();
+                            const WeatherIcon = day.hasRainAlert
+                              ? CloudRain
+                              : cond.includes('cloud')
+                                ? Cloud
+                                : Sun;
+                            return (
+                              <div
+                                key={`wx-${day.dayNumber}`}
+                                className="neu-inset-sm flex items-center justify-between rounded-xl px-3 py-2 text-xs"
+                              >
+                                <div>
+                                  <p className="font-semibold text-primary">Day {day.dayNumber}</p>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {day.tempC !== undefined ? `${day.tempC}°C` : day.weatherSummary}
+                                  </p>
+                                </div>
+                                <WeatherIcon className="size-4 text-amber-500" />
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
-                      {trip.itinerary.map((day) => {
-                        const cond = (day.weatherCondition || '').toLowerCase();
-                        const WeatherIcon = day.hasRainAlert
-                          ? CloudRain
-                          : cond.includes('cloud')
-                            ? Cloud
-                            : Sun;
-                        return (
-                          <div
-                            key={`wx-${day.dayNumber}`}
-                            className="neu-inset-sm flex items-center justify-between rounded-xl px-3 py-2 text-xs"
-                          >
-                            <div>
-                              <p className="font-semibold text-primary">Day {day.dayNumber}</p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {day.tempC !== undefined ? `${day.tempC}°C` : day.weatherSummary}
-                              </p>
-                            </div>
-                            <WeatherIcon className="size-4 text-amber-500" />
-                          </div>
-                        );
-                      })}
+                    {/* Route Overview Map Card */}
+                    <div id="trip-map" className="no-print">
+                      <DestinationMap
+                        city={trip.destination}
+                        center={trip.center}
+                        places={mapPlaces}
+                        selectedPlaceName={selectedPlaceName}
+                        onSelectPlace={setSelectedPlaceName}
+                        expanded={mapExpanded}
+                        onToggleExpand={() => setMapExpanded((v) => !v)}
+                      />
                     </div>
-                  </div>
-                )}
 
-                {/* Route Overview Map Card (Sticky on Desktop) */}
-                <div id="trip-map" className="no-print lg:sticky lg:top-20">
-                  <DestinationMap
-                    city={trip.destination}
-                    center={trip.center}
-                    places={mapPlaces}
-                    selectedPlaceName={selectedPlaceName}
-                    onSelectPlace={setSelectedPlaceName}
-                  />
-                </div>
+                    {/* Best Areas to Stay Card */}
+                    {(() => {
+                      const allCoords = trip.itinerary.flatMap((d) => d.stops.map((s) => s.coordinates));
+                      const avgLat = allCoords.length
+                        ? allCoords.reduce((s, c) => s + c.lat, 0) / allCoords.length
+                        : trip.center.lat;
+                      const avgLng = allCoords.length
+                        ? allCoords.reduce((s, c) => s + c.lng, 0) / allCoords.length
+                        : trip.center.lng;
+                      const hotelsUrl = `https://www.google.com/maps/search/hotels+near+${avgLat.toFixed(4)},${avgLng.toFixed(4)}`;
+                      return (
+                        <div className="no-print neu-raised flex flex-col gap-3 rounded-2xl p-5">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="size-4 text-primary" />
+                            <h3 className="font-display text-base font-semibold text-foreground">
+                              Best Area to Stay
+                            </h3>
+                          </div>
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            Stay near the geographic center of your {trip.itinerary.reduce((s, d) => s + d.stops.length, 0)} planned stops in{' '}
+                            <strong className="text-foreground">{trip.destination}</strong> ({avgLat.toFixed(3)}, {avgLng.toFixed(3)}) to minimize daily cab/auto commute.
+                          </p>
+                          <a
+                            href={hotelsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="neu-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold"
+                          >
+                            <span>Find Stays Near Route Center</span>
+                            <ExternalLink className="size-3.5" />
+                          </a>
+                        </div>
+                      );
+                    })()}
 
-                {/* Best Areas to Stay Card */}
-                {(() => {
-                  const allCoords = trip.itinerary.flatMap((d) => d.stops.map((s) => s.coordinates));
-                  const avgLat = allCoords.length
-                    ? allCoords.reduce((s, c) => s + c.lat, 0) / allCoords.length
-                    : trip.center.lat;
-                  const avgLng = allCoords.length
-                    ? allCoords.reduce((s, c) => s + c.lng, 0) / allCoords.length
-                    : trip.center.lng;
-                  const hotelsUrl = `https://www.google.com/maps/search/hotels+near+${avgLat.toFixed(4)},${avgLng.toFixed(4)}`;
-                  return (
-                    <div className="no-print neu-raised flex flex-col gap-3 rounded-2xl p-6">
+                    {/* Destination Reels & Social Inspiration Card */}
+                    <div className="no-print neu-raised flex flex-col gap-3 rounded-2xl p-5">
                       <div className="flex items-center gap-2">
-                        <Building2 className="size-4 text-primary" />
-                        <h3 className="font-display text-lg font-semibold text-foreground">
-                          Best Area to Stay
+                        <Instagram className="size-4 text-primary" />
+                        <h3 className="font-display text-base font-semibold text-foreground">
+                          Reels &amp; Photo Spots
                         </h3>
                       </div>
-                      <p className="text-xs leading-relaxed text-muted-foreground">
-                        Stay near the geographic center of your {trip.itinerary.reduce((s, d) => s + d.stops.length, 0)} planned stops in{' '}
-                        <strong className="text-foreground">{trip.destination}</strong> ({avgLat.toFixed(3)}, {avgLng.toFixed(3)}) to minimize daily cab/auto commute.
-                      </p>
-                      <a
-                        href={hotelsUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="neu-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold"
-                      >
-                        <span>Find Stays Near Route Center</span>
-                        <ExternalLink className="size-3.5" />
-                      </a>
-                    </div>
-                  );
-                })()}
-
-                {/* Destination Reels & Social Inspiration Card */}
-                <div className="no-print neu-raised flex flex-col gap-3 rounded-2xl p-6">
-                  <div className="flex items-center gap-2">
-                    <Instagram className="size-4 text-primary" />
-                    <h3 className="font-display text-lg font-semibold text-foreground">
-                      Reels &amp; Photo Spots
-                    </h3>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Preview real traveler reels, viewpoints, and food vlogs for {trip.destination}:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href={`https://www.instagram.com/explore/tags/${trip.destination.toLowerCase().replace(/[^a-z0-9]/g, '')}travel/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
-                    >
-                      <Instagram className="size-3.5 text-pink-500" />
-                      #{trip.destination.replace(/\s+/g, '')}Travel
-                    </a>
-                    <a
-                      href={`https://www.instagram.com/explore/tags/${trip.destination.toLowerCase().replace(/[^a-z0-9]/g, '')}diaries/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
-                    >
-                      <Instagram className="size-3.5 text-pink-500" />
-                      #{trip.destination.replace(/\s+/g, '')}Diaries
-                    </a>
-                    <a
-                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${trip.destination} travel itinerary vlog`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
-                    >
-                      <Youtube className="size-3.5 text-red-500" />
-                      YouTube Vlogs
-                    </a>
-                  </div>
-                </div>
-
-                {/* Local Essentials & Helplines Card */}
-                <div className="neu-raised flex flex-col gap-3 rounded-2xl p-6">
-                  <div className="flex items-center gap-2">
-                    <ShieldAlert className="size-4 text-primary" />
-                    <h3 className="font-display text-lg font-semibold text-foreground">
-                      Local Essentials
-                    </h3>
-                  </div>
-                  <ul className="space-y-2 text-xs text-muted-foreground">
-                    <li>
-                      <strong className="text-foreground">Payments:</strong> Carry ₹500–₹1,000 cash for temple lockers, street stalls, and remote viewpoints where UPI/signal drops.
-                    </li>
-                    <li>
-                      <strong className="text-foreground">Local Transit:</strong> Compare Uber/Ola vs local auto/shared cab rates before boarding.
-                    </li>
-                    <li>
-                      <strong className="text-foreground">Emergency Helplines:</strong> National Emergency <span className="font-mono font-semibold text-foreground">112</span> · Tourist Helpline <span className="font-mono font-semibold text-foreground">1363</span>.
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Trip Completion Card (Stitch style) */}
-                {(() => {
-                  const totalStops = trip.itinerary.reduce((s, d) => s + d.stops.length, 0);
-                  const visitedStops = trip.itinerary.reduce(
-                    (s, d) => s + d.stops.filter((st) => st.visited).length,
-                    0,
-                  );
-                  const checkedCount = packingChecklist.filter((i) => checkedPacking[i.id]).length;
-                  const totalTasks = totalStops + packingChecklist.length;
-                  const readinessPct =
-                    totalTasks > 0
-                      ? Math.round(((visitedStops + checkedCount) / totalTasks) * 100)
-                      : 0;
-                  return (
-                    <div className="neu-raised flex flex-col gap-3 rounded-2xl p-6">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-outline">
-                        Trip Completion
-                      </span>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-foreground">
-                          Stops &amp; Packing
-                        </span>
-                        <span className="text-sm font-bold text-primary tabular-nums">
-                          {visitedStops + checkedCount} / {totalTasks} ({readinessPct}%)
-                        </span>
+                      <div className="flex flex-wrap gap-2">
+                        <a
+                          href={`https://www.instagram.com/explore/tags/${trip.destination.toLowerCase().replace(/[^a-z0-9]/g, '')}travel/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
+                        >
+                          <Instagram className="size-3.5 text-pink-500" />
+                          #{trip.destination.replace(/\s+/g, '')}Travel
+                        </a>
+                        <a
+                          href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${trip.destination} travel itinerary vlog`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary hover:text-primary"
+                        >
+                          <Youtube className="size-3.5 text-red-500" />
+                          YouTube Vlogs
+                        </a>
                       </div>
-                      <div className="neu-inset-sm h-3 w-full overflow-hidden rounded-full p-0.5">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all duration-500"
-                          style={{ width: `${readinessPct}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {visitedStops}/{totalStops} stops visited · {checkedCount}/
-                        {packingChecklist.length} items packed
-                      </p>
                     </div>
-                  );
-                })()}
+                  </>
+                )}
 
-                {/* Expense Breakdown Chart */}
-                <BudgetBreakdownChart itinerary={trip.itinerary} />
+                {sidebarTab === 'budget' && (
+                  <>
+                    <BudgetBreakdownChart itinerary={trip.itinerary} />
+                    <GroupExpenseSplitter
+                      destination={trip.destination}
+                      travelers={trip.travelers}
+                      plannedBudget={costPerPerson}
+                      stopNames={trip.itinerary.flatMap((d) => d.stops.map((s) => s.name))}
+                      {...(trip.tripId ? { tripId: trip.tripId } : {})}
+                    />
+                  </>
+                )}
 
-                {/* Group Split-Bill & Expense Tracker */}
-                <GroupExpenseSplitter destination={trip.destination} travelers={trip.travelers} />
-
-                {/* Shared Packing Checklist Card */}
-                <div className="neu-raised flex flex-col gap-4 rounded-2xl p-6">
-                  <div className="flex items-center gap-2">
-                    <CheckSquare className="size-4 text-primary" />
-                    <h3 className="font-display text-lg font-semibold text-foreground">
-                      Packing Checklist
-                    </h3>
-                  </div>
-                  <ul className="flex flex-col gap-2.5 text-sm">
-                    {packingChecklist.map((item) => {
-                      const checked = Boolean(checkedPacking[item.id]);
-                      return (
-                        <li key={item.id}>
-                          <label className="flex cursor-pointer items-start gap-3 rounded-xl p-2 transition-colors hover:bg-surface-lowest">
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() =>
-                                setCheckedPacking((prev) => ({
-                                  ...prev,
-                                  [item.id]: !prev[item.id],
-                                }))
-                              }
-                              className="mt-1 accent-primary"
-                            />
-                            <span className={checked ? 'line-through opacity-60' : ''}>
-                              <span className="block font-medium text-foreground">
-                                {item.label}
-                              </span>
-                              <span className="block text-xs text-muted-foreground">
-                                {item.reason}
-                              </span>
-                            </span>
-                          </label>
-                        </li>
+                {sidebarTab === 'checklist' && (
+                  <>
+                    {/* Trip Completion Card */}
+                    {(() => {
+                      const totalStops = trip.itinerary.reduce((s, d) => s + d.stops.length, 0);
+                      const visitedStops = trip.itinerary.reduce(
+                        (s, d) => s + d.stops.filter((st) => st.visited).length,
+                        0,
                       );
-                    })}
-                  </ul>
-                </div>
+                      const checkedCount = packingChecklist.filter((i) => checkedPacking[i.id]).length;
+                      const totalTasks = totalStops + packingChecklist.length;
+                      const readinessPct =
+                        totalTasks > 0
+                          ? Math.round(((visitedStops + checkedCount) / totalTasks) * 100)
+                          : 0;
+                      return (
+                        <div className="neu-raised flex flex-col gap-3 rounded-2xl p-5">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-outline">
+                            Trip Completion
+                          </span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-semibold text-foreground">
+                              Stops &amp; Packing
+                            </span>
+                            <span className="text-sm font-bold text-primary tabular-nums">
+                              {visitedStops + checkedCount} / {totalTasks} ({readinessPct}%)
+                            </span>
+                          </div>
+                          <div className="neu-inset-sm h-3 w-full overflow-hidden rounded-full p-0.5">
+                            <div
+                              className="h-full rounded-full bg-primary transition-all duration-500"
+                              style={{ width: `${readinessPct}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {visitedStops}/{totalStops} stops visited · {checkedCount}/
+                            {packingChecklist.length} items packed
+                          </p>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Shared Packing Checklist Card */}
+                    <div className="neu-raised flex flex-col gap-4 rounded-2xl p-5">
+                      <div className="flex items-center gap-2">
+                        <CheckSquare className="size-4 text-primary" />
+                        <h3 className="font-display text-base font-semibold text-foreground">
+                          Packing Checklist
+                        </h3>
+                      </div>
+                      <ul className="flex flex-col gap-2 text-sm">
+                        {packingChecklist.map((item) => {
+                          const checked = Boolean(checkedPacking[item.id]);
+                          return (
+                            <li key={item.id}>
+                              <label className="flex cursor-pointer items-start gap-3 rounded-xl p-2 transition-colors hover:bg-surface-lowest">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() =>
+                                    setCheckedPacking((prev) => ({
+                                      ...prev,
+                                      [item.id]: !prev[item.id],
+                                    }))
+                                  }
+                                  className="mt-1 accent-primary"
+                                />
+                                <span className={checked ? 'line-through opacity-60' : ''}>
+                                  <span className="block font-medium text-foreground">
+                                    {item.label}
+                                  </span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {item.reason}
+                                  </span>
+                                </span>
+                              </label>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+
+                    {/* Local Essentials & Helplines Card */}
+                    <div className="neu-raised flex flex-col gap-3 rounded-2xl p-5">
+                      <div className="flex items-center gap-2">
+                        <ShieldAlert className="size-4 text-primary" />
+                        <h3 className="font-display text-base font-semibold text-foreground">
+                          Local Essentials
+                        </h3>
+                      </div>
+                      <ul className="space-y-2 text-xs text-muted-foreground">
+                        <li>
+                          <strong className="text-foreground">Payments:</strong> Carry ₹500–₹1,000 cash for temple lockers, street stalls, and remote viewpoints where UPI/signal drops.
+                        </li>
+                        <li>
+                          <strong className="text-foreground">Local Transit:</strong> Compare Uber/Ola vs local auto/shared cab rates before boarding.
+                        </li>
+                        <li>
+                          <strong className="text-foreground">Emergency Helplines:</strong> National Emergency <span className="font-mono font-semibold text-foreground">112</span> · Tourist Helpline <span className="font-mono font-semibold text-foreground">1363</span>.
+                        </li>
+                      </ul>
+                    </div>
+                  </>
+                )}
               </aside>
             </div>
           </section>

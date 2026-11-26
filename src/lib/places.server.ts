@@ -1248,7 +1248,10 @@ export async function generateDirectGeminiItinerary(params: {
 
   const { optimizeItinerary } = await import('@/lib/optimizer');
   const transport =
-    params.transportMode === 'transit' || params.transportMode === 'walking'
+    params.transportMode === 'transit' ||
+    params.transportMode === 'walking' ||
+    params.transportMode === 'scooter' ||
+    params.transportMode === 'tempo'
       ? params.transportMode
       : 'cab';
 

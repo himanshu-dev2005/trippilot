@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { LocateFixed, Navigation, MapPin, LoaderCircle, Plus, Minus, Clock3, IndianRupee, RotateCcw } from 'lucide-react';
+import { LocateFixed, Navigation, MapPin, LoaderCircle, Plus, Minus, Clock3, IndianRupee, RotateCcw, Maximize2, Minimize2 } from 'lucide-react';
 import { haversineKm } from '@/lib/destinations';
 import { Button } from '@/components/ui/button';
 
@@ -13,6 +13,7 @@ export type MapPlace = {
   startTime?: string;
   travelMinutesToNext?: number;
   note?: string;
+  dayNumber?: number;
 };
 
 type Props = {
@@ -21,7 +22,18 @@ type Props = {
   places: MapPlace[];
   selectedPlaceName: string | null;
   onSelectPlace: (name: string) => void;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 };
+
+const DAY_PIN_COLORS = [
+  'bg-[#6C3FE4] text-white',
+  'bg-emerald-600 text-white',
+  'bg-amber-600 text-white',
+  'bg-rose-600 text-white',
+  'bg-sky-600 text-white',
+  'bg-fuchsia-600 text-white',
+];
 
 const TILE_SIZE = 256;
 const MAP_WIDTH = 640;
@@ -44,7 +56,7 @@ function worldToLatLng(x: number, y: number, zoom: number) {
   return { lat, lng };
 }
 
-export function DestinationMap({ city, center, places, selectedPlaceName, onSelectPlace }: Props) {
+export function DestinationMap({ city, center, places, selectedPlaceName, onSelectPlace, expanded, onToggleExpand }: Props) {
   const [zoom, setZoom] = useState(12);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -149,10 +161,6 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
     );
   }, []);
 
-  useEffect(() => {
-    requestUserLocation();
-  }, [requestUserLocation]);
-
   const selectedDistanceKm =
     userLocation && selectedPlace
       ? haversineKm(userLocation.lat, userLocation.lng, selectedPlace.lat, selectedPlace.lng)
@@ -170,15 +178,28 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
             {city} Route Map
           </h3>
         </div>
-        <button
-          type="button"
-          onClick={requestUserLocation}
-          disabled={locating}
-          className="neu-raised-sm inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-primary transition-all active:shadow-inner disabled:opacity-50"
-        >
-          {locating ? <LoaderCircle className="size-3.5 animate-spin" /> : <LocateFixed className="size-3.5 text-primary" />}
-          {userLocation ? 'Update location' : 'My distance'}
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onToggleExpand && (
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              title={expanded ? 'Collapse map' : 'Expand map'}
+              className="neu-raised-sm inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-foreground hover:text-primary"
+            >
+              {expanded ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+              <span>{expanded ? 'Compact' : 'Expand'}</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={requestUserLocation}
+            disabled={locating}
+            className="neu-raised-sm inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-primary transition-all active:shadow-inner disabled:opacity-50"
+          >
+            {locating ? <LoaderCircle className="size-3.5 animate-spin" /> : <LocateFixed className="size-3.5 text-primary" />}
+            {userLocation ? 'Update location' : 'My distance'}
+          </button>
+        </div>
       </div>
 
       {locationError && (
@@ -336,12 +357,14 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
                 isSelected ? 'z-30' : 'z-10 hover:z-30'
               }`}
             >
-              {/* Dot pin — always visible, compact */}
+              {/* Dot pin — color-coded per day */}
               <span
                 className={`flex size-6 items-center justify-center rounded-full border-2 border-white font-mono text-[10px] font-bold shadow-lg transition-all ${
                   isSelected
-                    ? 'bg-accent text-accent-foreground scale-125'
-                    : 'bg-primary text-primary-foreground hover:scale-110'
+                    ? 'bg-zinc-950 text-white scale-125 ring-2 ring-[#6C3FE4]'
+                    : place.dayNumber
+                      ? DAY_PIN_COLORS[(place.dayNumber - 1) % DAY_PIN_COLORS.length]
+                      : 'bg-primary text-primary-foreground hover:scale-110'
                 }`}
               >
                 {index + 1}

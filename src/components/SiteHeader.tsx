@@ -148,7 +148,7 @@ export function SiteHeader() {
             {darkMode ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4" />}
           </button>
 
-          {accountAction}
+          <div className="hidden md:block">{accountAction}</div>
 
           <button
             type="button"

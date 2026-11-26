@@ -14,6 +14,14 @@ import {
   type TransportMode,
 } from '@/lib/optimizer';
 
+export type TripExpense = {
+  id: string;
+  title: string;
+  amount: number;
+  paidBy: string;
+  stopName?: string;
+};
+
 export type TripRecord = {
   _id?: string;
   userId: string;
@@ -22,6 +30,8 @@ export type TripRecord = {
   budget: number;
   numberOfDays: number;
   travelers?: number;
+  memberNames?: string[];
+  expenses?: TripExpense[];
   interests: string[];
   transportMode: TransportMode;
   startPoint?: StartPoint;
@@ -35,7 +45,7 @@ export type TripRecord = {
   updatedAt: string;
 };
 
-const TransportSchema = z.enum(['walking', 'transit', 'cab']).default('cab');
+const TransportSchema = z.enum(['walking', 'transit', 'cab', 'scooter', 'tempo']).default('cab');
 
 const GenerateSchema = z.object({
   destination: z.string().trim().min(2).max(80),
@@ -76,6 +86,8 @@ const SaveTripSchema = z.object({
   budget: z.number().min(0),
   numberOfDays: z.number().int().min(1),
   travelers: z.number().int().min(1).max(20).default(1),
+  memberNames: z.array(z.string()).optional(),
+  expenses: z.array(z.any()).optional(),
   interests: z.array(z.string()),
   transportMode: TransportSchema,
   startPoint: z.any().optional(),
@@ -1274,3 +1286,36 @@ export const searchIndianCitiesServer = createServerFn({ method: 'GET' })
       }
     },
   );
+
+const UpdateExpensesSchema = z.object({
+  tripId: z.string().min(1),
+  memberNames: z.array(z.string().min(1)).max(20),
+  expenses: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string().min(1),
+      amount: z.number().positive(),
+      paidBy: z.string().min(1),
+      stopName: z.string().optional(),
+    }),
+  ),
+});
+
+export const updateTripExpenses = createServerFn({ method: 'POST' })
+  .inputValidator((raw: unknown) => UpdateExpensesSchema.parse(raw))
+  .handler(async ({ data }): Promise<{ ok: boolean }> => {
+    const { getMongoDb } = await import('@/lib/mongodb.server');
+    const { ObjectId } = await import('mongodb');
+    const db = await getMongoDb();
+    await db.collection('trips').updateOne(
+      { _id: new ObjectId(data.tripId) },
+      {
+        $set: {
+          memberNames: data.memberNames,
+          expenses: data.expenses,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    );
+    return { ok: true };
+  });

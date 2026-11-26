@@ -4,6 +4,7 @@ import { Clock3, ExternalLink, LoaderCircle, Navigation, ThumbsDown, ThumbsUp } 
 import { getPublicTripById, voteTripStop, type TripRecord } from '@/lib/trips';
 import { formatTime24 } from '@/lib/optimizer';
 import { DestinationMap } from '@/components/DestinationMap';
+import { GroupExpenseSplitter } from '@/components/GroupExpenseSplitter';
 import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute('/trips/$id')({
@@ -191,13 +192,22 @@ function SharedTripPage() {
           ))}
         </div>
 
-        <aside className="lg:sticky lg:top-24">
+        <aside className="space-y-6 lg:sticky lg:top-24">
           <DestinationMap
             city={trip.destination}
             center={trip.center}
             places={mapPlaces}
             selectedPlaceName={selectedPlaceName}
             onSelectPlace={setSelectedPlaceName}
+          />
+          <GroupExpenseSplitter
+            destination={trip.destination}
+            travelers={trip.travelers ?? 2}
+            plannedBudget={trip.budget}
+            stopNames={trip.itinerary.flatMap((d) => d.stops.map((s) => s.name))}
+            tripId={id}
+            initialMembers={trip.memberNames}
+            initialExpenses={trip.expenses}
           />
         </aside>
       </div>

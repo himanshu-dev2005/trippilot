@@ -12,12 +12,14 @@ export type OpeningHours = {
   close: number;
 };
 
-export type TransportMode = 'walking' | 'transit' | 'cab';
+export type TransportMode = 'walking' | 'transit' | 'cab' | 'scooter' | 'tempo';
 
-export const TRANSPORT_CONFIG: Record<TransportMode, { label: string; speedKmh: number; costPerKm: number }> = {
-  walking: { label: 'Walking', speedKmh: 5, costPerKm: 0 },
-  transit: { label: 'Public Transit', speedKmh: 18, costPerKm: 8 },
-  cab: { label: 'Cab / Auto', speedKmh: 25, costPerKm: 18 },
+export const TRANSPORT_CONFIG: Record<TransportMode, { label: string; speedKmh: number; costPerKm: number; note: string }> = {
+  walking: { label: 'Walking', speedKmh: 5, costPerKm: 0, note: 'Zero fare · best for old quarters' },
+  transit: { label: 'Metro + Auto', speedKmh: 20, costPerKm: 8, note: 'Metro + last-mile auto' },
+  cab: { label: 'Cab / Auto', speedKmh: 25, costPerKm: 18, note: 'Private cab / Uber / Ola' },
+  scooter: { label: 'Scooter Rental', speedKmh: 28, costPerKm: 4, note: '₹450/day rental + fuel' },
+  tempo: { label: 'Shared Tempo', speedKmh: 22, costPerKm: 6, note: 'Shared mountain sumo / tempo' },
 };
 
 export type StartPoint = {
@@ -52,6 +54,8 @@ export type Stop = AttractionCandidate & {
   instagramSearchUrl: string;
   userNote?: string;
   visited?: boolean;
+  locked?: boolean;
+  lateClosureWarning?: string;
   votes?: { up: number; down: number };
 };
 
@@ -1093,4 +1097,197 @@ export function applyGoldenHourMode(params: {
   });
   const totalCost = nextItinerary.reduce((s, d) => s + d.totalCost, 0);
   return { itinerary: nextItinerary, totalCost, remainingBudget: totalBudget - totalCost };
+}
+
+export type AdaptationProfile = 'heatwave' | 'altitude' | 'senior';
+
+/** Shifts unlocked stops by delayMinutes and flags any stop arriving past closing time. */
+export function applyRunningLateRipple(
+  day: ItineraryDay,
+  delayMinutes = 45,
+): ItineraryDay {
+  const shiftedStops = day.stops.map((stop) => {
+    if (stop.locked) return stop;
+    const [hh, mm] = stop.startTime.split(':').map(Number);
+    const baseMins = (hh ?? 9) * 60 + (mm ?? 0) + delayMinutes;
+    const clampedMins = Math.min(22 * 60, baseMins);
+    const nextStart = `${String(Math.floor(clampedMins / 60)).padStart(2, '0')}:${String(clampedMins % 60).padStart(2, '0')}`;
+    const arrivalHour = clampedMins / 60;
+    const closeHour = stop.openingHours?.close ?? 19;
+    const lateClosureWarning =
+      arrivalHour + 0.5 >= closeHour
+        ? `Running late: arrives ~${nextStart}, near/after closing (${formatTime24(closeHour)}). Consider dropping or moving to tomorrow.`
+        : undefined;
+    return {
+      ...stop,
+      startTime: nextStart,
+      ...(lateClosureWarning ? { lateClosureWarning } : {}),
+    };
+  });
+  return { ...day, stops: shiftedStops };
+}
+
+/** Smart adaptation modes: Heatwave, Altitude Acclimatization, or Senior/Stroller-Friendly. */
+export function applyAdaptationProfile(params: {
+  destination: string;
+  currentItinerary: ItineraryDay[];
+  profile: AdaptationProfile;
+  totalBudget: number;
+  transportMode?: TransportMode;
+  startPoint?: StartPoint;
+}): OptimizationResult {
+  const { destination, currentItinerary, profile, totalBudget, transportMode = 'cab', startPoint } = params;
+  const isHighAltitudeDest = /leh|ladakh|spiti|sikkim|gangtok|manali|tawang/i.test(destination);
+
+  const nextItinerary = currentItinerary.map((day) => {
+    let stops = [...day.stops];
+
+    if (profile === 'heatwave') {
+      const outdoor = stops.filter((s) => s.isOutdoor);
+      const indoor = stops.filter((s) => !s.isOutdoor);
+      const ordered: Stop[] = [];
+      if (outdoor[0]) ordered.push(outdoor[0]);
+      ordered.push(...indoor);
+      if (outdoor.length > 1) ordered.push(...outdoor.slice(1));
+      stops = ordered;
+    } else if (profile === 'altitude') {
+      if (day.dayNumber <= 2 && stops.length > 2) {
+        stops = stops.slice(0, 2);
+      }
+      stops = stops.map((s) => ({
+        ...s,
+        note: `${s.note ? `${s.note} ` : ''}${isHighAltitudeDest ? '[Altitude tip: hydrate well, avoid steep exertion on Days 1–2]' : '[Low-exertion acclimatization pace]'}`.trim(),
+      }));
+    } else if (profile === 'senior') {
+      stops = stops
+        .filter((s) => !/\b(trek|climb|hike|peak|summit|rafting|bungee)\b/i.test(`${s.name} ${s.category}`))
+        .map((s) => ({
+          ...s,
+          duration: Math.max(1, s.duration),
+        }));
+    }
+
+    return buildTimedDay(
+      stops,
+      destination,
+      day.dayNumber,
+      day.date,
+      day.hasRainAlert,
+      day.weatherSummary,
+      transportMode,
+      startPoint,
+    );
+  });
+
+  const totalCost = nextItinerary.reduce((s, d) => s + d.totalCost, 0);
+  return { itinerary: nextItinerary, totalCost, remainingBudget: totalBudget - totalCost };
+}
+
+/** Calendar-aware closure and festival intelligence based on dateStr (YYYY-MM-DD). */
+export function getDateAwareAlerts(destination: string, dateStr: string, stopName: string): string[] {
+  const alerts: string[] = [];
+  const dt = new Date(`${dateStr}T00:00:00`);
+  if (!Number.isNaN(dt.getTime())) {
+    const dayOfWeek = dt.getDay(); // 0=Sun, 1=Mon, 5=Fri
+    const month = dt.getMonth() + 1; // 1..12
+    const lowerStop = stopName.toLowerCase();
+    const lowerDest = destination.toLowerCase();
+
+    if (dayOfWeek === 5 && lowerStop.includes('taj mahal')) {
+      alerts.push('Closed Fridays (Taj Mahal weekly closure)');
+    }
+    if (dayOfWeek === 1 && /museum|red fort|qutub|palace|science|planetarium|zoo/.test(lowerStop)) {
+      alerts.push('Many museums & ASI monuments are closed Mondays — verify entry');
+    }
+    if ((month >= 7 && month <= 9) && /trek|pass|valley|falls|waterfall|cave|guchhupani|rohtang|spiti|leh/.test(lowerStop)) {
+      alerts.push('Monsoon alert (Jul–Sep): check trail/water-level advisories');
+    }
+    if (month === 11 && lowerDest.includes('varanasi')) {
+      alerts.push('Dev Deepawali season: expect peak ghat crowds & surge fares');
+    }
+    if (month === 11 && (lowerDest.includes('pushkar') || lowerDest.includes('jaipur'))) {
+      alerts.push('Peak desert/fair season: book stays & cabs early');
+    }
+    if (month === 12 && lowerDest.includes('hornbill')) {
+      alerts.push('Hornbill Festival season: high demand');
+    }
+  }
+  return alerts;
+}
+
+export type BudgetTierOption = {
+  tier: 'Backpacker' | 'Comfort' | 'Luxury';
+  multiplier: number;
+  budget: number;
+  transportLabel: string;
+  stayStyle: string;
+  foodStyle: string;
+};
+
+export function buildBudgetTiers(baseBudget: number, days: number): BudgetTierOption[] {
+  const safeBase = Math.max(1500, baseBudget || days * 2000);
+  return [
+    {
+      tier: 'Backpacker',
+      multiplier: 0.6,
+      budget: Math.round((safeBase * 0.6) / 100) * 100,
+      transportLabel: 'Metro / Shared Tempo / Scooter',
+      stayStyle: 'Hostels & homestays',
+      foodStyle: 'Street stalls & local dhabas',
+    },
+    {
+      tier: 'Comfort',
+      multiplier: 1,
+      budget: Math.round(safeBase / 100) * 100,
+      transportLabel: 'Cab / Auto + Metro',
+      stayStyle: '3-star boutique hotels',
+      foodStyle: 'Popular cafés & regional dining',
+    },
+    {
+      tier: 'Luxury',
+      multiplier: 2,
+      budget: Math.round((safeBase * 2) / 100) * 100,
+      transportLabel: 'Private chauffeur cab',
+      stayStyle: 'Heritage palaces & 5-star resorts',
+      foodStyle: 'Fine dining & curated experiences',
+    },
+  ];
+}
+
+export type HighwayPitstop = {
+  name: string;
+  type: string;
+  detourKm: number;
+  note: string;
+};
+
+export function getHighwayPitstops(destinationQuery: string): HighwayPitstop[] {
+  const q = destinationQuery.toLowerCase();
+  if (q.includes('agra') || (q.includes('delhi') && q.includes('jaipur'))) {
+    return [
+      { name: 'Murthal Amrik Sukhdev / Highway Dhabas', type: 'Food Pitstop', detourKm: 0.5, note: 'Iconic tandoori parathas right on NH-44' },
+      { name: 'Chand Baori Stepwell (Abhaneri)', type: 'Heritage Pitstop', detourKm: 4.5, note: '1,000-year-old geometric stepwell off Agra–Jaipur highway' },
+      { name: 'Fatehpur Sikri', type: 'UNESCO Pitstop', detourKm: 3.0, note: 'Mughal sandstone capital en route to Jaipur' },
+    ];
+  }
+  if (q.includes('dehradun') || q.includes('mussoorie') || q.includes('rishikesh')) {
+    return [
+      { name: 'Cheetal Grand (Khatauli)', type: 'Food Pitstop', detourKm: 0.2, note: 'Classic Delhi–Dehradun highway breakfast & chai stop' },
+      { name: 'Rajaji National Park Safari Gate', type: 'Nature Pitstop', detourKm: 3.8, note: 'Elephant & sal forest reserve between Haridwar and Dehradun' },
+      { name: 'Bhatta Falls / Maggi Point', type: 'Viewpoint Pitstop', detourKm: 1.5, note: 'Hillside chai & valley overlook on Dehradun–Mussoorie road' },
+    ];
+  }
+  if (q.includes('manali') || q.includes('shimla') || q.includes('leh')) {
+    return [
+      { name: 'Pandoh Dam & Beas River Overlook', type: 'Viewpoint Pitstop', detourKm: 0.4, note: 'Turquoise river gorge on Mandi–Kullu highway' },
+      { name: 'Sunder Nagar Lake Promenade', type: 'Rest Pitstop', detourKm: 1.0, note: 'Scenic tea & stretch break before climbing to Kullu' },
+    ];
+  }
+  if (q.includes('goa') || q.includes('mumbai') || q.includes('pune')) {
+    return [
+      { name: 'Amboli Ghat Waterfalls', type: 'Nature Pitstop', detourKm: 1.2, note: 'Misty Western Ghats cliff viewpoints en route to Goa' },
+      { name: 'Lonavala Chikki & Tiger Point', type: 'Viewpoint Pitstop', detourKm: 3.5, note: 'Expressway valley overlook & fudge shops' },
+    ];
+  }
+  return [];
 }

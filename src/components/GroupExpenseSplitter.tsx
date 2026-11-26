@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Plus, Receipt, Trash2, Users, ArrowRight } from 'lucide-react';
-
-type ExpenseEntry = {
-  id: string;
-  title: string;
-  amount: number;
-  paidBy: string;
-};
+import { Plus, Receipt, Trash2, Users, ArrowRight, Smartphone, Check } from 'lucide-react';
+import { updateTripExpenses, type TripExpense } from '@/lib/trips';
 
 type Settlement = {
   from: string;
@@ -14,7 +8,7 @@ type Settlement = {
   amount: number;
 };
 
-function computeSettlements(names: string[], expenses: ExpenseEntry[]): Settlement[] {
+function computeSettlements(names: string[], expenses: TripExpense[]): Settlement[] {
   if (names.length < 2 || expenses.length === 0) return [];
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const share = total / names.length;
@@ -56,39 +50,61 @@ function computeSettlements(names: string[], expenses: ExpenseEntry[]): Settleme
 export function GroupExpenseSplitter({
   destination,
   travelers,
+  plannedBudget = 0,
+  stopNames = [],
+  tripId,
+  initialMembers,
+  initialExpenses,
 }: {
   destination: string;
   travelers: number;
+  plannedBudget?: number;
+  stopNames?: string[];
+  tripId?: string | undefined;
+  initialMembers?: string[] | undefined;
+  initialExpenses?: TripExpense[] | undefined;
 }) {
-  const storageKey = `trippilot:expenses:${destination.trim().toLowerCase()}`;
+  const storageKey = `trippilot:expenses:${tripId || destination.trim().toLowerCase()}`;
 
   const [names, setNames] = useState<string[]>(() =>
-    Array.from({ length: Math.max(2, travelers) }, (_, i) => `Traveler ${i + 1}`),
+    initialMembers?.length
+      ? initialMembers
+      : Array.from({ length: Math.max(2, travelers) }, (_, i) => `Traveler ${i + 1}`),
   );
-  const [expenses, setExpenses] = useState<ExpenseEntry[]>([]);
+  const [expenses, setExpenses] = useState<TripExpense[]>(() => initialExpenses ?? []);
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [paidBy, setPaidBy] = useState('Traveler 1');
+  const [paidBy, setPaidBy] = useState(names[0] ?? 'Traveler 1');
+  const [stopName, setStopName] = useState('');
+  const [editingNames, setEditingNames] = useState(false);
+  const [syncSaved, setSyncSaved] = useState(false);
 
   useEffect(() => {
-    setNames((prev) => {
-      const target = Math.max(2, travelers);
-      if (prev.length === target) return prev;
-      if (prev.length < target) {
-        return [
-          ...prev,
-          ...Array.from({ length: target - prev.length }, (_, i) => `Traveler ${prev.length + i + 1}`),
-        ];
-      }
-      return prev.slice(0, target);
-    });
-  }, [travelers]);
+    if (initialMembers?.length) setNames(initialMembers);
+    else {
+      setNames((prev) => {
+        const target = Math.max(2, travelers);
+        if (prev.length === target) return prev;
+        if (prev.length < target) {
+          return [
+            ...prev,
+            ...Array.from({ length: target - prev.length }, (_, i) => `Traveler ${prev.length + i + 1}`),
+          ];
+        }
+        return prev.slice(0, target);
+      });
+    }
+  }, [travelers, initialMembers]);
 
   useEffect(() => {
+    if (initialExpenses) {
+      setExpenses(initialExpenses);
+      return;
+    }
     try {
       const raw = window.localStorage.getItem(storageKey);
       if (raw) {
-        const parsed = JSON.parse(raw) as ExpenseEntry[];
+        const parsed = JSON.parse(raw) as TripExpense[];
         if (Array.isArray(parsed)) setExpenses(parsed);
       } else {
         setExpenses([]);
@@ -96,14 +112,29 @@ export function GroupExpenseSplitter({
     } catch {
       setExpenses([]);
     }
-  }, [storageKey]);
+  }, [storageKey, initialExpenses]);
 
-  function saveExpenses(next: ExpenseEntry[]) {
-    setExpenses(next);
+  function persist(nextMembers: string[], nextExpenses: TripExpense[]) {
+    setExpenses(nextExpenses);
+    setNames(nextMembers);
     try {
-      window.localStorage.setItem(storageKey, JSON.stringify(next));
+      window.localStorage.setItem(storageKey, JSON.stringify(nextExpenses));
     } catch {
       // ignore storage errors
+    }
+    if (tripId) {
+      void updateTripExpenses({
+        data: {
+          tripId,
+          memberNames: nextMembers,
+          expenses: nextExpenses,
+        },
+      })
+        .then(() => {
+          setSyncSaved(true);
+          setTimeout(() => setSyncSaved(false), 1800);
+        })
+        .catch(() => {});
     }
   }
 
@@ -111,15 +142,17 @@ export function GroupExpenseSplitter({
     e.preventDefault();
     const numeric = Math.round(Number(amount));
     if (!title.trim() || !Number.isFinite(numeric) || numeric <= 0) return;
-    const entry: ExpenseEntry = {
+    const entry: TripExpense = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       title: title.trim(),
       amount: numeric,
       paidBy: names.includes(paidBy) ? paidBy : names[0]!,
+      ...(stopName ? { stopName } : {}),
     };
-    saveExpenses([entry, ...expenses]);
+    persist(names, [entry, ...expenses]);
     setTitle('');
     setAmount('');
+    setStopName('');
   }
 
   const totalSpent = useMemo(() => expenses.reduce((s, e) => s + e.amount, 0), [expenses]);
@@ -127,18 +160,47 @@ export function GroupExpenseSplitter({
   const settlements = useMemo(() => computeSettlements(names, expenses), [names, expenses]);
 
   return (
-    <div className="neu-raised flex flex-col gap-4 rounded-2xl p-6">
-      <div className="flex items-center justify-between gap-2">
+    <div className="neu-raised flex flex-col gap-4 rounded-2xl p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Receipt className="size-4 text-primary" />
-          <h3 className="font-display text-lg font-semibold text-foreground">
-            Group Split-Bill
+          <h3 className="font-display text-base font-semibold text-foreground">
+            Group Split-Bill {tripId ? '· Synced' : ''}
           </h3>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#F3F0FF] px-2.5 py-0.5 text-[11px] font-semibold text-[#6C3FE4] dark:bg-[#1E103C] dark:text-[#a78bfa]">
-          <Users className="size-3" /> {names.length} people
-        </span>
+        <div className="flex items-center gap-2">
+          {syncSaved && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+              <Check className="size-3" /> Saved
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setEditingNames((v) => !v)}
+            className="inline-flex items-center gap-1 rounded-full bg-[#F3F0FF] px-2.5 py-0.5 text-[11px] font-semibold text-[#6C3FE4] dark:bg-[#1E103C] dark:text-[#c4b5fd]"
+          >
+            <Users className="size-3" /> {editingNames ? 'Done' : `${names.length} Members`}
+          </button>
+        </div>
       </div>
+
+      {/* Rename members */}
+      {editingNames && (
+        <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-muted/40 p-2.5">
+          {names.map((n, idx) => (
+            <input
+              key={idx}
+              value={n}
+              onChange={(e) => {
+                const updated = [...names];
+                updated[idx] = e.target.value || `Traveler ${idx + 1}`;
+                persist(updated, expenses);
+              }}
+              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:border-primary focus:outline-none"
+            />
+          ))}
+        </div>
+      )}
 
       {/* Add expense form */}
       <form onSubmit={handleAddExpense} className="grid grid-cols-1 gap-2 sm:grid-cols-12">
@@ -174,57 +236,86 @@ export function GroupExpenseSplitter({
         >
           <Plus className="size-4" />
         </button>
+        {stopNames.length > 0 && (
+          <select
+            value={stopName}
+            onChange={(e) => setStopName(e.target.value)}
+            className="neu-inset h-8 rounded-lg px-2.5 text-[11px] text-muted-foreground sm:col-span-12 focus:outline-none"
+          >
+            <option value="">Link to stop (optional) — Planned vs Actual</option>
+            {stopNames.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        )}
       </form>
 
-      {/* Totals */}
-      <div className="neu-inset-sm flex items-center justify-between rounded-xl px-4 py-2.5 text-xs">
+      {/* Planned vs Actual */}
+      <div className="neu-inset-sm flex flex-wrap items-center justify-between gap-2 rounded-xl px-3.5 py-2.5 text-xs">
         <span>
-          Total: <strong className="font-mono text-foreground">₹{totalSpent.toLocaleString('en-IN')}</strong>
+          Actual: <strong className="font-mono text-foreground">₹{totalSpent.toLocaleString('en-IN')}</strong>
+          {plannedBudget > 0 && (
+            <span className="text-muted-foreground"> / ₹{plannedBudget.toLocaleString('en-IN')} est.</span>
+          )}
         </span>
         <span>
-          Per person: <strong className="font-mono text-primary">₹{perPerson.toLocaleString('en-IN')}</strong>
+          Share: <strong className="font-mono text-primary">₹{perPerson.toLocaleString('en-IN')}/person</strong>
         </span>
       </div>
 
-      {/* Settlements */}
+      {/* Settlements with 1-click UPI link */}
       {settlements.length > 0 && (
         <div className="space-y-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Who Owes Whom
+            Settle Up (Who Owes Whom)
           </span>
-          {settlements.map((s, idx) => (
-            <div
-              key={`${s.from}-${s.to}-${idx}`}
-              className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-xs"
-            >
-              <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-                {s.from} <ArrowRight className="size-3 text-primary" /> {s.to}
-              </span>
-              <span className="font-mono font-bold text-primary">
-                ₹{s.amount.toLocaleString('en-IN')}
-              </span>
-            </div>
-          ))}
+          {settlements.map((s, idx) => {
+            const upiHref = `upi://pay?pn=${encodeURIComponent(s.to)}&am=${s.amount}&cu=INR&tn=${encodeURIComponent(`${destination} TripPilot split`)}`;
+            return (
+              <div
+                key={`${s.from}-${s.to}-${idx}`}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-xs"
+              >
+                <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                  {s.from} <ArrowRight className="size-3 text-primary" /> {s.to}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-primary">
+                    ₹{s.amount.toLocaleString('en-IN')}
+                  </span>
+                  <a
+                    href={upiHref}
+                    className="inline-flex items-center gap-1 rounded-md bg-[#F3F0FF] px-2 py-0.5 text-[10px] font-bold text-[#6C3FE4] hover:bg-[#6C3FE4] hover:text-white dark:bg-[#1E103C] dark:text-[#c4b5fd]"
+                  >
+                    <Smartphone className="size-2.5" /> UPI Pay
+                  </a>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
       {/* Logged items */}
       {expenses.length > 0 && (
-        <ul className="max-h-40 space-y-1.5 overflow-y-auto text-xs">
+        <ul className="max-h-36 space-y-1.5 overflow-y-auto text-xs">
           {expenses.map((exp) => (
             <li
               key={exp.id}
               className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-1.5"
             >
               <span className="truncate text-foreground">
-                <strong>{exp.title}</strong> · paid by {exp.paidBy}
+                <strong>{exp.title}</strong> · {exp.paidBy}
+                {exp.stopName ? ` · @${exp.stopName}` : ''}
               </span>
               <span className="flex shrink-0 items-center gap-2">
                 <span className="font-mono font-semibold">₹{exp.amount.toLocaleString('en-IN')}</span>
                 <button
                   type="button"
                   aria-label={`Remove ${exp.title}`}
-                  onClick={() => saveExpenses(expenses.filter((item) => item.id !== exp.id))}
+                  onClick={() => persist(names, expenses.filter((item) => item.id !== exp.id))}
                   className="text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="size-3.5" />
