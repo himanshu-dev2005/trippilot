@@ -11,9 +11,16 @@ export function BudgetBreakdownChart({ itinerary }: { itinerary: ItineraryDay[] 
   }));
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
-      <h3 className="font-display text-lg font-medium text-card-foreground">Expense Breakdown (₹)</h3>
-      <p className="mt-0.5 text-xs text-muted-foreground">Activity tickets &amp; entry vs. estimated local transit</p>
+    <div className="neu-raised rounded-2xl p-6">
+      <span className="text-xs font-semibold uppercase tracking-wider text-outline">
+        Category Breakdown
+      </span>
+      <h3 className="mt-1 font-display text-lg font-semibold text-card-foreground">
+        Expense Breakdown (₹)
+      </h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Activity tickets &amp; entry vs. estimated local transit
+      </p>
       <div className="mt-4 h-52 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
@@ -22,16 +29,17 @@ export function BudgetBreakdownChart({ itinerary }: { itinerary: ItineraryDay[] 
             <Tooltip
               formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
               contentStyle={{
-                borderRadius: '10px',
+                borderRadius: '12px',
                 fontSize: '12px',
-                border: '1px solid var(--color-border)',
+                border: 'none',
+                boxShadow: '6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6)',
                 background: 'var(--color-popover)',
                 color: 'var(--color-popover-foreground)',
               }}
             />
             <Legend wrapperStyle={{ fontSize: '12px' }} />
-            <Bar dataKey="Activities" stackId="cost" fill="var(--color-chart-1)" radius={[0, 0, 4, 4]} />
-            <Bar dataKey="Transit" stackId="cost" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="Activities" stackId="cost" fill="var(--color-chart-1)" radius={[0, 0, 6, 6]} />
+            <Bar dataKey="Transit" stackId="cost" fill="var(--color-chart-2)" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

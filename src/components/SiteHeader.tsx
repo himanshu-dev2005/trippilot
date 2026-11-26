@@ -1,8 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Menu, X, LogOut, UserRound, Sun, Moon } from "lucide-react";
+import { Menu, X, LogOut, LogIn, UserRound, Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAccount } from "@/components/AuthProvider";
 import { signOutMongo } from "@/lib/auth";
@@ -10,9 +9,9 @@ import { signOutMongo } from "@/lib/auth";
 const THEME_STORAGE_KEY = "trippilot:theme";
 
 const navLinks = [
-  { label: "Plan", to: "/" },
+  { label: "Discover", to: "/" },
   { label: "Explore", to: "/explore" },
-  { label: "Saved Trips", to: "/trips" },
+  { label: "Itineraries", to: "/trips" },
   { label: "Favourites", to: "/favourites" },
   { label: "How It Works", to: "/how-it-works" },
 ] as const;
@@ -22,7 +21,7 @@ export function SiteHeader() {
   const [signingOut, setSigningOut] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [error, setError] = useState("");
-  const { user, loading, setUser } = useAccount();
+  const { user, setUser } = useAccount();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -73,125 +72,115 @@ export function SiteHeader() {
     }
   }
 
-  const accountAction = loading ? (
-    <span className="h-9 w-20 shrink-0" />
-  ) : user ? (
-    <div className="flex shrink-0 items-center gap-1.5">
+  const accountAction = user ? (
+    <div className="flex shrink-0 items-center gap-2">
       <Link
         to="/profile"
         onClick={() => setOpen(false)}
-        className="inline-flex h-9 max-w-[160px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground transition-colors hover:border-primary/60 hover:text-primary"
+        className="neu-raised-sm inline-flex h-10 max-w-[160px] shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-3.5 text-sm font-semibold text-foreground transition-all hover:text-primary"
         title={user.email}
       >
-        <UserRound className="size-3.5 shrink-0 text-primary" />
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <UserRound className="size-3.5" />
+        </span>
         <span className="truncate">{user.name?.trim() || user.email.split("@")[0] || "Profile"}</span>
       </Link>
-      <Button
-        variant="ghost"
-        size="icon"
+      <button
+        type="button"
         aria-label="Sign out"
         title="Sign out"
         disabled={signingOut}
         onClick={() => void signOut()}
-        className="size-9 shrink-0"
+        className="neu-raised-sm inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-all hover:text-destructive active:shadow-inner disabled:opacity-50"
       >
         <LogOut className="size-4" />
-      </Button>
+      </button>
     </div>
   ) : (
-    <Button
-      asChild
-      size="sm"
-      className="h-9 shrink-0 whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+    <Link
+      to="/auth"
+      onClick={() => setOpen(false)}
+      className="neu-btn-primary inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition-all"
     >
-      <Link to="/auth" onClick={() => setOpen(false)}>
-        Sign in
-      </Link>
-    </Button>
+      <LogIn className="size-4" />
+      <span>Sign in</span>
+    </Link>
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-8 px-6">
-        <Link to="/" className="shrink-0 whitespace-nowrap transition-opacity hover:opacity-90" onClick={() => setOpen(false)}>
+    <header className="sticky top-0 z-50 w-full bg-background/85 backdrop-blur-xl shadow-[0_1px_10px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-6 lg:px-12">
+        <Link
+          to="/"
+          className="shrink-0 whitespace-nowrap transition-opacity hover:opacity-90"
+          onClick={() => setOpen(false)}
+        >
           <BrandLogo />
         </Link>
 
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="hidden items-center gap-2 md:flex">
           {navLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               activeProps={{
-                className: "border-b-2 border-primary text-foreground pb-1 font-medium",
+                className:
+                  "bg-primary-container text-white font-semibold rounded-xl px-4 py-2 text-sm shadow-[4px_4px_10px_rgba(99,102,241,0.22),-4px_-4px_10px_var(--neu-shadow-light)]",
               }}
               inactiveProps={{
-                className: "border-b-2 border-transparent text-muted-foreground hover:text-foreground pb-1",
+                className:
+                  "text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/70 px-3.5 py-2 rounded-xl",
               }}
-              className="shrink-0 whitespace-nowrap text-sm transition-colors"
+              className="shrink-0 whitespace-nowrap transition-all"
             >
               {l.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2.5 md:flex">
-          <Button
+        <div className="flex shrink-0 items-center gap-2.5">
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
             aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
             onClick={toggleTheme}
-            className="size-9 shrink-0 rounded-lg text-muted-foreground hover:text-foreground"
+            className="neu-raised-sm inline-flex size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-all hover:text-foreground"
           >
             {darkMode ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4" />}
-          </Button>
-          {accountAction}
-        </div>
+          </button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Toggle menu"
-          aria-expanded={open}
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+          {accountAction}
+
+          <button
+            type="button"
+            className="neu-raised-sm inline-flex size-10 items-center justify-center rounded-xl text-foreground md:hidden"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Toggle menu"
+            aria-expanded={open}
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {open && (
-        <nav className="border-t border-border bg-background px-6 py-4 md:hidden">
-          <div className="flex flex-col gap-3">
+        <nav className="bg-surface-low px-6 py-4 shadow-inner md:hidden">
+          <div className="flex flex-col gap-2">
             {navLinks.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                activeProps={{ className: "text-primary font-medium" }}
-                inactiveProps={{ className: "text-muted-foreground hover:text-foreground" }}
-                className="py-1 text-sm"
+                activeProps={{ className: "bg-primary-container text-white font-semibold rounded-xl px-3.5 py-2.5" }}
+                inactiveProps={{ className: "text-muted-foreground hover:text-foreground rounded-xl px-3.5 py-2.5" }}
+                className="text-sm transition-all"
               >
                 {l.label}
               </Link>
             ))}
-            <div className="flex items-center justify-between border-t border-border pt-3">
-              {accountAction}
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Toggle theme"
-                onClick={toggleTheme}
-                className="size-9"
-              >
-                {darkMode ? <Sun className="size-4 text-amber-400" /> : <Moon className="size-4" />}
-              </Button>
-            </div>
           </div>
         </nav>
       )}
+
       {error && (
         <p role="alert" className="px-6 pb-2 text-sm text-destructive">
           {error}

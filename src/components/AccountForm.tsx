@@ -103,12 +103,13 @@ export function AccountForm({ mode }: { mode: Mode }) {
   const accountMode = mode === 'signin' || mode === 'signup';
   return (
     <main className="mx-auto w-full max-w-md px-6 py-12 sm:py-16">
-      <div className="mb-7 flex items-center gap-2 text-primary">
-        <Compass className="size-5" />
-        <span className="font-mono text-xs uppercase">TripPilot · Your account</span>
-      </div>
-      <h1 className="font-display text-4xl leading-tight text-foreground">{titles[mode]}</h1>
-      <p className="mt-3 text-muted-foreground">{descriptions[mode]}</p>
+      <div className="neu-raised rounded-3xl p-8">
+        <div className="mb-6 flex items-center gap-2 text-primary">
+          <Compass className="size-5" />
+          <span className="font-mono text-xs font-semibold uppercase tracking-wider">TripPilot · Your account</span>
+        </div>
+        <h1 className="font-display text-3xl font-bold leading-tight text-foreground">{titles[mode]}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{descriptions[mode]}</p>
 
       {success ? (
         <div className="mt-8 space-y-5" role="status">
@@ -263,6 +264,7 @@ export function AccountForm({ mode }: { mode: Mode }) {
           {mode === 'reset' ? 'Request a new reset link' : 'Back to sign in'}
         </Link>
       )}
+      </div>
     </main>
   );
 }

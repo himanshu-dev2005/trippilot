@@ -14,20 +14,20 @@ const POPULAR_CITIES = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-card/50">
-      <div className="mx-auto max-w-6xl px-6 py-14">
+    <footer className="mt-16 w-full bg-surface-low py-12">
+      <div className="mx-auto max-w-7xl px-6 lg:px-12">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link to="/" className="inline-block">
               <BrandLogo />
             </Link>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Day-by-day Indian itineraries built around real neighborhood clustering, opening hours, transparent budgets, and live weather forecasts.
+              AI-powered journey architect crafting personalized day-by-day itineraries tailored to your exact destination, budget, and pace.
             </p>
           </div>
 
           <div>
-            <h3 className="text-xs font-medium text-foreground">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
               Popular destinations
             </h3>
             <ul className="mt-3.5 grid grid-cols-2 gap-x-4 gap-y-2">
@@ -46,23 +46,23 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="text-xs font-medium text-foreground">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
               Navigation
             </h3>
             <ul className="mt-3.5 space-y-2">
               <li>
                 <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                  Trip Planner
+                  Discover &amp; AI Planner
                 </Link>
               </li>
               <li>
                 <Link to="/explore" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                  Explore India
+                  Explore Destinations
                 </Link>
               </li>
               <li>
                 <Link to="/trips" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                  Saved Trips
+                  Itineraries
                 </Link>
               </li>
               <li>
@@ -79,9 +79,9 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row">
-          <p>© 2026 TripPilot · India Travel Planner</p>
-          <p>Always verify seasonal opening hours and monument holidays before visiting.</p>
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 pt-6 text-xs text-muted-foreground sm:flex-row">
+          <p>© 2026 TripPilot. All rights reserved.</p>
+          <p>Verify seasonal opening hours and local advisories before visiting.</p>
         </div>
       </div>
     </footer>

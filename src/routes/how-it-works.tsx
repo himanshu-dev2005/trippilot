@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowRight, CloudRain, Database, MapPin, Route as RouteIcon, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 const STAGES = [
   {
@@ -47,14 +46,14 @@ export const Route = createFileRoute('/how-it-works')({
 
 function HowItWorksPage() {
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12 sm:py-16">
-      <div className="border-b border-border pb-8">
-        <p className="text-xs font-medium text-primary">Planning Architecture</p>
-        <h1 className="mt-2 font-display text-4xl font-medium tracking-tight sm:text-5xl">
+    <main className="mx-auto max-w-7xl px-6 py-12 lg:px-12">
+      <div className="neu-raised rounded-3xl p-8">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Planning Architecture</p>
+        <h1 className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-5xl">
           How TripPilot builds your route
         </h1>
         <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-          Every itinerary combines verified Indian coordinates, multi-stage route optimization, live weather forecasts, and interactive editing.
+          Every itinerary sends your exact destination, days, budget, and travel style directly to Gemini AI, paired with live weather forecasts and interactive maps.
         </p>
       </div>
 
@@ -62,12 +61,12 @@ function HowItWorksPage() {
         {STAGES.map((stage) => {
           const Icon = stage.icon;
           return (
-            <article key={stage.title} className="rounded-xl border border-border bg-card p-6">
+            <article key={stage.title} className="neu-raised rounded-2xl p-6">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-primary">{stage.index}</span>
-                <Icon className="size-5 text-muted-foreground" />
+                <span className="font-mono text-xs font-semibold text-primary">{stage.index}</span>
+                <Icon className="size-5 text-primary" />
               </div>
-              <h2 className="mt-3 font-display text-xl font-medium text-foreground">
+              <h2 className="mt-3 font-display text-xl font-semibold text-foreground">
                 {stage.title}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -79,12 +78,13 @@ function HowItWorksPage() {
       </div>
 
       <div className="mt-12 flex justify-center">
-        <Button asChild size="lg" className="gap-2 rounded-xl">
-          <Link to="/">
-            Start planning a trip
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
+        <Link
+          to="/"
+          className="neu-btn-primary inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold"
+        >
+          Start planning a trip
+          <ArrowRight className="size-4" />
+        </Link>
       </div>
     </main>
   );

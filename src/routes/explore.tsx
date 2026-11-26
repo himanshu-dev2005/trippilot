@@ -50,32 +50,32 @@ function ExplorePage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-12 sm:py-16">
-      <div className="border-b border-border pb-8">
-        <p className="text-xs font-medium text-primary">India Destination Atlas</p>
+    <main className="mx-auto max-w-7xl px-6 py-10 lg:px-12">
+      <div className="neu-raised rounded-3xl p-8">
+        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Destination Atlas</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-4xl font-medium tracking-tight text-foreground sm:text-5xl">
-              Explore India
+            <h1 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Explore Destinations
             </h1>
             <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-              Browse curated regional circuits or filter by any Indian city name to jump straight into an optimized day-by-day plan.
+              Browse curated regional circuits or filter by any city name to generate a custom itinerary directly with Gemini AI.
             </p>
           </div>
-          <p className="text-xs text-muted-foreground tabular-nums">
+          <p className="text-xs font-medium text-muted-foreground tabular-nums">
             {FEATURED_CIRCUITS.length} curated circuits · 140+ Indian cities indexed
           </p>
         </div>
 
         <div className="mt-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative w-full max-w-md">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="neu-inset relative flex w-full max-w-md items-center rounded-xl">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-outline" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter cities by starting letters (e.g. New, Jai, Man)..."
-              className="h-10 w-full rounded-xl border border-border bg-card pl-10 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+              placeholder="Filter cities (e.g. New, Jai, Man)..."
+              className="h-11 w-full bg-transparent pl-10 pr-9 text-sm text-foreground placeholder:text-outline focus:outline-none"
             />
             {searchQuery && (
               <button
@@ -89,7 +89,7 @@ function ExplorePage() {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-1 rounded-xl bg-muted p-1">
+          <div className="flex flex-wrap items-center gap-2">
             {REGION_TABS.map((tab) => {
               const active = regionFilter === tab;
               return (
@@ -97,11 +97,10 @@ function ExplorePage() {
                   key={tab}
                   type="button"
                   onClick={() => setRegionFilter(tab)}
-                  className={`h-8 whitespace-nowrap rounded-lg px-3 text-xs font-medium transition-colors ${
-                    active
-                      ? 'bg-card text-foreground shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`h-9 whitespace-nowrap rounded-xl px-4 text-xs font-semibold transition-all ${active
+                      ? 'neu-btn-primary'
+                      : 'neu-raised-sm text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   {tab}
                 </button>
@@ -119,9 +118,9 @@ function ExplorePage() {
                 key={c.city}
                 type="button"
                 onClick={() => openCircuitInPlanner(c.city, c.days, c.budget)}
-                className="group overflow-hidden rounded-xl border border-border bg-card text-left transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                className="neu-raised group overflow-hidden rounded-2xl p-4 text-left transition-transform duration-200 hover:-translate-y-1"
               >
-                <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
+                <div className="neu-inset aspect-[4/3] w-full overflow-hidden rounded-xl">
                   <img
                     src={c.image}
                     alt={c.title}
@@ -130,21 +129,21 @@ function ExplorePage() {
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 </div>
-                <div className="p-5">
+                <div className="pt-4">
                   <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground tabular-nums">
                     <span>
                       {c.region} · {c.days} days · ₹{c.budget.toLocaleString('en-IN')}
                     </span>
-                    <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                    <span className="inline-flex items-center gap-1 font-semibold text-foreground">
                       <Star className="size-3 fill-amber-500 text-amber-500" />
                       {c.rating}
                     </span>
                   </div>
-                  <h2 className="mt-2 font-display text-2xl font-medium text-foreground transition-colors group-hover:text-primary">
+                  <h2 className="mt-2 font-display text-xl font-semibold text-foreground transition-colors group-hover:text-primary">
                     {c.title}
                   </h2>
                   <p className="mt-1 text-sm text-muted-foreground">{c.subtitle}</p>
-                  <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                  <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
                     Plan {c.days}-day itinerary
                     <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                   </p>

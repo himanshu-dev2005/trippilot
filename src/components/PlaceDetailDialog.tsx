@@ -81,7 +81,7 @@ export function PlaceDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+      <DialogContent className="neu-raised-lg max-h-[90vh] max-w-xl overflow-y-auto rounded-2xl border-none">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2 pr-6 text-xs text-muted-foreground">
             <span className="font-mono font-medium tabular-nums text-primary">{stop.startTime}</span>

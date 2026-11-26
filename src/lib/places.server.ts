@@ -884,6 +884,336 @@ out ${Math.min(35, (params.limit ?? 18) * 2)};`;
   return { center, attractions, source: 'openstreetmap' };
 }
 
+export type GeminiItineraryStop = {
+  attractionId?: string;
+  name: string;
+  startTime?: string;
+  duration?: number;
+  category?: string;
+  isOutdoor?: boolean;
+  rating?: number;
+  cost?: number;
+  coordinates: Coordinates;
+  openingHours?: { open: number; close: number };
+  note?: string;
+  location?: string;
+};
+
+export type GeminiItineraryDay = {
+  dayNumber: number;
+  title?: string;
+  summary?: string;
+  stops: GeminiItineraryStop[];
+};
+
+export type DirectAiItineraryResult = {
+  destination: string;
+  center: Coordinates;
+  aiResponseText: string;
+  budgetSummary?: string;
+  days: GeminiItineraryDay[];
+  extraCandidates: AttractionCandidate[];
+  modelName: string;
+};
+
+function buildDirectItineraryPrompt(params: {
+  destination: string;
+  numberOfDays: number;
+  budget: number;
+  travelers: number;
+  interests: string[];
+  transportMode: string;
+  startDate?: string;
+  startPointQuery?: string;
+}): string {
+  return `You are TripPilot's expert AI travel planner. Create a real, authentic, non-random ${params.numberOfDays}-day itinerary tailored specifically to the user's request below.
+
+USER INPUT:
+- Destination: ${params.destination}
+- Duration: ${params.numberOfDays} day(s)
+- Budget per person: ₹${params.budget.toLocaleString('en-IN')} INR (or equivalent if international)
+- Travelers: ${params.travelers}
+- Travel Style / Interests: ${params.interests.length > 0 ? params.interests.join(', ') : 'Balanced sightseeing, local culture, and food'}
+- Preferred Local Transport: ${params.transportMode}
+${params.startDate ? `- Start Date: ${params.startDate}` : ''}
+${params.startPointQuery ? `- Starting Hotel / Landmark: ${params.startPointQuery}` : ''}
+
+REQUIREMENTS:
+1. Every stop MUST be a real, specific place in or near ${params.destination} with accurate WGS84 coordinates (lat, lng).
+2. Respect the ${params.numberOfDays}-day duration (return exactly ${params.numberOfDays} day objects) and stay realistic for the ₹${params.budget.toLocaleString('en-IN')} per-person activity/entry budget.
+3. Include 3 to 4 stops per day (Morning, Afternoon, Evening) ordered logically by geography.
+4. Provide "aiResponseText": a direct, helpful, well-formatted response written straight to the traveler summarizing their ${params.numberOfDays}-day ${params.destination} trip, daily highlights, local dining picks, and practical budget tips for ₹${params.budget.toLocaleString('en-IN')}.
+5. Also include 4-6 "extraCandidates" (including indoor options) so the user can swap or add spots if desired.
+
+Return ONLY valid JSON matching this exact schema:
+{
+  "destination": "${params.destination}",
+  "center": { "lat": 0.0, "lng": 0.0 },
+  "aiResponseText": "Direct personalized Gemini AI response to the traveler...",
+  "budgetSummary": "1-2 sentence summary of how this itinerary fits ₹${params.budget.toLocaleString('en-IN')} per person",
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Short Day Theme",
+      "summary": "1 sentence overview of Day 1",
+      "stops": [
+        {
+          "attractionId": "slug-id",
+          "name": "Exact Real Place Name",
+          "startTime": "09:00",
+          "duration": 2,
+          "category": "History | Nature | Food | Culture | Museum | Shopping | Adventure | Sightseeing",
+          "isOutdoor": true,
+          "rating": 4.6,
+          "cost": 200,
+          "coordinates": { "lat": 0.0, "lng": 0.0 },
+          "openingHours": { "open": 9, "close": 18 },
+          "location": "Neighborhood / Ward",
+          "note": "Concise 1-2 sentence local tip tailored to the user's interests"
+        }
+      ]
+    }
+  ],
+  "extraCandidates": [
+    {
+      "attractionId": "extra-1",
+      "name": "Real Nearby Place",
+      "coordinates": { "lat": 0.0, "lng": 0.0 },
+      "category": "Museum",
+      "isOutdoor": false,
+      "rating": 4.5,
+      "duration": 1.5,
+      "cost": 150,
+      "openingHours": { "open": 10, "close": 18 },
+      "note": "Great indoor alternative or bonus stop"
+    }
+  ]
+}`;
+}
+
+function parseDirectAiItinerary(
+  rawText: string,
+  fallbackDestination: string,
+): Omit<DirectAiItineraryResult, 'modelName'> | null {
+  try {
+    const cleaned = rawText
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```\s*$/i, '')
+      .trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleaned) as {
+      destination?: string;
+      center?: Coordinates;
+      aiResponseText?: string;
+      budgetSummary?: string;
+      days?: GeminiItineraryDay[];
+      extraCandidates?: AttractionCandidate[];
+    };
+
+    const validDays = (parsed.days ?? [])
+      .map((d, idx) => ({
+        dayNumber: Number(d.dayNumber) || idx + 1,
+        ...(d.title ? { title: d.title } : {}),
+        ...(d.summary ? { summary: d.summary } : {}),
+        stops: (d.stops ?? []).filter(
+          (s) =>
+            Boolean(s?.name) &&
+            Boolean(s?.coordinates) &&
+            Number.isFinite(s.coordinates.lat) &&
+            Number.isFinite(s.coordinates.lng),
+        ),
+      }))
+      .filter((d) => d.stops.length > 0);
+
+    if (validDays.length === 0) return null;
+
+    const firstStopCoord = validDays[0]?.stops[0]?.coordinates;
+    const center =
+      parsed.center && Number.isFinite(parsed.center.lat) && Number.isFinite(parsed.center.lng)
+        ? parsed.center
+        : firstStopCoord ?? { lat: 28.6139, lng: 77.209 };
+
+    const extraCandidates = (parsed.extraCandidates ?? []).filter(
+      (c) =>
+        Boolean(c?.name) &&
+        Boolean(c?.coordinates) &&
+        Number.isFinite(c.coordinates.lat) &&
+        Number.isFinite(c.coordinates.lng),
+    );
+
+    return {
+      destination: parsed.destination?.trim() || fallbackDestination,
+      center,
+      aiResponseText:
+        parsed.aiResponseText?.trim() ||
+        `Here is your ${validDays.length}-day itinerary for ${fallbackDestination}.`,
+      ...(parsed.budgetSummary ? { budgetSummary: parsed.budgetSummary } : {}),
+      days: validDays,
+      extraCandidates,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateDirectGeminiItinerary(params: {
+  destination: string;
+  numberOfDays: number;
+  budget: number;
+  travelers: number;
+  interests: string[];
+  transportMode: string;
+  startDate?: string;
+  startPointQuery?: string;
+  geminiApiKey?: string;
+}): Promise<DirectAiItineraryResult> {
+  const geminiKey =
+    params.geminiApiKey?.trim() || process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'];
+  const lovableKey = process.env['LOVABLE_API_KEY'];
+  const groqKey = process.env['GROQ_API_KEY'];
+  const openrouterKey = process.env['OPENROUTER_API_KEY'];
+  const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+
+  if (!geminiKey && !lovableKey && !openrouterKey && !groqKey) {
+    throw new Error(
+      'MISSING_GEMINI_KEY: No Gemini API key is configured. Add GEMINI_API_KEY to your .env file (or paste a Gemini API key below) to generate your itinerary directly with Gemini AI.',
+    );
+  }
+
+  const prompt = buildDirectItineraryPrompt(params);
+  let lastError = 'Gemini AI did not return a valid itinerary response.';
+
+  if (geminiKey) {
+    const geminiModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    for (const model of geminiModels) {
+      try {
+        const gemRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.35,
+                responseMimeType: 'application/json',
+              },
+            }),
+            signal: AbortSignal.timeout(25000),
+          },
+        );
+
+        if (!gemRes.ok) {
+          const errBody = (await gemRes.json().catch(() => ({}))) as {
+            error?: { message?: string };
+          };
+          lastError = errBody.error?.message || `Gemini API returned ${gemRes.status}`;
+          continue;
+        }
+
+        const gemJson = (await gemRes.json()) as {
+          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        };
+        const rawText = gemJson.candidates?.[0]?.content?.parts?.[0]?.text;
+        const parsed = rawText ? parseDirectAiItinerary(rawText, params.destination) : null;
+        if (parsed) {
+          if (googleKey) {
+            const allStops = parsed.days.flatMap((d) => d.stops as AttractionCandidate[]);
+            const enriched = await enrichWithGooglePhotos(allStops, parsed.destination, googleKey);
+            let cursor = 0;
+            for (const day of parsed.days) {
+              day.stops = enriched.slice(cursor, cursor + day.stops.length);
+              cursor += day.stops.length;
+            }
+          }
+          return {
+            ...parsed,
+            modelName: model === 'gemini-2.5-flash' ? 'Gemini 2.5 Flash' : 'Gemini 2.0 Flash',
+          };
+        }
+        lastError = 'Gemini returned an unexpected format. Please try again.';
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : 'Gemini request timed out.';
+      }
+    }
+  }
+
+  const openAiProviders = [
+    lovableKey
+      ? {
+          url: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+          key: lovableKey,
+          model: 'google/gemini-2.5-flash',
+          label: 'Gemini 2.5 Flash (Lovable AI)',
+        }
+      : null,
+    openrouterKey
+      ? {
+          url: 'https://openrouter.ai/api/v1/chat/completions',
+          key: openrouterKey,
+          model: 'google/gemini-2.0-flash-exp:free',
+          label: 'Gemini 2.0 Flash (OpenRouter)',
+        }
+      : null,
+    groqKey
+      ? {
+          url: 'https://api.groq.com/openai/v1/chat/completions',
+          key: groqKey,
+          model: 'llama-3.3-70b-versatile',
+          label: 'Llama 3.3 70B',
+        }
+      : null,
+  ].filter((p): p is { url: string; key: string; model: string; label: string } => Boolean(p));
+
+  for (const provider of openAiProviders) {
+    try {
+      const aiRes = await fetch(provider.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${provider.key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          temperature: 0.35,
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are TripPilot AI travel planner. Return accurate WGS84 coordinates, realistic INR costs, opening hours, and a personalized itinerary in strict JSON.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        }),
+        signal: AbortSignal.timeout(25000),
+      });
+
+      if (!aiRes.ok) {
+        lastError = `${provider.label} returned ${aiRes.status}`;
+        continue;
+      }
+
+      const payload = (await aiRes.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const rawText = payload.choices?.[0]?.message?.content;
+      const parsed = rawText ? parseDirectAiItinerary(rawText, params.destination) : null;
+      if (parsed) {
+        return {
+          ...parsed,
+          modelName: provider.label,
+        };
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : 'AI request failed.';
+    }
+  }
+
+  throw new Error(lastError);
+}
+
 export async function resolveStartPoint(
   hotelOrStart: string,
   destination: string,

@@ -77,28 +77,28 @@ function FavouritesPage() {
       : localFavs.map((f) => ({ ...f, category: 'Saved Place', lat: 0, lng: 0, createdAt: '' }));
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <p className="font-mono text-xs uppercase text-primary">Wishlist</p>
-      <h1 className="mt-2 font-display text-4xl">Saved Places</h1>
+    <main className="mx-auto max-w-7xl px-6 py-10 lg:px-12">
+      <p className="font-mono text-xs font-semibold uppercase tracking-wider text-primary">Wishlist</p>
+      <h1 className="mt-2 font-display text-3xl font-bold lg:text-4xl">Saved Places</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {user
-          ? 'Synced with your MongoDB account.'
+          ? 'Synced with your account.'
           : 'Saved locally in this browser. Sign in to sync favourites across devices.'}
       </p>
 
       {combined.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-border bg-card p-10 text-center">
+        <div className="neu-raised mt-8 rounded-2xl p-10 text-center">
           <Heart className="mx-auto size-8 text-muted-foreground" />
           <p className="mt-3 text-sm text-muted-foreground">
             No favourite places yet. Click the heart icon on any stop in your itinerary to save it here.
           </p>
         </div>
       ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {combined.map((fav) => (
             <article
               key={`${fav.destination}::${fav.name}`}
-              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5"
+              className="neu-raised flex flex-col justify-between rounded-2xl p-6"
             >
               <div>
                 <p className="font-mono text-xs uppercase text-primary">{fav.destination}</p>

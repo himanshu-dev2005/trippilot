@@ -223,7 +223,7 @@ export function CityAutocomplete({
           id={listboxId}
           role="listbox"
           aria-label="City suggestions"
-          className="absolute left-0 right-0 top-[calc(100%+10px)] z-50 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl"
+          className="neu-raised-lg absolute left-0 right-0 top-[calc(100%+10px)] z-50 overflow-hidden rounded-2xl bg-popover text-popover-foreground"
         >
           <div className="flex items-center justify-between border-b border-border/70 px-3.5 py-2 text-xs text-muted-foreground">
             <span>

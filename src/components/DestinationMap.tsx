@@ -159,23 +159,26 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
       : null;
 
   return (
-    <div className="space-y-3">
+    <div className="neu-raised space-y-4 rounded-2xl p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <MapPin className="size-4 text-primary" />
-          <h3 className="font-display text-xl">{city} Route Map</h3>
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-outline">
+            Route Overview
+          </span>
+          <h3 className="mt-0.5 flex items-center gap-2 font-display text-lg font-semibold text-foreground">
+            <MapPin className="size-4 text-primary" />
+            {city} Route Map
+          </h3>
         </div>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           onClick={requestUserLocation}
           disabled={locating}
-          className="gap-1.5"
+          className="neu-raised-sm inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-primary transition-all active:shadow-inner disabled:opacity-50"
         >
           {locating ? <LoaderCircle className="size-3.5 animate-spin" /> : <LocateFixed className="size-3.5 text-primary" />}
-          {userLocation ? 'Update location' : 'My location & distance'}
-        </Button>
+          {userLocation ? 'Update location' : 'My distance'}
+        </button>
       </div>
 
       {locationError && (
@@ -277,7 +280,7 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
           dragRef.current = null;
           pinchDistRef.current = null;
         }}
-        className="relative h-80 w-full cursor-grab overflow-hidden rounded-lg border border-border bg-muted select-none touch-none active:cursor-grabbing"
+        className="neu-inset relative h-64 w-full cursor-grab overflow-hidden rounded-xl select-none touch-none active:cursor-grabbing"
       >
         {tiles.map((tile) => (
           <img
@@ -419,44 +422,43 @@ export function DestinationMap({ city, center, places, selectedPlaceName, onSele
       </div>
 
       {selectedPlace && (
-        <div className="rounded-lg border border-border bg-card p-3.5 text-sm">
+        <div className="neu-inset-sm rounded-xl p-4 text-sm">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-medium text-card-foreground">{selectedPlace.name}</p>
+              <p className="font-semibold text-card-foreground">{selectedPlace.name}</p>
               <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <span>{selectedPlace.type}</span>
                 <span className="flex items-center gap-1">
-                  <Clock3 className="size-3" />~{selectedPlace.hours}h
+                  <Clock3 className="size-3 text-primary" />~{selectedPlace.hours}h
                 </span>
                 {selectedPlace.cost !== undefined && (
                   <span className="flex items-center gap-0.5">
-                    <IndianRupee className="size-3" />
+                    <IndianRupee className="size-3 text-primary" />
                     {selectedPlace.cost}
                   </span>
                 )}
               </div>
             </div>
-            <Button asChild variant="outline" size="sm" className="h-8 gap-1 text-xs">
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedPlace.lat},${selectedPlace.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Navigation className="size-3" />
-                Directions
-              </a>
-            </Button>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${selectedPlace.lat},${selectedPlace.lng}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="neu-raised-sm inline-flex h-8 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-primary transition-all"
+            >
+              <Navigation className="size-3" />
+              Directions
+            </a>
           </div>
-          <div className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground">
+          <div className="mt-2.5 pt-2 text-xs text-muted-foreground">
             {selectedDistanceKm !== null ? (
-              <span className="font-medium text-primary">
+              <span className="font-semibold text-primary">
                 {selectedDistanceKm < 1
                   ? `${Math.round(selectedDistanceKm * 1000)} m`
                   : `${selectedDistanceKm.toFixed(1)} km`}{' '}
                 from your current location
               </span>
             ) : (
-              <span>Click “My location &amp; distance” to see how far this stop is from you.</span>
+              <span>Click “My distance” to see how far this stop is from you.</span>
             )}
           </div>
         </div>

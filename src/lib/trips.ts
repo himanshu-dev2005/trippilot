@@ -2,14 +2,15 @@ import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 import {
   applyWeatherAdjustment,
-  optimizeItinerary,
+  buildInstagramSearchUrl,
+  estimateTravel,
   regenerateSingleDay,
   replanForBudget,
-  resolveCitySpelling,
   type AttractionCandidate,
   type Coordinates,
   type ItineraryDay,
   type StartPoint,
+  type Stop,
   type TransportMode,
 } from '@/lib/optimizer';
 
@@ -27,6 +28,9 @@ export type TripRecord = {
   itinerary: ItineraryDay[];
   candidates: AttractionCandidate[];
   weatherConfigured: boolean;
+  aiResponseText?: string;
+  budgetSummary?: string;
+  modelName?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,12 +39,14 @@ const TransportSchema = z.enum(['walking', 'transit', 'cab']).default('cab');
 
 const GenerateSchema = z.object({
   destination: z.string().trim().min(2).max(80),
-  numberOfDays: z.number().int().min(1).max(10),
-  budget: z.number().min(0).max(500000),
+  numberOfDays: z.number().int().min(1).max(14),
+  budget: z.number().min(0).max(5000000),
+  travelers: z.number().int().min(1).max(20).default(1),
   interests: z.array(z.string()).default([]),
   startDate: z.string().optional(),
   transportMode: TransportSchema,
   startPointQuery: z.string().optional(),
+  geminiApiKey: z.string().optional(),
 });
 
 const RegenerateDaySchema = z.object({
@@ -75,54 +81,143 @@ const SaveTripSchema = z.object({
   itinerary: z.array(z.any()),
   candidates: z.array(z.any()),
   weatherConfigured: z.boolean().default(false),
+  aiResponseText: z.string().optional(),
+  budgetSummary: z.string().optional(),
+  modelName: z.string().optional(),
 });
+
+function formatDayIsoDate(startDate: string | undefined, dayOffset: number): string {
+  const base = startDate ? new Date(`${startDate}T00:00:00`) : new Date();
+  const safeBase = Number.isNaN(base.getTime()) ? new Date() : base;
+  const dt = new Date(safeBase);
+  dt.setDate(dt.getDate() + dayOffset);
+  return dt.toISOString().slice(0, 10);
+}
 
 export const generateOptimizedTrip = createServerFn({ method: 'POST' })
   .inputValidator((raw: unknown) => GenerateSchema.parse(raw))
   .handler(async ({ data }) => {
-    const { discoverAttractions, resolveStartPoint } = await import('@/lib/places.server');
+    const { generateDirectGeminiItinerary, resolveStartPoint } = await import('@/lib/places.server');
     const { getDestinationWeather } = await import('@/lib/weather.server');
 
-    const { city: resolvedDestination, correctedFrom } = resolveCitySpelling(data.destination);
-
-    const [{ center, attractions, source }, startPoint] = await Promise.all([
-      discoverAttractions({
-        destination: resolvedDestination,
+    const [aiResult, startPoint] = await Promise.all([
+      generateDirectGeminiItinerary({
+        destination: data.destination,
+        numberOfDays: data.numberOfDays,
+        budget: data.budget,
+        travelers: data.travelers,
         interests: data.interests,
-        limit: Math.max(12, data.numberOfDays * 5),
+        transportMode: data.transportMode,
+        ...(data.startDate ? { startDate: data.startDate } : {}),
+        ...(data.startPointQuery ? { startPointQuery: data.startPointQuery } : {}),
+        ...(data.geminiApiKey ? { geminiApiKey: data.geminiApiKey } : {}),
       }),
       data.startPointQuery
-        ? resolveStartPoint(data.startPointQuery, resolvedDestination)
+        ? resolveStartPoint(data.startPointQuery, data.destination)
         : Promise.resolve(undefined),
     ]);
 
     const weather = await getDestinationWeather({
-      coordinates: center,
+      coordinates: aiResult.center,
       numberOfDays: data.numberOfDays,
       ...(data.startDate ? { startDate: data.startDate } : {}),
     });
 
-    const optimized = optimizeItinerary({
-      destination: resolvedDestination,
-      attractions,
-      numberOfDays: data.numberOfDays,
-      budget: data.budget,
-      transportMode: data.transportMode,
-      ...(startPoint ? { startPoint } : {}),
-      ...(data.startDate ? { startDate: data.startDate } : {}),
-      dailyWeather: weather.days,
+    const dayThemes: Record<number, { title?: string; summary?: string }> = {};
+    const allCandidates: AttractionCandidate[] = [...aiResult.extraCandidates];
+
+    const itinerary: ItineraryDay[] = aiResult.days.map((aiDay, dayIdx) => {
+      const dayNumber = aiDay.dayNumber || dayIdx + 1;
+      dayThemes[dayNumber] = {
+        ...(aiDay.title ? { title: aiDay.title } : {}),
+        ...(aiDay.summary ? { summary: aiDay.summary } : {}),
+      };
+
+      const weatherDay = weather.days[dayIdx];
+      const hasRainAlert = weatherDay?.hasRain ?? false;
+
+      const stops: Stop[] = aiDay.stops.map((rawStop, stopIdx) => {
+        const nextStop = aiDay.stops[stopIdx + 1];
+        const travelToNext = nextStop
+          ? estimateTravel(rawStop.coordinates, nextStop.coordinates, data.transportMode)
+          : null;
+
+        const stopObj: Stop = {
+          attractionId:
+            rawStop.attractionId ||
+            `gem-${dayNumber}-${stopIdx + 1}-${rawStop.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24)}`,
+          name: rawStop.name,
+          coordinates: rawStop.coordinates,
+          category: rawStop.category || 'Sightseeing',
+          isOutdoor: rawStop.isOutdoor ?? true,
+          rating: Number(rawStop.rating) || 4.5,
+          duration: Number(rawStop.duration) || 2,
+          cost: Math.max(0, Math.round(Number(rawStop.cost) || 0)),
+          openingHours: rawStop.openingHours ?? { open: 9, close: 19 },
+          ...(rawStop.note ? { note: rawStop.note } : {}),
+          ...(rawStop.location ? { userNote: rawStop.location } : {}),
+          startTime: rawStop.startTime || `${String(9 + stopIdx * 3).padStart(2, '0')}:00`,
+          travelToNext,
+          weatherStatus: hasRainAlert && (rawStop.isOutdoor ?? true) ? 'rain' : 'clear',
+          instagramSearchUrl: buildInstagramSearchUrl(rawStop.name, aiResult.destination),
+        };
+
+        allCandidates.push({
+          attractionId: stopObj.attractionId,
+          name: stopObj.name,
+          coordinates: stopObj.coordinates,
+          category: stopObj.category,
+          isOutdoor: stopObj.isOutdoor,
+          rating: stopObj.rating,
+          duration: stopObj.duration,
+          cost: stopObj.cost,
+          openingHours: stopObj.openingHours,
+          ...(stopObj.note ? { note: stopObj.note } : {}),
+        });
+
+        return stopObj;
+      });
+
+      const activityCost = stops.reduce((s, st) => s + st.cost, 0);
+      const transitCost = stops.reduce((s, st) => s + (st.travelToNext?.cost ?? 0), 0);
+      const totalTravelTime = stops.reduce((s, st) => s + (st.travelToNext?.minutes ?? 0), 0);
+
+      return {
+        dayNumber,
+        date: weatherDay?.date || formatDayIsoDate(data.startDate, dayIdx),
+        totalCost: activityCost + transitCost,
+        activityCost,
+        transitCost,
+        totalTravelTime,
+        weatherSummary: weatherDay?.summary || 'Clear',
+        hasRainAlert,
+        ...(weatherDay?.tempC !== undefined ? { tempC: weatherDay.tempC } : {}),
+        ...(weatherDay?.tempMinC !== undefined ? { tempMinC: weatherDay.tempMinC } : {}),
+        ...(weatherDay?.tempMaxC !== undefined ? { tempMaxC: weatherDay.tempMaxC } : {}),
+        ...(weatherDay?.humidity !== undefined ? { humidity: weatherDay.humidity } : {}),
+        ...(weatherDay?.windKmh !== undefined ? { windKmh: weatherDay.windKmh } : {}),
+        ...(weatherDay?.condition ? { weatherCondition: weatherDay.condition } : {}),
+        stops,
+      };
     });
+
+    const totalCost = itinerary.reduce((s, d) => s + d.totalCost, 0);
 
     return {
-      destination: resolvedDestination,
-      ...(correctedFrom ? { correctedFrom } : {}),
-      center,
-      source,
+      destination: aiResult.destination,
+      center: aiResult.center,
+      source: 'gemini' as const,
+      modelName: aiResult.modelName,
+      aiResponseText: aiResult.aiResponseText,
+      budgetSummary: aiResult.budgetSummary,
+      dayThemes,
       transportMode: data.transportMode,
       startPoint,
       weatherConfigured: weather.configured,
-      candidates: attractions,
-      ...optimized,
+      candidates: allCandidates,
+      itinerary,
+      totalCost,
+      remainingBudget: data.budget - totalCost,
     };
   });
 
@@ -722,6 +817,9 @@ export const saveTripToMongo = createServerFn({ method: 'POST' })
             itinerary: data.itinerary,
             candidates: data.candidates,
             weatherConfigured: data.weatherConfigured,
+            ...(data.aiResponseText ? { aiResponseText: data.aiResponseText } : {}),
+            ...(data.budgetSummary ? { budgetSummary: data.budgetSummary } : {}),
+            ...(data.modelName ? { modelName: data.modelName } : {}),
             updatedAt: now,
           },
         },
@@ -742,6 +840,9 @@ export const saveTripToMongo = createServerFn({ method: 'POST' })
       itinerary: data.itinerary,
       candidates: data.candidates,
       weatherConfigured: data.weatherConfigured,
+      ...(data.aiResponseText ? { aiResponseText: data.aiResponseText } : {}),
+      ...(data.budgetSummary ? { budgetSummary: data.budgetSummary } : {}),
+      ...(data.modelName ? { modelName: data.modelName } : {}),
       createdAt: now,
       updatedAt: now,
     });

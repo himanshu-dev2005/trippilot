@@ -82,19 +82,19 @@ function MyTripsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-7xl px-6 py-10 lg:px-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-xs uppercase text-primary">MongoDB Trips</p>
-          <h1 className="mt-2 font-display text-4xl">My Saved Trips</h1>
+          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-primary">Saved Itineraries</p>
+          <h1 className="mt-2 font-display text-3xl font-bold lg:text-4xl">My Saved Trips</h1>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+        <div className="neu-inset relative flex w-full items-center rounded-xl sm:w-72">
+          <Search className="absolute left-3.5 size-4 text-outline" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter by city..."
-            className="pl-9"
+            className="border-none bg-transparent pl-10 shadow-none focus-visible:ring-0"
           />
         </div>
       </div>
@@ -122,9 +122,9 @@ function MyTripsPage() {
             const totalStops = t.itinerary.reduce((sum, d) => sum + d.stops.length, 0);
             const totalCost = t.itinerary.reduce((sum, d) => sum + d.totalCost, 0);
             return (
-              <article key={t._id} className="flex flex-col justify-between rounded-xl border border-border bg-card p-5">
+              <article key={t._id} className="neu-raised flex flex-col justify-between rounded-2xl p-6">
                 <div>
-                  <h2 className="font-display text-2xl">{t.destination}</h2>
+                  <h2 className="font-display text-2xl font-bold">{t.destination}</h2>
                   <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <CalendarDays className="size-3.5" />

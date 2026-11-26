@@ -110,7 +110,7 @@ function SharedTripPage() {
       <div className="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
           {trip.itinerary.map((day) => (
-            <section key={day.dayNumber} className="rounded-xl border border-border bg-card p-5">
+            <section key={day.dayNumber} className="neu-raised rounded-2xl p-6">
               <h2 className="font-display text-2xl">
                 Day {day.dayNumber} <span className="font-mono text-xs text-muted-foreground">({day.date})</span>
               </h2>
