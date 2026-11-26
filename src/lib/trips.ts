@@ -516,7 +516,38 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
           }
         }
       } catch {
-        // Fall through to Wikipedia / Wikimedia Commons fallback
+        // Fall through to Google Custom Search / Wikipedia fallback
+      }
+
+      // 1b) Official Google Custom Search Image API (when GOOGLE_CSE_ID / GOOGLE_SEARCH_CX is configured)
+      const cseId = process.env['GOOGLE_CSE_ID'] || process.env['GOOGLE_SEARCH_CX'];
+      if (cseId) {
+        try {
+          const cseUrl = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(`${searchQuery} tourist attraction`)}&cx=${encodeURIComponent(cseId)}&searchType=image&imgType=photo&imgSize=large&num=3&safe=active&key=${encodeURIComponent(googleKey)}`;
+          const cseRes = await fetch(cseUrl, { signal: AbortSignal.timeout(4500) });
+          if (cseRes.ok) {
+            const cseJson = (await cseRes.json()) as {
+              items?: Array<{
+                link?: string;
+                title?: string;
+                image?: { width?: number; height?: number };
+              }>;
+            };
+            for (const item of cseJson.items ?? []) {
+              if (!item.link) continue;
+              if (isBadPhotoCandidate(item.link, item.title ?? '', item.image?.width, item.image?.height)) {
+                continue;
+              }
+              const embedded = await fetchImageAsDataUrl(item.link);
+              if (embedded) {
+                setPhotoCache(cacheKey, embedded);
+                return { dataUrl: embedded };
+              }
+            }
+          }
+        } catch {
+          // Fall through to Wikipedia / Wikimedia Commons
+        }
       }
     }
 

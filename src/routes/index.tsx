@@ -157,50 +157,87 @@ function PlanningProgressView({ destination }: { destination: string }) {
   useEffect(() => {
     const interval = setInterval(() => {
       setStep((s) => Math.min(s + 1, PLANNING_STEPS.length - 1));
-    }, 1800);
+    }, 1400);
     return () => clearInterval(interval);
   }, []);
 
+  const progressPct = Math.round(((step + 1) / PLANNING_STEPS.length) * 100);
+
   return (
-    <div className="mx-auto my-8 flex max-w-xl flex-col items-center gap-6 px-6 py-12 text-center">
-      <div className="neu-raised flex size-16 items-center justify-center rounded-2xl">
-        <LoaderCircle className="size-7 animate-spin text-primary" />
+    <div className="mx-auto my-6 max-w-2xl overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+      {/* Top violet progress bar */}
+      <div className="h-1.5 w-full bg-[#F3F0FF] dark:bg-[#1E103C]">
+        <div
+          className="h-full bg-gradient-to-r from-[#6C3FE4] to-[#7C5CFF] transition-all duration-700 ease-out"
+          style={{ width: `${progressPct}%` }}
+        />
       </div>
 
-      <div>
-        <span className="text-xs font-semibold uppercase tracking-widest text-primary">
-          Gemini AI Architect
-        </span>
-        <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight text-foreground">
-          Crafting your {destination} itinerary
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Generating personalized day-by-day recommendations directly with Gemini AI.
-        </p>
-      </div>
+      <div className="flex flex-col items-center gap-6 px-6 py-10 text-center sm:px-10">
+        {/* Animated Paper-Plane Route Icon */}
+        <div className="relative flex size-16 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-[#6C3FE4]/20" />
+          <div className="relative flex size-16 items-center justify-center rounded-full bg-[#6C3FE4] text-white shadow-md">
+            <Navigation className="size-7 animate-pulse" />
+          </div>
+        </div>
 
-      <div className="w-full space-y-3">
-        {PLANNING_STEPS.map((s, i) => {
-          const Icon = s.icon;
-          const isCurrent = i === step;
-          const isDone = i < step;
-          return (
-            <div
-              key={s.label}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-all ${isCurrent
-                ? 'neu-raised text-foreground font-semibold'
-                : isDone
-                  ? 'neu-inset-sm text-muted-foreground'
-                  : 'text-muted-foreground/60'
+        <div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F3F0FF] px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#6C3FE4] dark:bg-[#1E103C] dark:text-[#a78bfa]">
+            <Sparkles className="size-3" />
+            TripPilot Route Engine · {progressPct}%
+          </span>
+          <h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
+            Crafting your {destination} itinerary
+          </h2>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Sequencing real landmarks, local weather, and transit estimates.
+          </p>
+        </div>
+
+        <div className="w-full space-y-2.5 text-left">
+          {PLANNING_STEPS.map((s, i) => {
+            const Icon = s.icon;
+            const isCurrent = i === step;
+            const isDone = i < step;
+            return (
+              <div
+                key={s.label}
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-all duration-300 ${
+                  isCurrent
+                    ? 'border-[#6C3FE4]/40 bg-[#F3F0FF] font-semibold text-foreground shadow-sm dark:bg-[#1E103C]'
+                    : isDone
+                      ? 'border-transparent bg-muted/40 text-muted-foreground'
+                      : 'border-transparent text-muted-foreground/50'
                 }`}
-            >
-              <Icon className={`size-4 shrink-0 ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className="flex-1 text-left">{s.label}</span>
-              {isDone && <Check className="size-4 text-primary" />}
-              {isCurrent && <LoaderCircle className="size-3.5 animate-spin text-primary" />}
+              >
+                <div
+                  className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${
+                    isCurrent
+                      ? 'bg-[#6C3FE4] text-white'
+                      : isDone
+                        ? 'bg-emerald-500/15 text-emerald-600'
+                        : 'bg-muted text-muted-foreground/50'
+                  }`}
+                >
+                  {isDone ? <Check className="size-3.5" /> : <Icon className="size-3.5" />}
+                </div>
+                <span className="flex-1">{s.label}</span>
+                {isCurrent && <LoaderCircle className="size-4 animate-spin text-[#6C3FE4]" />}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Subtle Shimmer Preview Skeleton */}
+        <div className="grid w-full grid-cols-3 gap-3 pt-2 opacity-60">
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="h-14 animate-pulse rounded-xl bg-muted p-3">
+              <div className="h-2.5 w-1/2 rounded bg-muted-foreground/20" />
+              <div className="mt-2 h-2 w-4/5 rounded bg-muted-foreground/15" />
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );

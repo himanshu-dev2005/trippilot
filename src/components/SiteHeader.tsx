@@ -108,8 +108,8 @@ export function SiteHeader() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-white/95 backdrop-blur-md dark:bg-slate-950/95">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 lg:px-10">
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-white/90 backdrop-blur-lg shadow-[0_1px_12px_rgba(108,63,228,0.06)] dark:bg-[#0b0914]/90">
+      <div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-5 lg:px-10">
         <Link
           to="/"
           className="shrink-0 whitespace-nowrap transition-opacity hover:opacity-85"
@@ -118,20 +118,20 @@ export function SiteHeader() {
           <BrandLogo />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 rounded-full border border-border/70 bg-surface-lowest/80 p-1 md:flex">
           {navLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               activeProps={{
                 className:
-                  "text-foreground font-semibold bg-muted rounded-lg px-3.5 py-2 text-sm",
+                  "bg-[#6C3FE4] text-white font-semibold rounded-full px-4 py-1.5 text-sm shadow-sm",
               }}
               inactiveProps={{
                 className:
-                  "text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 px-3.5 py-2 rounded-lg",
+                  "text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/70 px-3.5 py-1.5 rounded-full",
               }}
-              className="shrink-0 whitespace-nowrap transition-colors"
+              className="shrink-0 whitespace-nowrap transition-all"
             >
               {l.label}
             </Link>
