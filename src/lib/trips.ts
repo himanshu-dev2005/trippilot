@@ -402,7 +402,7 @@ async function fetchImageAsDataUrl(imageUrl: string): Promise<string | null> {
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
     if (!contentType.startsWith('image/') || contentType.includes('svg')) return null;
     const arr = await res.arrayBuffer();
-    if (arr.byteLength < 3000 || arr.byteLength > 950_000) return null;
+    if (arr.byteLength < 3000 || arr.byteLength > 2_000_000) return null;
     const mime = contentType.split(';')[0] || 'image/jpeg';
     return `data:${mime};base64,${Buffer.from(arr).toString('base64')}`;
   } catch {
@@ -446,11 +446,14 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
     async function fetchGoogleMediaUri(photoName: string): Promise<string | null> {
       if (!googleKey) return null;
       if (photoName.startsWith('places/')) {
-        const metaUrl = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=640&skipHttpRedirect=true&key=${encodeURIComponent(googleKey)}`;
+        const metaUrl = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&skipHttpRedirect=true&key=${encodeURIComponent(googleKey)}`;
         const metaRes = await fetch(metaUrl, { signal: AbortSignal.timeout(4500) });
         if (metaRes.ok) {
           const payload = (await metaRes.json()) as { photoUri?: string };
-          if (payload.photoUri) return payload.photoUri;
+          if (payload.photoUri) {
+            const embedded = await fetchImageAsDataUrl(payload.photoUri);
+            return embedded || payload.photoUri;
+          }
         }
       } else {
         const legacyUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&photoreference=${encodeURIComponent(photoName)}&key=${encodeURIComponent(googleKey)}`;
@@ -570,43 +573,50 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
         }
       }
 
-      // 2) Scored Wikipedia search (requires strong place-name token overlap + rejects maps/logos)
-      try {
-        const wikiQuery = destination ? `${placeName} ${destination}` : placeName;
-        const wikiSearchUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(wikiQuery)}&gsrlimit=6&prop=pageimages|description&piprop=thumbnail&pithumbsize=640&format=json`;
-        const wikiRes = await fetch(wikiSearchUrl, {
-          headers: { 'User-Agent': 'TripPilot/1.0 (https://trippilot.app)' },
-          signal: AbortSignal.timeout(4000),
-        });
-        if (wikiRes.ok) {
-          const wikiJson = (await wikiRes.json()) as {
-            query?: {
-              pages?: Record<
-                string,
-                {
-                  title?: string;
-                  description?: string;
-                  thumbnail?: { source?: string; width?: number; height?: number };
-                }
-              >;
+      // 2) Scored Wikipedia search (requires place-name token overlap + rejects maps/logos)
+      const wikiQueries = [
+        destination ? `${placeName} ${destination}` : placeName,
+        placeName,
+      ].filter((q, i, arr) => Boolean(q) && arr.indexOf(q) === i);
+
+      for (const wikiQuery of wikiQueries) {
+        if (candidateUrls.length > 0) break;
+        try {
+          const wikiSearchUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(wikiQuery)}&gsrlimit=6&prop=pageimages|description&piprop=thumbnail&pithumbsize=800&format=json`;
+          const wikiRes = await fetch(wikiSearchUrl, {
+            headers: { 'User-Agent': 'TripPilot/1.0 (https://trippilot.app)' },
+            signal: AbortSignal.timeout(4000),
+          });
+          if (wikiRes.ok) {
+            const wikiJson = (await wikiRes.json()) as {
+              query?: {
+                pages?: Record<
+                  string,
+                  {
+                    title?: string;
+                    description?: string;
+                    thumbnail?: { source?: string; width?: number; height?: number };
+                  }
+                >;
+              };
             };
-          };
-          for (const page of Object.values(wikiJson.query?.pages ?? {})) {
-            const thumb = page.thumbnail;
-            if (!thumb?.source || !page.title) continue;
-            const desc = (page.description ?? '').toLowerCase();
-            if (/\b(politician|actor|cricketer|singer|district|constituency|tehsil|state of india)\b/.test(desc)) {
-              continue;
-            }
-            if (isBadPhotoCandidate(thumb.source, page.title, thumb.width, thumb.height)) continue;
-            const score = scoreTitleRelevance(`${page.title} ${page.description ?? ''}`, placeName, destination);
-            if (score >= 5) {
-              candidateUrls.push({ url: thumb.source, score: score + 3 });
+            for (const page of Object.values(wikiJson.query?.pages ?? {})) {
+              const thumb = page.thumbnail;
+              if (!thumb?.source || !page.title) continue;
+              const desc = (page.description ?? '').toLowerCase();
+              if (/\b(politician|actor|cricketer|singer|district|constituency|tehsil|state of india)\b/.test(desc)) {
+                continue;
+              }
+              if (isBadPhotoCandidate(thumb.source, page.title, thumb.width, thumb.height)) continue;
+              const score = scoreTitleRelevance(`${page.title} ${page.description ?? ''}`, placeName, destination);
+              if (score >= 4) {
+                candidateUrls.push({ url: thumb.source, score: score + 3 });
+              }
             }
           }
+        } catch {
+          // Ignore and try next query / Wikimedia Commons
         }
-      } catch {
-        // Ignore and try Wikimedia Commons
       }
 
       // 3) Scored Wikimedia Commons file search fallback (strictly filtered to real photos matching the place)

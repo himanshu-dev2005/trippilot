@@ -1,3 +1,4 @@
+import heroSigiriyaImg from '@/assets/images/hero_sigiriya.jpg';
 import jaipurFallback from '@/assets/images/circuit_jaipur_1795697908494.jpg';
 import varanasiFallback from '@/assets/images/circuit_varanasi_1795697909580.jpg';
 import keralaFallback from '@/assets/images/circuit_kerala_1795697913226.jpg';
@@ -24,7 +25,7 @@ export type FeaturedCircuit = {
 
 // Real high-resolution travel photography (with local bundled fallbacks)
 export const CIRCUIT_IMAGES = {
-  hero: 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1800&q=85',
+  hero: heroSigiriyaImg,
   jaipur: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=1200&q=85',
   varanasi: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=1200&q=85',
   kerala: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=85',

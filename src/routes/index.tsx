@@ -855,13 +855,12 @@ function Index() {
 
   return (
     <main className="min-h-screen w-full bg-background pb-20">
-      {/* Screenshot 1: Full-Bleed Hero Banner with Script Subtitle + Giant Serif Title + Green Explore Button */}
+      {/* Screenshot 1: Full-Bleed Hero Banner with Script Subtitle + Giant Serif Title + Primary Explore Button */}
       <section className="no-print relative h-[440px] w-full overflow-hidden lg:h-[500px]">
-        <StopPhoto
-          name="Santorini Greece Coast"
-          destination="Greece"
-          category="Coast"
-          className="h-full w-full"
+        <img
+          src={CIRCUIT_IMAGES.hero}
+          alt="Ancient rock fortress at sunset"
+          className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/45" />
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
@@ -1188,11 +1187,15 @@ function Index() {
                     onClick={() => void handlePlanCircuit(c)}
                     className="group relative h-72 cursor-pointer overflow-hidden rounded-xl shadow-lg"
                   >
-                    <StopPhoto
-                      name={c.title}
-                      destination={c.city}
-                      category={c.region}
-                      className="h-full w-full"
+                    <img
+                      src={c.image}
+                      alt={c.title}
+                      loading="lazy"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (img.src !== c.fallbackImage) img.src = c.fallbackImage;
+                      }}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/35" />
                     <div className="absolute inset-0 flex flex-col justify-between p-5 text-white">
@@ -1218,11 +1221,15 @@ function Index() {
                               key={thumb.city}
                               className="h-14 w-20 overflow-hidden rounded-md border-2 border-white shadow"
                             >
-                              <StopPhoto
-                                name={thumb.title}
-                                destination={thumb.city}
-                                category={thumb.region}
-                                className="h-full w-full"
+                              <img
+                                src={thumb.image}
+                                alt={thumb.title}
+                                loading="lazy"
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  if (img.src !== thumb.fallbackImage) img.src = thumb.fallbackImage;
+                                }}
+                                className="h-full w-full object-cover"
                               />
                             </div>
                           ))}
@@ -1264,11 +1271,15 @@ function Index() {
                     onClick={() => void handlePlanCircuit(c)}
                     className="group relative h-80 cursor-pointer overflow-hidden rounded-xl shadow-md transition-transform hover:-translate-y-1"
                   >
-                    <StopPhoto
-                      name={c.title}
-                      destination={c.city}
-                      category={c.region}
-                      className="h-full w-full"
+                    <img
+                      src={c.image}
+                      alt={c.title}
+                      loading="lazy"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (img.src !== c.fallbackImage) img.src = c.fallbackImage;
+                      }}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/45" />
                     <div className="absolute inset-0 flex flex-col justify-between p-4 text-white">
@@ -1288,7 +1299,7 @@ function Index() {
             </div>
           </section>
 
-          {/* Screenshot 5: Explore your WILDLIFE & NATURE (Deep Jungle Green Band) */}
+          {/* Screenshot 5: Explore your WILDLIFE & NATURE (Deep Jungle Indigo Band) */}
           <section className="relative overflow-hidden bg-[#1E103C] py-16 text-white">
             <div className="mx-auto max-w-6xl px-5 lg:px-10">
               <div className="mb-8 text-center">
@@ -1305,11 +1316,15 @@ function Index() {
                     onClick={() => void handlePlanCircuit(c)}
                     className="group relative h-60 cursor-pointer overflow-hidden rounded-xl shadow-xl transition-transform hover:-translate-y-1"
                   >
-                    <StopPhoto
-                      name={c.title}
-                      destination={c.city}
-                      category={c.region}
-                      className="h-full w-full"
+                    <img
+                      src={c.image}
+                      alt={c.title}
+                      loading="lazy"
+                      onError={(e) => {
+                        const img = e.currentTarget;
+                        if (img.src !== c.fallbackImage) img.src = c.fallbackImage;
+                      }}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
