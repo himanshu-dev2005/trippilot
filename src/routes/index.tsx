@@ -156,8 +156,8 @@ function PlanningProgressView({ destination }: { destination: string }) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStep((s) => (s + 1) % PLANNING_STEPS.length);
-    }, 1500);
+      setStep((s) => Math.min(s + 1, PLANNING_STEPS.length - 1));
+    }, 1800);
     return () => clearInterval(interval);
   }, []);
 
@@ -855,40 +855,55 @@ function Index() {
 
   return (
     <main className="min-h-screen w-full bg-background pb-20">
-      {/* Bold Editorial Hero + Integrated Planner */}
-      <section className="no-print relative border-b border-border bg-zinc-950 text-white">
-        <img
-          src={CIRCUIT_IMAGES.hero}
-          alt="India architectural heritage"
-          className="absolute inset-0 h-full w-full object-cover opacity-40"
+      {/* Screenshot 1: Full-Bleed Hero Banner with Script Subtitle + Giant Serif Title + Green Explore Button */}
+      <section className="no-print relative h-[440px] w-full overflow-hidden lg:h-[500px]">
+        <StopPhoto
+          name="Santorini Greece Coast"
+          destination="Greece"
+          category="Coast"
+          className="h-full w-full"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/60 via-zinc-950/50 to-zinc-950/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/45" />
+        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
+          <span className="font-script text-2xl font-semibold text-[#38d67a] drop-shadow sm:text-3xl">
+            Chasing Sunsets and Legends in
+          </span>
+          <h1
+            className="mt-0.5 text-5xl font-extrabold tracking-tight text-white drop-shadow-xl sm:text-7xl lg:text-8xl"
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            India &amp; Beyond
+          </h1>
+          <a
+            href="#search-plans"
+            className="neu-btn-primary mt-5 inline-flex items-center justify-center rounded-lg px-7 py-2.5 text-sm font-semibold shadow-lg"
+          >
+            Explore
+          </a>
+        </div>
+      </section>
 
-        <div className="relative z-10 mx-auto max-w-6xl px-6 py-16 lg:px-10 lg:py-24">
-          <div className="max-w-3xl">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
-              Route-Optimized Travel Planning
-            </p>
-            <h1 className="font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.03em] text-white sm:text-5xl lg:text-6xl">
-              Every stop, route, and rupee—planned in seconds.
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-zinc-300">
-              Enter your destination, trip length, and budget. Get a geographically sequenced day-by-day itinerary with live weather and realistic local transit.
-            </p>
+      {/* Screenshot 2: Search Plans — Build Custom Travel Plans */}
+      <section id="search-plans" className="no-print bg-white py-12 dark:bg-slate-950">
+        <div className="mx-auto max-w-5xl px-5">
+          <div className="mb-7 text-center">
+            <span className="font-script text-2xl font-semibold text-[#38d67a]">Search Plans</span>
+            <h2 className="mt-0.5 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+              Build Custom Travel Plans
+            </h2>
           </div>
 
-          {/* Crisp Architectural Search / Planner Bar */}
-          <form onSubmit={handleGenerate} className="mt-10 flex flex-col gap-3">
-            <div className="flex w-full flex-col items-stretch gap-2 rounded-xl border border-white/15 bg-white p-2 text-zinc-950 shadow-2xl md:flex-row md:items-center">
+          <form onSubmit={handleGenerate} className="flex flex-col items-center gap-5">
+            <div className="flex w-full flex-col items-stretch gap-2 rounded-xl border border-border bg-white p-2 shadow-md dark:bg-slate-900 md:flex-row md:items-center">
               {/* Destination */}
-              <div className="flex flex-[2] items-center gap-2.5 rounded-lg px-3 py-1.5">
-                <Compass className="size-4 shrink-0 text-zinc-500" />
+              <div className="flex flex-[2] items-center gap-2 rounded-lg px-3 py-1.5">
+                <MapPin className="size-4 shrink-0 text-muted-foreground" />
                 <CityAutocomplete
                   id="destination"
                   value={destination}
                   onChange={setDestination}
-                  placeholder="Where are you going? (e.g. Dehradun, Jaipur, Goa)"
-                  inputClassName="h-10 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400"
+                  placeholder="Where To Next ? (e.g. Dehradun, Jaipur, Goa)"
+                  inputClassName="h-10 text-sm font-medium"
                 />
                 <button
                   type="button"
@@ -896,21 +911,21 @@ function Index() {
                   disabled={locatingCity}
                   title="Use my current location"
                   aria-label="Use my current location"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   {locatingCity ? (
-                    <LoaderCircle className="size-4 animate-spin" />
+                    <LoaderCircle className="size-3.5 animate-spin" />
                   ) : (
-                    <LocateFixed className="size-4" />
+                    <LocateFixed className="size-3.5" />
                   )}
                 </button>
               </div>
 
-              <div className="hidden h-8 w-px bg-zinc-200 md:block" />
+              <div className="hidden h-7 w-px bg-border md:block" />
 
               {/* Days */}
-              <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 md:w-36">
-                <Calendar className="size-4 shrink-0 text-zinc-500" />
+              <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 md:w-32">
+                <Calendar className="size-4 shrink-0 text-muted-foreground" />
                 <input
                   id="days-input"
                   type="number"
@@ -921,17 +936,17 @@ function Index() {
                     setNumberOfDays(Math.min(14, Math.max(1, Number(e.target.value) || 1)))
                   }
                   aria-label="Days"
-                  className="w-10 bg-transparent font-mono text-sm font-bold tabular-nums text-zinc-950 focus:outline-none"
+                  className="w-10 bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
                 />
-                <span className="text-xs font-medium text-zinc-500">days</span>
+                <span className="text-xs text-muted-foreground">days</span>
               </div>
 
-              <div className="hidden h-8 w-px bg-zinc-200 md:block" />
+              <div className="hidden h-7 w-px bg-border md:block" />
 
               {/* Budget */}
-              <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 md:w-44">
-                <Wallet className="size-4 shrink-0 text-zinc-500" />
-                <span className="font-mono text-sm font-bold text-zinc-950">₹</span>
+              <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 md:w-36">
+                <Wallet className="size-4 shrink-0 text-muted-foreground" />
+                <span className="font-mono text-sm font-semibold text-foreground">₹</span>
                 <input
                   id="budget"
                   type="number"
@@ -941,44 +956,51 @@ function Index() {
                   onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
                   placeholder="6000"
                   aria-label="Budget"
-                  className="w-full bg-transparent font-mono text-sm font-bold tabular-nums text-zinc-950 focus:outline-none"
+                  className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
                 />
               </div>
 
               <button
+                type="button"
+                onClick={() => {
+                  setDestination('');
+                  setNumberOfDays(3);
+                  setBudget(6000);
+                }}
+                className="hidden rounded-lg bg-[#ebfbf0] px-3 py-2 text-xs font-medium text-zinc-700 hover:bg-green-100 md:inline-block"
+              >
+                Clear All
+              </button>
+
+              <button
                 type="submit"
                 disabled={loading || !destination.trim()}
-                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-6 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="neu-btn-primary inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-7 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
                   <LoaderCircle className="size-4 animate-spin" />
                 ) : (
                   <Zap className="size-4" />
                 )}
-                <span>{loading ? 'Generating…' : 'Generate Itinerary'}</span>
+                <span>{loading ? 'Planning…' : 'Search'}</span>
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowOptions((v) => !v)}
-                className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 transition-colors hover:text-white"
-              >
-                <SlidersHorizontal className="size-3.5" />
-                {showOptions ? 'Hide options' : 'Style, travelers, dates & transport'}
-              </button>
-              <span className="text-xs text-zinc-400">
-                Instant route optimization · Live Open-Meteo weather
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowOptions((v) => !v)}
+              className="neu-btn-primary inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-xs font-semibold shadow-sm"
+            >
+              <SlidersHorizontal className="size-3.5" />
+              {showOptions ? 'Hide Custom Plan Options' : 'Build Custom Travel Plan'}
+            </button>
 
             {/* Extra Options Drawer */}
             {showOptions && (
-              <div className="mt-2 rounded-xl border border-white/15 bg-zinc-900/95 p-5 text-white backdrop-blur-md">
+              <div className="mt-1 w-full rounded-xl border border-border bg-surface-lowest p-5 text-left shadow-sm">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
-                  <span className="mr-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    Style
+                  <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Travel Style:
                   </span>
                   {TRAVEL_STYLES.map((style) => {
                     const active = interests.includes(style.label);
@@ -988,10 +1010,10 @@ function Index() {
                         type="button"
                         aria-pressed={active}
                         onClick={() => toggleInterest(style.label)}
-                        className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
                           active
-                            ? 'border-white bg-white text-zinc-950'
-                            : 'border-white/15 bg-transparent text-zinc-300 hover:border-white/40 hover:text-white'
+                            ? 'border-[#38d67a] bg-[#38d67a] text-zinc-950'
+                            : 'border-border bg-white text-foreground hover:border-[#38d67a] dark:bg-slate-800'
                         }`}
                       >
                         {style.short}
@@ -1001,8 +1023,8 @@ function Index() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="travelers" className="text-xs font-medium text-zinc-400">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="travelers" className="text-xs font-semibold text-muted-foreground">
                       Travelers
                     </label>
                     <input
@@ -1012,11 +1034,11 @@ function Index() {
                       max={20}
                       value={travelers}
                       onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
-                      className="h-9 rounded-lg border border-white/15 bg-zinc-950 px-3 font-mono text-sm text-white"
+                      className="h-9 rounded-lg border border-border bg-background px-3 font-mono text-sm text-foreground"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="startDate" className="text-xs font-medium text-zinc-400">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="startDate" className="text-xs font-semibold text-muted-foreground">
                       Start date
                     </label>
                     <input
@@ -1024,11 +1046,11 @@ function Index() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="h-9 rounded-lg border border-white/15 bg-zinc-950 px-3 text-sm text-white"
+                      className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="startPoint" className="text-xs font-medium text-zinc-400">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="startPoint" className="text-xs font-semibold text-muted-foreground">
                       Starting hotel / area
                     </label>
                     <input
@@ -1036,12 +1058,12 @@ function Index() {
                       value={startPointQuery}
                       onChange={(e) => setStartPointQuery(e.target.value)}
                       placeholder="e.g. Rajpur Road, Baga..."
-                      className="h-9 rounded-lg border border-white/15 bg-zinc-950 px-3 text-sm text-white placeholder:text-zinc-500"
+                      className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-zinc-400">Transport</span>
-                    <div className="flex h-9 items-center gap-1 rounded-lg border border-white/15 bg-zinc-950 p-0.5">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-muted-foreground">Transport</span>
+                    <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-background p-0.5">
                       {TRANSPORT_OPTIONS.map(({ mode, label, icon: Icon }) => {
                         const active = transportMode === mode;
                         return (
@@ -1050,7 +1072,7 @@ function Index() {
                             type="button"
                             onClick={() => setTransportMode(mode)}
                             className={`flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-xs font-semibold ${
-                              active ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'
+                              active ? 'bg-[#38d67a] text-zinc-950' : 'text-muted-foreground'
                             }`}
                           >
                             <Icon className="size-3" />
@@ -1065,8 +1087,8 @@ function Index() {
             )}
 
             {needsGeminiKey && (
-              <div className="rounded-xl border border-amber-400/30 bg-amber-950/40 p-4 text-left">
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-300">
+              <div className="w-full rounded-xl border border-amber-300 bg-amber-50 p-4 text-left dark:bg-amber-950/30">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-300">
                   <KeyRound className="size-4" />
                   <span>Optional: Paste a Gemini API Key</span>
                 </div>
@@ -1075,7 +1097,7 @@ function Index() {
                   value={customGeminiKey}
                   onChange={(e) => setCustomGeminiKey(e.target.value)}
                   placeholder="Paste Gemini API key (AIza...) if you want custom LLM prose"
-                  className="mt-2 h-10 w-full rounded-lg border border-white/15 bg-zinc-950 px-3 font-mono text-xs text-white"
+                  className="mt-2 h-10 w-full rounded-lg border border-border bg-white px-3 font-mono text-xs text-foreground"
                 />
               </div>
             )}
@@ -1085,7 +1107,7 @@ function Index() {
             <div
               id="planner-error"
               role="alert"
-              className="mt-4 rounded-lg border border-red-500/40 bg-red-950/60 px-4 py-3 text-sm font-medium text-red-200"
+              className="mt-4 rounded-lg border border-destructive/25 bg-destructive/10 px-4 py-3 text-center text-sm font-medium text-destructive"
             >
               {error}
             </div>
@@ -1093,7 +1115,7 @@ function Index() {
           {notice && (
             <div
               role="status"
-              className="mt-4 rounded-lg border border-emerald-500/40 bg-emerald-950/60 px-4 py-3 text-sm font-medium text-emerald-200"
+              className="mt-4 rounded-lg border border-green-500/25 bg-[#ebfbf0] px-4 py-3 text-center text-sm font-medium text-green-900"
             >
               {notice}
             </div>
@@ -1103,32 +1125,30 @@ function Index() {
 
       {/* Loading View */}
       {loading && (
-        <div id="planning-progress" className="mx-auto max-w-5xl px-6 py-10">
+        <div id="planning-progress" className="mx-auto max-w-5xl px-5 py-8">
           <PlanningProgressView destination={destination || 'your trip'} />
         </div>
       )}
 
       {/* Saved Trips Quick Strip */}
       {savedTrips.length > 0 && !loading && (
-        <section className="no-print mx-auto max-w-6xl px-6 pt-8 lg:px-10">
+        <section className="no-print mx-auto max-w-7xl px-5 pt-6 lg:px-10">
           <div className="flex items-center justify-between pb-3">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Saved Itineraries
-            </h2>
-            <Link to="/trips" className="text-xs font-semibold text-foreground hover:underline">
-              View all →
+            <h2 className="text-sm font-bold text-foreground">Your Saved Trips</h2>
+            <Link to="/trips" className="text-xs font-semibold text-green-700 hover:underline">
+              Manage all →
             </Link>
           </div>
           <div className="flex flex-wrap gap-2.5">
             {savedTrips.slice(0, 5).map((saved) => (
               <div
                 key={saved._id}
-                className="flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-xs"
+                className="flex items-center gap-2 rounded-lg border border-border bg-white px-3.5 py-2 text-xs shadow-sm dark:bg-slate-800"
               >
                 <button
                   type="button"
                   onClick={() => handleLoadSavedTrip(saved)}
-                  className="font-semibold text-foreground hover:underline"
+                  className="font-semibold text-foreground hover:text-green-600"
                 >
                   {saved.destination} · {saved.numberOfDays}d · ₹{saved.budget.toLocaleString('en-IN')}
                 </button>
@@ -1148,114 +1168,173 @@ function Index() {
         </section>
       )}
 
-      {/* Bold Architectural Pre-Trip Showcase (shown before a trip is generated) */}
+      {/* Screenshots 3, 4, 5: Exact trippilot.com Sections with Google Maps Photos */}
       {!trip && !loading && (
-        <>
-          {/* 3-Column Structural Value Strip */}
-          <section className="border-b border-border bg-background py-12">
-            <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-6 md:grid-cols-3 lg:px-10">
-              <div className="border-t-2 border-foreground pt-4">
-                <span className="font-mono text-xs font-semibold text-muted-foreground">01</span>
-                <h2 className="mt-2 font-display text-base font-bold text-foreground">
-                  Geographically Sequenced
+        <div className="flex flex-col">
+          {/* Screenshot 3: Hot Picks (Mint section, 2 large horizontal cards with 3 mini thumbnails + EXPLORE) */}
+          <section className="bg-[#ebfbf0] py-14 dark:bg-slate-900/60">
+            <div className="mx-auto max-w-6xl px-5 lg:px-10">
+              <div className="mb-8">
+                <span className="font-script text-2xl font-semibold text-[#28c76a]">
+                  Fresh &amp; Fabulous Getaways
+                </span>
+                <h2 className="mt-0.5 font-display text-3xl font-extrabold text-foreground">
+                  Hot Picks
                 </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  Stops are clustered by neighborhood and ordered to cut backtracking across the city.
-                </p>
               </div>
-              <div className="border-t-2 border-foreground pt-4">
-                <span className="font-mono text-xs font-semibold text-muted-foreground">02</span>
-                <h2 className="mt-2 font-display text-base font-bold text-foreground">
-                  Weather-Aware Routes
-                </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  Live daily forecasts flag rain risk and swap outdoor landmarks for indoor alternatives.
-                </p>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {FEATURED_CIRCUITS.slice(0, 2).map((c) => (
+                  <div
+                    key={c.city}
+                    onClick={() => void handlePlanCircuit(c)}
+                    className="group relative h-72 cursor-pointer overflow-hidden rounded-xl shadow-lg"
+                  >
+                    <StopPhoto
+                      name={c.title}
+                      destination={c.city}
+                      category={c.region}
+                      className="h-full w-full"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/35" />
+                    <div className="absolute inset-0 flex flex-col justify-between p-5 text-white">
+                      <div className="flex items-start justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-widest text-white/90">
+                          {c.region}
+                        </span>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-white/90">
+                            {c.city}
+                          </span>
+                          <h3 className="text-lg font-bold leading-snug">{c.subtitle}</h3>
+                          <span className="mt-1.5 inline-block rounded bg-[#38d67a] px-2.5 py-0.5 text-[11px] font-semibold text-zinc-950">
+                            {c.days} Days · ₹{c.budget.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-end justify-between gap-3">
+                        <div className="flex gap-2">
+                          {FEATURED_CIRCUITS.slice(2, 5).map((thumb) => (
+                            <div
+                              key={thumb.city}
+                              className="h-14 w-20 overflow-hidden rounded-md border-2 border-white shadow"
+                            >
+                              <StopPhoto
+                                name={thumb.title}
+                                destination={thumb.city}
+                                category={thumb.region}
+                                className="h-full w-full"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <span className="neu-btn-primary rounded-md px-4 py-1.5 text-xs font-bold uppercase tracking-wide">
+                          Explore
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="border-t-2 border-foreground pt-4">
-                <span className="font-mono text-xs font-semibold text-muted-foreground">03</span>
-                <h2 className="mt-2 font-display text-base font-bold text-foreground">
-                  Transparent Cost Breakdown
-                </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  Realistic entry tickets and local transit estimates calibrated to your per-person budget.
-                </p>
+
+              <div className="mt-8 text-center">
+                <Link
+                  to="/explore"
+                  className="neu-btn-primary inline-block rounded-lg px-6 py-2.5 text-xs font-semibold shadow"
+                >
+                  Explore More Locations
+                </Link>
               </div>
             </div>
           </section>
 
-          {/* Single Clean Editorial Grid — 6 Distinct Real Photographs */}
-          <section className="bg-background py-14">
-            <div className="mx-auto max-w-6xl px-6 lg:px-10">
-              <div className="mb-8 flex items-end justify-between border-b border-border pb-4">
-                <div>
-                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Curated Circuits
-                  </span>
-                  <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
-                    Ready-to-Plan Destinations
-                  </h2>
-                </div>
-                <Link
-                  to="/explore"
-                  className="text-sm font-semibold text-foreground transition-colors hover:text-primary"
-                >
-                  All destinations →
-                </Link>
+          {/* Screenshot 4: Beach & Coast Destinations (4 portrait cards) */}
+          <section className="bg-white py-14 dark:bg-slate-950">
+            <div className="mx-auto max-w-6xl px-5 lg:px-10">
+              <div className="mb-8">
+                <span className="font-script text-2xl font-semibold text-[#28c76a]">Trip Ideas</span>
+                <h2 className="mt-0.5 font-display text-3xl font-extrabold text-foreground">
+                  Top Destinations
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {FEATURED_CIRCUITS.slice(0, 6).map((c) => (
-                  <button
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {FEATURED_CIRCUITS.slice(2, 6).map((c) => (
+                  <div
                     key={c.city}
-                    type="button"
                     onClick={() => void handlePlanCircuit(c)}
-                    className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left transition-all hover:border-foreground/40 hover:shadow-lg"
+                    className="group relative h-80 cursor-pointer overflow-hidden rounded-xl shadow-md transition-transform hover:-translate-y-1"
                   >
-                    <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
-                      <img
-                        src={c.image}
-                        alt={c.title}
-                        loading="lazy"
-                        onError={(e) => {
-                          const img = e.currentTarget;
-                          if (img.src !== c.fallbackImage) {
-                            img.src = c.fallbackImage;
-                          }
-                        }}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                      <span className="absolute left-3 top-3 rounded-md bg-zinc-950/80 px-2.5 py-1 font-mono text-[11px] font-medium text-white backdrop-blur-sm">
-                        {c.region}
-                      </span>
-                    </div>
-                    <div className="flex flex-1 flex-col justify-between gap-3 p-5">
+                    <StopPhoto
+                      name={c.title}
+                      destination={c.city}
+                      category={c.region}
+                      className="h-full w-full"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-transparent to-black/45" />
+                    <div className="absolute inset-0 flex flex-col justify-between p-4 text-white">
                       <div>
-                        <div className="flex items-baseline justify-between gap-2">
-                          <h3 className="font-display text-lg font-bold text-foreground">
-                            {c.title}
-                          </h3>
-                          <span className="font-mono text-xs font-semibold text-foreground">
-                            ₹{c.budget.toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                          {c.subtitle}
-                        </p>
+                        <h3 className="text-lg font-bold">{c.title}</h3>
+                        <p className="text-xs text-white/85">{c.region}</p>
                       </div>
-                      <div className="flex items-center justify-between border-t border-border pt-3 text-xs font-semibold">
-                        <span className="text-muted-foreground">{c.days} days</span>
-                        <span className="text-foreground transition-transform group-hover:translate-x-1">
-                          Generate route →
+                      <div>
+                        <span className="neu-btn-primary inline-block rounded px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wide">
+                          Explore
                         </span>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
           </section>
-        </>
+
+          {/* Screenshot 5: Explore your WILDLIFE & NATURE (Deep Jungle Green Band) */}
+          <section className="relative overflow-hidden bg-[#0b3d24] py-16 text-white">
+            <div className="mx-auto max-w-6xl px-5 lg:px-10">
+              <div className="mb-8 text-center">
+                <span className="font-script text-2xl font-semibold text-white">Explore your</span>
+                <h2 className="mt-0.5 font-display text-3xl font-black uppercase tracking-wide text-[#38d67a] sm:text-4xl">
+                  Wildlife &amp; Nature
+                </h2>
+              </div>
+
+              <div className="mx-auto grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-3">
+                {FEATURED_CIRCUITS.slice(6, 9).map((c) => (
+                  <div
+                    key={c.city}
+                    onClick={() => void handlePlanCircuit(c)}
+                    className="group relative h-60 cursor-pointer overflow-hidden rounded-xl shadow-xl transition-transform hover:-translate-y-1"
+                  >
+                    <StopPhoto
+                      name={c.title}
+                      destination={c.city}
+                      category={c.region}
+                      className="h-full w-full"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="text-base font-bold text-white">{c.title}</h3>
+                      <span className="neu-btn-primary mt-2 inline-block rounded px-3 py-1 text-[11px] font-bold uppercase">
+                        Explore
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 text-center">
+                <Link
+                  to="/explore"
+                  className="neu-btn-primary inline-block rounded-lg px-6 py-2.5 text-xs font-semibold shadow-lg"
+                >
+                  Explore More
+                </Link>
+              </div>
+            </div>
+          </section>
+        </div>
       )}
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 pt-8 lg:px-10">

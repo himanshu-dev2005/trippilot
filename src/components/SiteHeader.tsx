@@ -100,16 +100,16 @@ export function SiteHeader() {
     <Link
       to="/auth"
       onClick={() => setOpen(false)}
-      className="neu-btn-primary inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-semibold transition-all"
+      className="neu-btn-primary inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-5 text-sm font-semibold transition-all"
     >
       <LogIn className="size-4" />
-      <span>Sign in</span>
+      <span>Sign in | Sign Up</span>
     </Link>
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-6 lg:px-10">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-white/95 backdrop-blur-md dark:bg-slate-950/95">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 lg:px-10">
         <Link
           to="/"
           className="shrink-0 whitespace-nowrap transition-opacity hover:opacity-85"

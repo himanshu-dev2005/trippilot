@@ -1073,13 +1073,15 @@ export async function generateDirectGeminiItinerary(params: {
   const lovableKey = process.env['LOVABLE_API_KEY'];
   const groqKey = process.env['GROQ_API_KEY'];
   const openrouterKey = process.env['OPENROUTER_API_KEY'];
-  const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+  const googleKey =
+    process.env['GOOGLE_PLACES_API_KEY'] ||
+    process.env['GOOGLE_MAPS_API_KEY'] ||
+    process.env['GOOGLE_API_KEY'];
 
   const prompt = buildDirectItineraryPrompt(params);
 
   if (geminiKey) {
-    // 1. Try Gemini Interactions API first (gemini-3.8-flash)
-    try {
+    const callInteractions = async (): Promise<DirectAiItineraryResult> => {
       const interRes = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/interactions',
         {
@@ -1091,90 +1093,71 @@ export async function generateDirectGeminiItinerary(params: {
           body: JSON.stringify({
             model: 'gemini-3.8-flash',
             input: prompt,
-            generation_config: {
-              temperature: 0.35,
-            },
+            generation_config: { temperature: 0.35 },
           }),
-          signal: AbortSignal.timeout(12000),
+          signal: AbortSignal.timeout(9000),
         },
       );
+      if (!interRes.ok) throw new Error(`Interactions ${interRes.status}`);
+      const interJson = (await interRes.json()) as {
+        outputs?: Array<{ text?: string; content?: string }>;
+        text?: string;
+      };
+      const rawText =
+        interJson.outputs?.map((o) => o.text ?? o.content ?? '').find((t) => t.trim().length > 0) ||
+        interJson.text;
+      const parsed = rawText ? parseDirectAiItinerary(rawText, params.destination) : null;
+      if (!parsed) throw new Error('Invalid Interactions payload');
+      return { ...parsed, modelName: 'Gemini 3.8 Flash (Interactions API)' };
+    };
 
-      if (interRes.ok) {
-        const interJson = (await interRes.json()) as {
-          outputs?: Array<{ text?: string; content?: string }>;
-          text?: string;
-        };
-        const rawText =
-          interJson.outputs?.map((o) => o.text ?? o.content ?? '').find((t) => t.trim().length > 0) ||
-          interJson.text;
-        const parsed = rawText ? parseDirectAiItinerary(rawText, params.destination) : null;
-        if (parsed) {
-          if (googleKey) {
-            const allStops = parsed.days.flatMap((d) => d.stops as AttractionCandidate[]);
-            const enriched = await enrichWithGooglePhotos(allStops, parsed.destination, googleKey);
-            let cursor = 0;
-            for (const day of parsed.days) {
-              day.stops = enriched.slice(cursor, cursor + day.stops.length);
-              cursor += day.stops.length;
-            }
-          }
-          return {
-            ...parsed,
-            modelName: 'Gemini 3.8 Flash (Interactions API)',
-          };
+    const callGenerateContent = async (model: 'gemini-3.8-flash' | 'gemini-2.5-flash'): Promise<DirectAiItineraryResult> => {
+      const gemRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.35,
+              responseMimeType: 'application/json',
+            },
+          }),
+          signal: AbortSignal.timeout(9000),
+        },
+      );
+      if (!gemRes.ok) throw new Error(`${model} ${gemRes.status}`);
+      const gemJson = (await gemRes.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      };
+      const rawText = gemJson.candidates?.[0]?.content?.parts?.[0]?.text;
+      const parsed = rawText ? parseDirectAiItinerary(rawText, params.destination) : null;
+      if (!parsed) throw new Error(`Invalid ${model} payload`);
+      return {
+        ...parsed,
+        modelName: model === 'gemini-3.8-flash' ? 'Gemini 3.8 Flash' : 'Gemini 2.5 Flash',
+      };
+    };
+
+    try {
+      const winner = await Promise.any([
+        callInteractions(),
+        callGenerateContent('gemini-3.8-flash'),
+        callGenerateContent('gemini-2.5-flash'),
+      ]);
+      if (googleKey) {
+        const allStops = winner.days.flatMap((d) => d.stops as AttractionCandidate[]);
+        const enriched = await enrichWithGooglePhotos(allStops, winner.destination, googleKey);
+        let cursor = 0;
+        for (const day of winner.days) {
+          day.stops = enriched.slice(cursor, cursor + day.stops.length);
+          cursor += day.stops.length;
         }
       }
+      return winner;
     } catch {
-      // Fall through to generateContent models below
-    }
-
-    // 2. Fallback to generateContent REST endpoint
-    const geminiModels = ['gemini-3.8-flash', 'gemini-2.5-flash'];
-    for (const model of geminiModels) {
-      try {
-        const gemRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.35,
-                responseMimeType: 'application/json',
-              },
-            }),
-            signal: AbortSignal.timeout(12000),
-          },
-        );
-
-        if (!gemRes.ok) {
-          continue;
-        }
-
-        const gemJson = (await gemRes.json()) as {
-          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-        };
-        const rawText = gemJson.candidates?.[0]?.content?.parts?.[0]?.text;
-        const parsed = rawText ? parseDirectAiItinerary(rawText, params.destination) : null;
-        if (parsed) {
-          if (googleKey) {
-            const allStops = parsed.days.flatMap((d) => d.stops as AttractionCandidate[]);
-            const enriched = await enrichWithGooglePhotos(allStops, parsed.destination, googleKey);
-            let cursor = 0;
-            for (const day of parsed.days) {
-              day.stops = enriched.slice(cursor, cursor + day.stops.length);
-              cursor += day.stops.length;
-            }
-          }
-          return {
-            ...parsed,
-            modelName: model === 'gemini-3.8-flash' ? 'Gemini 3.8 Flash' : 'Gemini 2.5 Flash',
-          };
-        }
-      } catch {
-        // Continue to next model
-      }
+      // All Gemini endpoints failed or timed out; fall through immediately
     }
   }
 

@@ -438,7 +438,10 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
       return { dataUrl: cached.dataUrl };
     }
 
-    const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+    const googleKey =
+      process.env['GOOGLE_PLACES_API_KEY'] ||
+      process.env['GOOGLE_MAPS_API_KEY'] ||
+      process.env['GOOGLE_API_KEY'];
 
     async function fetchGoogleMediaUri(photoName: string): Promise<string | null> {
       if (!googleKey) return null;
@@ -686,7 +689,10 @@ export const fetchPlaceDetails = createServerFn({ method: 'GET' })
       .parse(raw),
   )
   .handler(async ({ data }): Promise<PlaceDetailsPayload> => {
-    const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
+    const googleKey =
+      process.env['GOOGLE_PLACES_API_KEY'] ||
+      process.env['GOOGLE_MAPS_API_KEY'] ||
+      process.env['GOOGLE_API_KEY'];
     const query = [data.placeName, data.destination].filter(Boolean).join(', ');
 
     let address: string | null = null;
