@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { ArrowUp } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 const POPULAR_CITIES = [
@@ -14,21 +15,21 @@ const POPULAR_CITIES = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-16 w-full bg-surface-low py-12">
-      <div className="mx-auto max-w-7xl px-6 lg:px-12">
+    <footer className="mt-16 w-full border-t border-border bg-white py-14 dark:bg-slate-950">
+      <div className="mx-auto max-w-7xl px-5 lg:px-10">
         <div className="grid gap-10 md:grid-cols-4">
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <Link to="/" className="inline-block">
               <BrandLogo />
             </Link>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
-              AI-powered journey architect crafting personalized day-by-day itineraries tailored to your exact destination, budget, and pace.
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              Custom day-by-day travel itineraries powered by Gemini AI and verified local routes.
             </p>
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-              Popular destinations
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              Popular Destinations
             </h3>
             <ul className="mt-3.5 grid grid-cols-2 gap-x-4 gap-y-2">
               {POPULAR_CITIES.map((city) => (
@@ -36,7 +37,7 @@ export function SiteFooter() {
                   <Link
                     to="/"
                     search={{ city } as never}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                    className="text-xs text-muted-foreground transition-colors hover:text-primary"
                   >
                     {city}
                   </Link>
@@ -46,40 +47,57 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-              Navigation
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              Explore
             </h3>
             <ul className="mt-3.5 space-y-2">
               <li>
-                <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                  Discover &amp; AI Planner
+                <Link to="/" className="text-xs text-muted-foreground transition-colors hover:text-primary">
+                  Build Custom Plans
                 </Link>
               </li>
               <li>
-                <Link to="/explore" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                  Explore Destinations
+                <Link to="/explore" className="text-xs text-muted-foreground transition-colors hover:text-primary">
+                  Destinations Directory
                 </Link>
               </li>
               <li>
-                <Link to="/trips" className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                  Itineraries
+                <Link to="/trips" className="text-xs text-muted-foreground transition-colors hover:text-primary">
+                  Saved Itineraries
                 </Link>
               </li>
               <li>
-                <Link to="/favourites" className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                <Link to="/favourites" className="text-xs text-muted-foreground transition-colors hover:text-primary">
                   Favourites
                 </Link>
               </li>
               <li>
-                <Link to="/how-it-works" className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                <Link to="/how-it-works" className="text-xs text-muted-foreground transition-colors hover:text-primary">
                   How It Works
                 </Link>
               </li>
             </ul>
           </div>
+
+          <div className="flex flex-col items-start justify-between gap-4 md:items-end">
+            <div className="md:text-right">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                Contact
+              </h3>
+              <p className="mt-2 text-xs font-medium text-primary">hello@trippilot.com</p>
+            </div>
+            <button
+              type="button"
+              aria-label="Scroll to top"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="inline-flex size-9 items-center justify-center rounded-full bg-primary text-white shadow-md transition-transform hover:-translate-y-0.5"
+            >
+              <ArrowUp className="size-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 pt-6 text-xs text-muted-foreground sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row">
           <p>© 2026 TripPilot. All rights reserved.</p>
           <p>Verify seasonal opening hours and local advisories before visiting.</p>
         </div>

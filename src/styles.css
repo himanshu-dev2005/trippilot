@@ -1,6 +1,5 @@
 /*
  * Tailwind v4 entry: config lives here, with no tailwind.config.js or PostCSS plugin.
- * - Keep every @import in this top block, above @theme and the rest of the file.
  */
 @import "tailwindcss" source(none);
 @source "../src";
@@ -9,15 +8,14 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design system definition — TripPilot (Matching trippilot.com)
- * Clean modern travel SaaS: White surfaces, deep navy primary (#0f172a),
- * Vibrant teal accent (#0ea5e9), warm orange CTA (#f97316).
- * Typography: Inter / Plus Jakarta Sans, clean weights.
+ * TripPilot — Travel Photography-First Design
+ * Dark navy header, vivid green CTAs, full-bleed destination imagery
+ * Fonts: Poppins / Plus Jakarta Sans
  */
 
 @theme inline {
-  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-display: "Poppins", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Poppins", system-ui, sans-serif;
   --font-mono: "DM Mono", monospace;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -79,72 +77,71 @@
   --google-background: #f8fafc;
   --google-foreground: #0f172a;
   --google-border: #e2e8f0;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
-  /* TripPilot Light Tokens — clean white SaaS */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Light mode — clean white base */
+  --background: #ffffff;
+  --foreground: #111827;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #111827;
 
-  /* Primary: deep teal/sky — matches trippilot.com brand */
-  --primary: #0ea5e9;
+  /* Primary: vivid green — exact match to screenshot CTAs */
+  --primary: #22c55e;
   --primary-foreground: #ffffff;
-  --primary-container: #bae6fd;
-  --primary-fixed: #e0f2fe;
+  --primary-container: #dcfce7;
+  --primary-fixed: #f0fdf4;
 
-  /* Tertiary: warm orange accent for CTAs */
-  --tertiary: #f97316;
+  /* Tertiary: deep navy — header / dark sections */
+  --tertiary: #0f172a;
   --tertiary-foreground: #ffffff;
-  --tertiary-container: #fed7aa;
-  --tertiary-fixed: #fff7ed;
-  --tertiary-fixed-foreground: #9a3412;
+  --tertiary-container: #1e293b;
+  --tertiary-fixed: #0f172a;
+  --tertiary-fixed-foreground: #94a3b8;
 
-  --secondary: #f1f5f9;
-  --secondary-foreground: #334155;
+  --secondary: #f8fafc;
+  --secondary-foreground: #374151;
   --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #e0f2fe;
-  --accent-foreground: #0369a1;
+  --muted-foreground: #6b7280;
+  --accent: #dcfce7;
+  --accent-foreground: #15803d;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #0ea5e9;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #22c55e;
 
-  --surface-lowest: #f8fafc;
-  --surface-low: #f1f5f9;
-  --surface-high: #e2e8f0;
-  --outline: #94a3b8;
+  --surface-lowest: #f9fafb;
+  --surface-low: #f3f4f6;
+  --surface-high: #e5e7eb;
+  --outline: #9ca3af;
 
-  /* Subtle shadows — clean, not neomorphic */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.07), 0 4px 6px rgba(0,0,0,0.04);
-  --shadow-xl: 0 20px 25px rgba(0,0,0,0.08), 0 8px 10px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08);
+  --shadow-xl: 0 25px 50px rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.1);
 
-  /* Legacy neomorphic compat vars — kept as transparent so old classes gracefully fade */
-  --neu-shadow-dark: rgba(0, 0, 0, 0.0);
-  --neu-shadow-light: rgba(255, 255, 255, 0.0);
-  --neu-inset-dark: rgba(0, 0, 0, 0.0);
-  --neu-inset-light: rgba(255, 255, 255, 0.0);
+  /* Legacy compat — neutral, non-neomorphic */
+  --neu-shadow-dark: rgba(0,0,0,0.0);
+  --neu-shadow-light: rgba(255,255,255,0.0);
+  --neu-inset-dark: rgba(0,0,0,0.0);
+  --neu-inset-light: rgba(255,255,255,0.0);
 
-  --chart-1: #0ea5e9;
-  --chart-2: #f97316;
-  --chart-3: #8b5cf6;
-  --chart-4: #10b981;
+  --chart-1: #22c55e;
+  --chart-2: #0ea5e9;
+  --chart-3: #f97316;
+  --chart-4: #a855f7;
   --chart-5: #f59e0b;
 
   --sidebar: #f1f5f9;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #0ea5e9;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #22c55e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e0f2fe;
-  --sidebar-accent-foreground: #0369a1;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #0ea5e9;
+  --sidebar-accent: #dcfce7;
+  --sidebar-accent-foreground: #15803d;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #22c55e;
 }
 
 .dark {
@@ -152,7 +149,6 @@
   --google-foreground: #f1f5f9;
   --google-border: #334155;
 
-  /* TripPilot Dark Tokens */
   --background: #0f172a;
   --foreground: #f1f5f9;
   --card: #1e293b;
@@ -160,65 +156,62 @@
   --popover: #1e293b;
   --popover-foreground: #f1f5f9;
 
-  --primary: #38bdf8;
-  --primary-foreground: #0c2340;
-  --primary-container: #0369a1;
-  --primary-fixed: #0c3454;
+  --primary: #4ade80;
+  --primary-foreground: #052e16;
+  --primary-container: #14532d;
+  --primary-fixed: #052e16;
 
-  --tertiary: #fb923c;
-  --tertiary-foreground: #431407;
-  --tertiary-container: #c2410c;
-  --tertiary-fixed: #3c1a07;
-  --tertiary-fixed-foreground: #fed7aa;
+  --tertiary: #334155;
+  --tertiary-foreground: #f1f5f9;
+  --tertiary-container: #1e293b;
+  --tertiary-fixed: #0f172a;
+  --tertiary-fixed-foreground: #94a3b8;
 
   --secondary: #1e293b;
   --secondary-foreground: #cbd5e1;
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
-  --accent: #0c3454;
-  --accent-foreground: #7dd3fc;
+  --accent: #14532d;
+  --accent-foreground: #86efac;
   --destructive: #f87171;
   --destructive-foreground: #450a0a;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.10);
-  --ring: #38bdf8;
+  --border: rgba(255,255,255,0.08);
+  --input: rgba(255,255,255,0.10);
+  --ring: #4ade80;
 
   --surface-lowest: #090e1a;
   --surface-low: #111827;
   --surface-high: #1e293b;
   --outline: #64748b;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.2);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
-  --shadow-xl: 0 20px 25px rgba(0,0,0,0.35), 0 8px 10px rgba(0,0,0,0.2);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.25);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+  --shadow-xl: 0 25px 50px rgba(0,0,0,0.5);
 
-  --neu-shadow-dark: rgba(0, 0, 0, 0.0);
-  --neu-shadow-light: rgba(255, 255, 255, 0.0);
-  --neu-inset-dark: rgba(0, 0, 0, 0.0);
-  --neu-inset-light: rgba(255, 255, 255, 0.0);
+  --neu-shadow-dark: rgba(0,0,0,0.0);
+  --neu-shadow-light: rgba(255,255,255,0.0);
+  --neu-inset-dark: rgba(0,0,0,0.0);
+  --neu-inset-light: rgba(255,255,255,0.0);
 
-  --chart-1: #38bdf8;
-  --chart-2: #fb923c;
-  --chart-3: #a78bfa;
-  --chart-4: #34d399;
+  --chart-1: #4ade80;
+  --chart-2: #38bdf8;
+  --chart-3: #fb923c;
+  --chart-4: #c084fc;
   --chart-5: #fbbf24;
 
   --sidebar: #1e293b;
   --sidebar-foreground: #f1f5f9;
-  --sidebar-primary: #38bdf8;
-  --sidebar-primary-foreground: #0c2340;
-  --sidebar-accent: #0c3454;
-  --sidebar-accent-foreground: #7dd3fc;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #38bdf8;
+  --sidebar-primary: #4ade80;
+  --sidebar-primary-foreground: #052e16;
+  --sidebar-accent: #14532d;
+  --sidebar-accent-foreground: #86efac;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: #4ade80;
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
+  * { border-color: var(--color-border); }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -227,82 +220,108 @@
   }
 }
 
-/* =====================================================================
-   TripPilot Card & Button Utility Classes
-   Clean flat-shadow style matching trippilot.com
-   ===================================================================== */
-
-/* Card / raised surface — white card with clean shadow */
+/* ================================================================
+   Card & Surface utilities — clean shadow style (no neomorphism)
+   ================================================================ */
 .neu-raised {
   background-color: var(--card);
   box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
 }
-
 .neu-raised-lg {
   background-color: var(--card);
   box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border);
 }
-
 .neu-raised-sm {
   background-color: var(--card);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
 }
-
-/* Inset / input surface */
 .neu-inset {
   background-color: var(--surface-lowest);
   border: 1px solid var(--border);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
 }
-
 .neu-inset-clay {
   background-color: var(--surface-low);
   border: 1px solid var(--border);
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
-
 .neu-inset-sm {
   background-color: var(--surface-low);
   border: 1px solid var(--border);
 }
 
-/* Primary CTA button — sky blue / teal, matches trippilot.com */
+/* ================================================================
+   Primary CTA — vivid green (matches screenshot buttons exactly)
+   ================================================================ */
 .neu-btn-primary {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  background-color: #22c55e;
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
+  font-weight: 600;
   border: none;
+  transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-
 .neu-btn-primary:hover {
-  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
+  background-color: #16a34a;
   transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34,197,94,0.4);
 }
-
 .neu-btn-primary:active {
+  background-color: #15803d;
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
 }
 
-/* Orange CTA variant (tertiary) */
-.btn-cta-orange {
-  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
-  border: none;
+/* ================================================================
+   Destination card — full image overlay style (matches screenshot)
+   ================================================================ */
+.dest-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.dest-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+.dest-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+.dest-card:hover img {
+  transform: scale(1.07);
+}
+.dest-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1rem;
 }
 
-.btn-cta-orange:hover {
-  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.45);
-  transform: translateY(-1px);
+/* ================================================================
+   Section banner — full-bleed image with text overlay
+   ================================================================ */
+.section-banner {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+.section-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
 }
 
-/* Google sign-in button */
+/* Google sign-in */
 .google-signin {
   background: var(--google-background);
   color: var(--google-foreground);
@@ -314,14 +333,6 @@
 }
 
 @media print {
-  header,
-  footer,
-  .no-print {
-    display: none !important;
-  }
-
-  body {
-    background: #ffffff !important;
-    color: #000000 !important;
-  }
+  header, footer, .no-print { display: none !important; }
+  body { background: #ffffff !important; color: #000000 !important; }
 }

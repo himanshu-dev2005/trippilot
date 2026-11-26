@@ -1075,16 +1075,60 @@ export async function generateDirectGeminiItinerary(params: {
   const openrouterKey = process.env['OPENROUTER_API_KEY'];
   const googleKey = process.env['GOOGLE_PLACES_API_KEY'];
 
-  if (!geminiKey && !lovableKey && !openrouterKey && !groqKey) {
-    throw new Error(
-      'MISSING_GEMINI_KEY: No Gemini API key is configured. Add GEMINI_API_KEY to your .env file (or paste a Gemini API key below) to generate your itinerary directly with Gemini AI.',
-    );
-  }
-
   const prompt = buildDirectItineraryPrompt(params);
-  let lastError = 'Gemini AI did not return a valid itinerary response.';
 
   if (geminiKey) {
+    // 1. Try Gemini Interactions API first (gemini-3.8-flash)
+    try {
+      const interRes = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/interactions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': geminiKey,
+          },
+          body: JSON.stringify({
+            model: 'gemini-3.8-flash',
+            input: prompt,
+            generation_config: {
+              temperature: 0.35,
+            },
+          }),
+          signal: AbortSignal.timeout(12000),
+        },
+      );
+
+      if (interRes.ok) {
+        const interJson = (await interRes.json()) as {
+          outputs?: Array<{ text?: string; content?: string }>;
+          text?: string;
+        };
+        const rawText =
+          interJson.outputs?.map((o) => o.text ?? o.content ?? '').find((t) => t.trim().length > 0) ||
+          interJson.text;
+        const parsed = rawText ? parseDirectAiItinerary(rawText, params.destination) : null;
+        if (parsed) {
+          if (googleKey) {
+            const allStops = parsed.days.flatMap((d) => d.stops as AttractionCandidate[]);
+            const enriched = await enrichWithGooglePhotos(allStops, parsed.destination, googleKey);
+            let cursor = 0;
+            for (const day of parsed.days) {
+              day.stops = enriched.slice(cursor, cursor + day.stops.length);
+              cursor += day.stops.length;
+            }
+          }
+          return {
+            ...parsed,
+            modelName: 'Gemini 3.8 Flash (Interactions API)',
+          };
+        }
+      }
+    } catch {
+      // Fall through to generateContent models below
+    }
+
+    // 2. Fallback to generateContent REST endpoint
     const geminiModels = ['gemini-3.8-flash', 'gemini-2.5-flash'];
     for (const model of geminiModels) {
       try {
@@ -1100,15 +1144,11 @@ export async function generateDirectGeminiItinerary(params: {
                 responseMimeType: 'application/json',
               },
             }),
-            signal: AbortSignal.timeout(25000),
+            signal: AbortSignal.timeout(12000),
           },
         );
 
         if (!gemRes.ok) {
-          const errBody = (await gemRes.json().catch(() => ({}))) as {
-            error?: { message?: string };
-          };
-          lastError = errBody.error?.message || `Gemini API returned ${gemRes.status}`;
           continue;
         }
 
@@ -1132,9 +1172,8 @@ export async function generateDirectGeminiItinerary(params: {
             modelName: model === 'gemini-3.8-flash' ? 'Gemini 3.8 Flash' : 'Gemini 2.5 Flash',
           };
         }
-        lastError = 'Gemini returned an unexpected format. Please try again.';
-      } catch (err) {
-        lastError = err instanceof Error ? err.message : 'Gemini request timed out.';
+      } catch {
+        // Continue to next model
       }
     }
   }
@@ -1187,11 +1226,10 @@ export async function generateDirectGeminiItinerary(params: {
             { role: 'user', content: prompt },
           ],
         }),
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(12000),
       });
 
       if (!aiRes.ok) {
-        lastError = `${provider.label} returned ${aiRes.status}`;
         continue;
       }
 
@@ -1206,12 +1244,73 @@ export async function generateDirectGeminiItinerary(params: {
           modelName: provider.label,
         };
       }
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : 'AI request failed.';
+    } catch {
+      // Continue to next provider
     }
   }
 
-  throw new Error(lastError);
+  // 3. Resilient fallback: curated / OpenStreetMap attractions + route optimizer
+  const discovered = await discoverAttractions({
+    destination: params.destination,
+    interests: params.interests,
+    limit: Math.max(12, params.numberOfDays * 4),
+  });
+
+  const { optimizeItinerary } = await import('@/lib/optimizer');
+  const transport =
+    params.transportMode === 'transit' || params.transportMode === 'walking'
+      ? params.transportMode
+      : 'cab';
+
+  const optimized = optimizeItinerary({
+    destination: params.destination,
+    attractions: discovered.attractions,
+    numberOfDays: params.numberOfDays,
+    budget: params.budget,
+    ...(params.startDate ? { startDate: params.startDate } : {}),
+    transportMode: transport,
+  });
+
+  const usedIds = new Set(optimized.itinerary.flatMap((d) => d.stops.map((s) => s.attractionId)));
+  const extraCandidates = discovered.attractions.filter((a) => !usedIds.has(a.attractionId)).slice(0, 6);
+
+  const days: GeminiItineraryDay[] = optimized.itinerary.map((day) => ({
+    dayNumber: day.dayNumber,
+    title: `Day ${day.dayNumber} in ${params.destination}`,
+    summary: `${day.stops.length} curated stops optimized for ${transport} travel`,
+    stops: day.stops.map((s) => ({
+      attractionId: s.attractionId,
+      name: s.name,
+      startTime: s.startTime,
+      duration: s.duration,
+      category: s.category,
+      isOutdoor: s.isOutdoor,
+      rating: s.rating,
+      cost: s.cost,
+      coordinates: s.coordinates,
+      openingHours: s.openingHours,
+      ...(s.note ? { note: s.note } : {}),
+    })),
+  }));
+
+  const daySummaries = days
+    .map(
+      (d) =>
+        `Day ${d.dayNumber}: ${d.stops.map((s) => s.name).join(' → ')}`,
+    )
+    .join('\n');
+
+  return {
+    destination: params.destination,
+    center: discovered.center,
+    aiResponseText: `Here is your ${params.numberOfDays}-day ${params.destination} itinerary tailored for ₹${params.budget.toLocaleString('en-IN')} per person (${params.travelers} ${params.travelers === 1 ? 'traveler' : 'travelers'}):\n\n${daySummaries}`,
+    budgetSummary: `Estimated ₹${optimized.totalCost.toLocaleString('en-IN')} across ${params.numberOfDays} days (${optimized.remainingBudget >= 0 ? `₹${optimized.remainingBudget.toLocaleString('en-IN')} within` : `₹${Math.abs(optimized.remainingBudget).toLocaleString('en-IN')} over`} your ₹${params.budget.toLocaleString('en-IN')} budget).`,
+    days,
+    extraCandidates,
+    modelName: geminiKey
+      ? 'TripPilot Smart Route Optimizer (Fallback)'
+      : 'TripPilot Smart Route Optimizer',
+  };
 }
 
 export async function resolveStartPoint(

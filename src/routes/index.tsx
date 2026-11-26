@@ -80,7 +80,7 @@ import {
   type Stop,
   type TransportMode,
 } from '@/lib/optimizer';
-import { FEATURED_CIRCUITS, type FeaturedCircuit } from '@/lib/circuit-media';
+import { CIRCUIT_IMAGES, FEATURED_CIRCUITS, type FeaturedCircuit } from '@/lib/circuit-media';
 import { useAccount } from '@/components/AuthProvider';
 import { CityAutocomplete } from '@/components/CityAutocomplete';
 import { DestinationMap } from '@/components/DestinationMap';
@@ -263,6 +263,9 @@ function Index() {
       setError('');
       setNotice('');
       setNeedsGeminiKey(false);
+      requestAnimationFrame(() =>
+        document.getElementById('planning-progress')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+      );
 
       try {
         const res = await generateOptimizedTrip({
@@ -853,152 +856,141 @@ function Index() {
 
   return (
     <main className="min-h-screen w-full bg-background pb-20">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 py-8 lg:px-10">
-        {/* Hero Section: TripPilot.com style — gradient banner + clean white form card */}
-        <section
-          id="destinations"
-          className="no-print"
-        >
-          {/* Top gradient hero banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 px-8 py-12 text-white lg:px-14 lg:py-16">
-            {/* Decorative floating orbs */}
-            <div className="pointer-events-none absolute -right-20 -top-20 size-80 rounded-full bg-white/10 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -left-20 size-80 rounded-full bg-orange-400/20 blur-3xl" />
+      {/* 1. Full-Bleed Hero Banner (matching screenshot) */}
+      <section className="no-print relative h-[420px] w-full overflow-hidden lg:h-[480px]">
+        <img
+          src={CIRCUIT_IMAGES.udaipur}
+          alt="Discover iconic destinations"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/30 to-black/55" />
+        <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 text-center text-white">
+          <span className="mb-1 text-sm font-medium italic tracking-wide text-white/90 md:text-base">
+            Explore Iconic Destinations
+          </span>
+          <h1
+            className="text-5xl font-extrabold tracking-tight text-white drop-shadow-lg sm:text-6xl lg:text-7xl"
+            style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+          >
+            TripPilot
+          </h1>
+          <a
+            href="#planner-bar"
+            className="mt-5 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-green-600"
+          >
+            Explore
+          </a>
+        </div>
+      </section>
 
-            <div className="relative z-10 max-w-2xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 backdrop-blur-sm">
-                <Sparkles className="size-3.5 text-amber-300" />
-                <span className="text-xs font-semibold uppercase tracking-widest text-amber-100">
-                  AI-Powered Travel Planner
-                </span>
-              </div>
-              <h1 className="font-display text-3xl font-bold leading-tight tracking-tight lg:text-5xl">
-                Build a Custom-Fit Travel<br className="hidden lg:block" />{' '}
-                Itinerary For You
-              </h1>
-              <p className="mt-4 text-base leading-relaxed text-blue-100">
-                Tell us where you want to go, your budget, and how many days — Gemini AI creates your personalized day-by-day itinerary instantly.
-              </p>
-            </div>
+      {/* 2. Build Custom Travel Plans — Clean Centered Search Bar */}
+      <section id="planner-bar" className="no-print bg-white py-12 dark:bg-slate-900">
+        <div className="mx-auto max-w-5xl px-5">
+          <div className="mb-7 text-center">
+            <span className="text-xs font-semibold italic text-primary">Custom AI Planner</span>
+            <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Build Custom Travel Plans
+            </h2>
           </div>
 
-          {/* White form card floating below the banner */}
-          <div className="relative -mt-6 mx-4 rounded-2xl bg-white shadow-xl ring-1 ring-black/5 dark:bg-slate-800 dark:ring-white/5 lg:mx-8">
-            <form onSubmit={handleGenerate} className="flex flex-col gap-5 p-6 lg:p-8">
-              {/* Core User Inputs: Destination, Days, Budget, Travel Style */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
-                {/* Destination */}
-                <div className="flex flex-col gap-1.5 lg:col-span-5">
-                  <label
-                    htmlFor="destination"
-                    className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                  >
-                    Where do you want to go?
-                  </label>
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-background px-3.5 py-1.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                    <Compass className="size-4 shrink-0 text-muted-foreground" />
-                    <CityAutocomplete
-                      id="destination"
-                      value={destination}
-                      onChange={setDestination}
-                      placeholder="Jaipur, Goa, Kyoto, Manali..."
-                      inputClassName="h-10 text-sm font-medium"
-                    />
-                    <button
-                      type="button"
-                      onClick={detectCurrentCity}
-                      disabled={locatingCity}
-                      title="Use my current location"
-                      aria-label="Use my current location"
-                      className="flex size-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
-                    >
-                      {locatingCity ? (
-                        <LoaderCircle className="size-3.5 animate-spin" />
-                      ) : (
-                        <LocateFixed className="size-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Days */}
-                <div className="flex flex-col gap-1.5 lg:col-span-3">
-                  <label htmlFor="days-input" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    How many days?
-                  </label>
-                  <div className="flex h-[52px] items-center justify-between rounded-xl border border-border bg-background px-3.5 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="size-4 shrink-0 text-muted-foreground" />
-                      <input
-                        id="days-input"
-                        type="number"
-                        min={1}
-                        max={14}
-                        value={numberOfDays}
-                        onChange={(e) =>
-                          setNumberOfDays(Math.min(14, Math.max(1, Number(e.target.value) || 1)))
-                        }
-                        className="w-14 bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
-                      />
-                      <span className="text-xs text-muted-foreground">days</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        aria-label="Decrease days"
-                        onClick={() => setNumberOfDays((d) => Math.max(1, d - 1))}
-                        className="flex size-7 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Minus className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Increase days"
-                        onClick={() => setNumberOfDays((d) => Math.min(14, d + 1))}
-                        className="flex size-7 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <Plus className="size-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Budget */}
-                <div className="flex flex-col gap-1.5 lg:col-span-4">
-                  <label htmlFor="budget" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Budget per person (₹ INR)
-                  </label>
-                  <div className="flex h-[52px] items-center gap-2.5 rounded-xl border border-border bg-background px-4 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-                    <Wallet className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="font-mono text-sm font-semibold text-primary">₹</span>
-                    <input
-                      id="budget"
-                      type="number"
-                      min={0}
-                      step={500}
-                      value={budget}
-                      onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
-                      placeholder="e.g. 6000"
-                      className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
-                    />
-                  </div>
-                </div>
+          <form onSubmit={handleGenerate} className="flex flex-col items-center gap-4">
+            <div className="flex w-full flex-col items-stretch gap-2 rounded-xl border border-border bg-white p-2 shadow-lg dark:bg-slate-800 md:flex-row md:items-center">
+              {/* Destination */}
+              <div className="flex flex-[2] items-center gap-2 rounded-lg px-3 py-1.5">
+                <Compass className="size-4 shrink-0 text-muted-foreground" />
+                <CityAutocomplete
+                  id="destination"
+                  value={destination}
+                  onChange={setDestination}
+                  placeholder="Where do you want to go? (e.g. Dehradun, Jaipur, Goa)"
+                  inputClassName="h-10 text-sm font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={detectCurrentCity}
+                  disabled={locatingCity}
+                  title="Use my current location"
+                  aria-label="Use my current location"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary"
+                >
+                  {locatingCity ? (
+                    <LoaderCircle className="size-3.5 animate-spin" />
+                  ) : (
+                    <LocateFixed className="size-3.5" />
+                  )}
+                </button>
               </div>
 
-              {/* Travel Style Pills */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Travel Style</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowOptions((v) => !v)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
-                  >
-                    <SlidersHorizontal className="size-3.5" />
-                    {showOptions ? 'Hide extra options' : 'Travelers, dates & transport'}
-                  </button>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 py-1">
+              <div className="hidden h-7 w-px bg-border md:block" />
+
+              {/* Days */}
+              <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 md:w-36">
+                <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                <input
+                  id="days-input"
+                  type="number"
+                  min={1}
+                  max={14}
+                  value={numberOfDays}
+                  onChange={(e) =>
+                    setNumberOfDays(Math.min(14, Math.max(1, Number(e.target.value) || 1)))
+                  }
+                  aria-label="Days"
+                  className="w-10 bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                />
+                <span className="text-xs text-muted-foreground">days</span>
+              </div>
+
+              <div className="hidden h-7 w-px bg-border md:block" />
+
+              {/* Budget */}
+              <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 md:w-40">
+                <Wallet className="size-4 shrink-0 text-muted-foreground" />
+                <span className="font-mono text-sm font-semibold text-primary">₹</span>
+                <input
+                  id="budget"
+                  type="number"
+                  min={0}
+                  step={500}
+                  value={budget}
+                  onChange={(e) => setBudget(Math.max(0, Number(e.target.value) || 0))}
+                  placeholder="6000"
+                  aria-label="Budget"
+                  className="w-full bg-transparent font-mono text-sm font-semibold tabular-nums text-foreground focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !destination.trim()}
+                className="neu-btn-primary inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-7 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <Zap className="size-4 fill-current" />
+                )}
+                <span>{loading ? 'Planning…' : 'Plan Trip'}</span>
+              </button>
+            </div>
+
+            {/* Customize Options Toggle Pill */}
+            <button
+              type="button"
+              onClick={() => setShowOptions((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-green-600"
+            >
+              <SlidersHorizontal className="size-3.5" />
+              {showOptions ? 'Hide Extra Options' : 'Customize Style, Travelers & Dates'}
+            </button>
+
+            {/* Extra Options Drawer */}
+            {showOptions && (
+              <div className="mt-2 w-full rounded-xl border border-border bg-surface-lowest p-5 text-left shadow-sm">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  <span className="mr-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Travel Style:
+                  </span>
                   {TRAVEL_STYLES.map((style) => {
                     const active = interests.includes(style.label);
                     return (
@@ -1007,23 +999,20 @@ function Index() {
                         type="button"
                         aria-pressed={active}
                         onClick={() => toggleInterest(style.label)}
-                        className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all border ${
+                        className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
                           active
-                            ? 'bg-primary text-white border-primary shadow-sm'
-                            : 'bg-background border-border text-foreground hover:border-primary hover:text-primary'
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-border bg-white text-foreground hover:border-primary dark:bg-slate-800'
                         }`}
                       >
-                        <span>{style.short}</span>
+                        {style.short}
                       </button>
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Extra Options Panel */}
-              {showOptions && (
-                <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-muted/40 p-5 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="flex flex-col gap-1.5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="flex flex-col gap-1">
                     <label htmlFor="travelers" className="text-xs font-semibold text-muted-foreground">
                       Travelers
                     </label>
@@ -1034,11 +1023,10 @@ function Index() {
                       max={20}
                       value={travelers}
                       onChange={(e) => setTravelers(Math.max(1, Number(e.target.value) || 1))}
-                      className="h-10 rounded-xl border border-border bg-background px-3.5 font-mono text-sm font-medium text-foreground focus:outline-none focus:border-primary"
+                      className="h-9 rounded-lg border border-border bg-background px-3 font-mono text-sm text-foreground"
                     />
                   </div>
-
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1">
                     <label htmlFor="startDate" className="text-xs font-semibold text-muted-foreground">
                       Start date
                     </label>
@@ -1047,26 +1035,24 @@ function Index() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="h-10 rounded-xl border border-border bg-background px-3.5 text-sm font-medium text-foreground focus:outline-none focus:border-primary"
+                      className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                     />
                   </div>
-
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1">
                     <label htmlFor="startPoint" className="text-xs font-semibold text-muted-foreground">
-                      Starting hotel / area (optional)
+                      Starting hotel / area
                     </label>
                     <input
                       id="startPoint"
                       value={startPointQuery}
                       onChange={(e) => setStartPointQuery(e.target.value)}
-                      placeholder="e.g. Connaught Place, Baga..."
-                      className="h-10 rounded-xl border border-border bg-background px-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                      placeholder="e.g. Rajpur Road, Baga..."
+                      className="h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground"
                     />
                   </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold text-muted-foreground">Local transport</span>
-                    <div className="flex h-10 items-center gap-1 rounded-xl border border-border bg-background p-1">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-semibold text-muted-foreground">Transport</span>
+                    <div className="flex h-9 items-center gap-1 rounded-lg border border-border bg-background p-0.5">
                       {TRANSPORT_OPTIONS.map(({ mode, label, icon: Icon }) => {
                         const active = transportMode === mode;
                         return (
@@ -1074,13 +1060,11 @@ function Index() {
                             key={mode}
                             type="button"
                             onClick={() => setTransportMode(mode)}
-                            className={`flex h-8 flex-1 items-center justify-center gap-1 rounded-lg text-xs font-semibold transition-all ${
-                              active
-                                ? 'bg-primary text-primary-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
+                            className={`flex h-7 flex-1 items-center justify-center gap-1 rounded-md text-xs font-semibold ${
+                              active ? 'bg-primary text-white' : 'text-muted-foreground'
                             }`}
                           >
-                            <Icon className="size-3.5" />
+                            <Icon className="size-3" />
                             {label}
                           </button>
                         );
@@ -1088,182 +1072,359 @@ function Index() {
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Optional Gemini API Key prompt only if server key is not set */}
-              {needsGeminiKey && (
-                <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800/40 dark:bg-amber-950/20">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                    <KeyRound className="size-4" />
-                    <span>Gemini API Key Required</span>
-                  </div>
-                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
-                    Set <code className="font-mono text-foreground">GEMINI_API_KEY</code> in your server <code className="font-mono text-foreground">.env</code> file, or paste a Gemini API key below for this session:
-                  </p>
-                  <input
-                    type="password"
-                    value={customGeminiKey}
-                    onChange={(e) => setCustomGeminiKey(e.target.value)}
-                    placeholder="Paste Gemini API key (AIza...) for this session"
-                    className="h-11 w-full rounded-xl border border-border bg-background px-4 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-              )}
-
-              {/* Action Row */}
-              <div className="flex flex-col items-center justify-between gap-4 pt-1 sm:flex-row">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                    AI
-                  </div>
-                  <span>
-                    Powered by Gemini AI — real responses to your exact trip details.
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading || !destination.trim()}
-                  className="btn-cta-orange flex w-full items-center justify-center gap-2.5 rounded-xl px-8 py-4 font-display text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  {loading ? (
-                    <LoaderCircle className="size-4 animate-spin" />
-                  ) : (
-                    <Zap className="size-4 fill-current" />
-                  )}
-                  <span>{loading ? 'Generating with Gemini…' : 'Plan My Trip'}</span>
-                </button>
-              </div>
-            </form>
-
-            {error && (
-              <div
-                role="alert"
-                className="mx-6 mb-5 rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive"
-              >
-                {error}
               </div>
             )}
-            {notice && (
-              <div
-                role="status"
-                className="mx-6 mb-5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary"
-              >
-                {notice}
+
+            {needsGeminiKey && (
+              <div className="w-full rounded-xl border border-amber-300 bg-amber-50 p-4 text-left dark:bg-amber-950/30">
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 dark:text-amber-300">
+                  <KeyRound className="size-4" />
+                  <span>Optional: Paste a Gemini API Key</span>
+                </div>
+                <input
+                  type="password"
+                  value={customGeminiKey}
+                  onChange={(e) => setCustomGeminiKey(e.target.value)}
+                  placeholder="Paste Gemini API key (AIza...) if you want custom LLM prose"
+                  className="mt-2 h-10 w-full rounded-lg border border-border bg-white px-3 font-mono text-xs text-foreground"
+                />
               </div>
             )}
-          </div>
-        </section>
+          </form>
 
-        {/* Saved Trips Quick Strip */}
-        {savedTrips.length > 0 && (
-          <section className="no-print flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground">Your saved trips</h2>
-              <Link to="/trips" className="text-xs font-semibold text-primary hover:underline">
-                Manage all trips →
-              </Link>
+          {error && (
+            <div
+              id="planner-error"
+              role="alert"
+              className="mt-4 rounded-lg border border-destructive/25 bg-destructive/10 px-4 py-3 text-center text-sm font-medium text-destructive"
+            >
+              {error}
             </div>
-            <div className="flex flex-wrap gap-3">
-              {savedTrips.slice(0, 5).map((saved) => (
-                <div
-                  key={saved._id}
-                  className="neu-raised-sm flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm"
+          )}
+          {notice && (
+            <div
+              role="status"
+              className="mt-4 rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-center text-sm font-medium text-green-700 dark:text-green-300"
+            >
+              {notice}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Loading View */}
+      {loading && (
+        <div id="planning-progress" className="mx-auto max-w-5xl px-5 py-8">
+          <PlanningProgressView destination={destination || 'your trip'} />
+        </div>
+      )}
+
+      {/* Saved Trips Quick Strip */}
+      {savedTrips.length > 0 && !loading && (
+        <section className="no-print mx-auto max-w-7xl px-5 pt-4 lg:px-10">
+          <div className="flex items-center justify-between pb-3">
+            <h2 className="text-sm font-bold text-foreground">Your Saved Trips</h2>
+            <Link to="/trips" className="text-xs font-semibold text-primary hover:underline">
+              Manage all →
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            {savedTrips.slice(0, 5).map((saved) => (
+              <div
+                key={saved._id}
+                className="flex items-center gap-2 rounded-lg border border-border bg-white px-3.5 py-2 text-xs shadow-sm dark:bg-slate-800"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleLoadSavedTrip(saved)}
+                  className="font-semibold text-foreground hover:text-primary"
                 >
+                  {saved.destination} · {saved.numberOfDays}d · ₹{saved.budget.toLocaleString('en-IN')}
+                </button>
+                {saved._id && (
                   <button
                     type="button"
-                    onClick={() => handleLoadSavedTrip(saved)}
-                    className="font-semibold text-foreground hover:text-primary"
+                    aria-label={`Delete ${saved.destination} trip`}
+                    onClick={() => void handleDeleteSavedTrip(saved._id!)}
+                    className="text-muted-foreground hover:text-destructive"
                   >
-                    {saved.destination} · {saved.numberOfDays}d · ₹{saved.budget.toLocaleString('en-IN')}
+                    <Trash2 className="size-3.5" />
                   </button>
-                  {saved._id && (
-                    <button
-                      type="button"
-                      aria-label={`Delete ${saved.destination} trip`}
-                      onClick={() => void handleDeleteSavedTrip(saved._id!)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 3. Photography-First Discovery Sections (shown before a trip is generated) */}
+      {!trip && !loading && (
+        <div className="flex flex-col">
+          {/* Hot Picks (Soft mint-tinted section, 2-column horizontal photo cards) */}
+          <section className="bg-[#f3fbf6] py-12 dark:bg-slate-900/60">
+            <div className="mx-auto max-w-7xl px-5 lg:px-10">
+              <div className="mb-7 text-center">
+                <span className="text-xs font-semibold italic text-primary">Handcrafted Routes</span>
+                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">Hot Picks</h2>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                {FEATURED_CIRCUITS.slice(0, 2).map((c) => (
+                  <div
+                    key={c.city}
+                    onClick={() => void handlePlanCircuit(c)}
+                    className="dest-card group relative h-64 cursor-pointer rounded-xl"
+                  >
+                    <img src={c.image} alt={c.title} loading="lazy" />
+                    <div className="dest-card-overlay justify-between p-6">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-xs font-medium text-green-300">{c.region}</span>
+                          <h3 className="text-xl font-bold text-white">{c.title}</h3>
+                          <p className="mt-1 text-xs text-white/85">{c.subtitle}</p>
+                        </div>
+                        <span className="rounded bg-black/50 px-2.5 py-1 text-xs font-semibold text-white">
+                          {c.days} Days · ₹{c.budget.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="flex items-end justify-between">
+                        <div className="flex gap-2">
+                          {FEATURED_CIRCUITS.slice(2, 5).map((thumb) => (
+                            <img
+                              key={thumb.city}
+                              src={thumb.image}
+                              alt={thumb.title}
+                              className="h-11 w-14 rounded border border-white/60 object-cover"
+                            />
+                          ))}
+                        </div>
+                        <span className="rounded-md bg-primary px-4 py-1.5 text-xs font-semibold text-white shadow">
+                          View Plan
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-7 text-center">
+                <Link
+                  to="/explore"
+                  className="inline-block rounded-md bg-primary px-6 py-2 text-xs font-semibold text-white shadow hover:bg-green-600"
+                >
+                  View All Hot Picks
+                </Link>
+              </div>
             </div>
           </section>
-        )}
 
-        {/* Loading View */}
-        {loading && <PlanningProgressView destination={destination || 'your trip'} />}
-
-        {/* Trending Destinations Cards (Only shown before a trip is generated) */}
-        {!trip && !loading && (
-          <section className="flex flex-col gap-8">
-            <div className="flex items-end justify-between">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="size-4 text-tertiary" />
-                  <span className="text-xs font-semibold uppercase tracking-widest text-tertiary">
-                    Global &amp; India Pulse
-                  </span>
-                </div>
-                <h2 className="font-display text-2xl font-semibold text-foreground lg:text-3xl">
-                  Trending Destinations
+          {/* Beach & Coast Destinations (4-column portrait cards) */}
+          <section className="bg-white py-12 dark:bg-slate-950">
+            <div className="mx-auto max-w-7xl px-5 lg:px-10">
+              <div className="mb-7 text-center">
+                <span className="text-xs font-semibold italic text-primary">Top Escapes</span>
+                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">
+                  Popular Destinations
                 </h2>
               </div>
-              <Link
-                to="/explore"
-                className="text-sm font-semibold text-primary transition-colors hover:underline"
-              >
-                Explore all →
-              </Link>
-            </div>
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {FEATURED_CIRCUITS.slice(0, 6).map((c) => (
-                <button
-                  key={c.city}
-                  type="button"
-                  onClick={() => void handlePlanCircuit(c)}
-                  className="neu-raised group flex cursor-pointer flex-col gap-4 rounded-2xl p-5 text-left transition-all hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="neu-inset relative h-60 w-full overflow-hidden rounded-xl">
-                    <img
-                      src={c.image}
-                      alt={c.title}
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute right-3 top-3 flex items-center gap-1 rounded-lg bg-background/85 px-2.5 py-1 text-xs font-semibold text-foreground backdrop-blur-md shadow-sm">
-                      <Star className="size-3.5 fill-amber-500 text-amber-500" />
-                      {c.rating}
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {FEATURED_CIRCUITS.slice(2, 6).map((c) => (
+                  <div
+                    key={c.city}
+                    onClick={() => void handlePlanCircuit(c)}
+                    className="dest-card h-80 rounded-xl"
+                  >
+                    <img src={c.image} alt={c.title} loading="lazy" />
+                    <div className="dest-card-overlay justify-between p-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{c.title}</h3>
+                        <p className="text-xs text-white/85">{c.region}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="rounded bg-primary px-3 py-1 text-xs font-semibold text-white">
+                          Explore
+                        </span>
+                        <span className="text-xs font-semibold text-white/90">
+                          ₹{c.budget.toLocaleString('en-IN')}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <h3 className="font-display text-lg font-semibold text-foreground group-hover:text-primary">
-                        {c.title}
-                      </h3>
-                      <span className="shrink-0 text-xs font-semibold text-primary">
-                        Budget ₹{c.budget.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">{c.subtitle}</p>
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock3 className="size-3.5" /> {c.days} days recommended
-                    </span>
-                    <span className="text-xs font-semibold text-primary transition-transform group-hover:translate-x-1">
-                      Generate with AI →
-                    </span>
-                  </div>
-                </button>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
-        )}
+
+          {/* Full-Bleed Dark Jungle / Nature Section (matching Wildlife Safaris band) */}
+          <section className="relative overflow-hidden bg-[#0a2e1f] py-14 text-white">
+            <img
+              src={CIRCUIT_IMAGES.kerala}
+              alt="Nature and wildlife escapes"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25"
+            />
+            <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-10">
+              <div className="mb-8 text-center">
+                <span className="text-xs font-semibold italic text-green-400">Explore Your</span>
+                <h2 className="mt-1 font-display text-3xl font-extrabold uppercase tracking-wide text-white sm:text-4xl">
+                  Nature &amp; Backwaters
+                </h2>
+              </div>
+
+              <div className="mx-auto grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-3">
+                {[FEATURED_CIRCUITS[3], FEATURED_CIRCUITS[4], FEATURED_CIRCUITS[5]]
+                  .filter((c): c is FeaturedCircuit => Boolean(c))
+                  .map((c) => (
+                    <div
+                      key={c.city}
+                      onClick={() => void handlePlanCircuit(c)}
+                      className="dest-card h-56 rounded-xl border border-white/15"
+                    >
+                      <img src={c.image} alt={c.title} loading="lazy" />
+                      <div className="dest-card-overlay p-4">
+                        <h3 className="text-base font-bold text-white">{c.title}</h3>
+                        <span className="mt-2 inline-block w-fit rounded bg-primary px-3 py-1 text-xs font-semibold text-white">
+                          Explore
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Full-Bleed Dark Adventure Section (matching ADVENTURE band) */}
+          <section className="relative overflow-hidden bg-[#182230] py-14 text-white">
+            <img
+              src={CIRCUIT_IMAGES.ladakh}
+              alt="Mountain adventures"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30"
+            />
+            <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-10">
+              <div className="mb-8 text-center">
+                <span className="text-xs font-semibold italic text-white/80">Time to go for</span>
+                <h2 className="mt-1 font-display text-4xl font-black uppercase tracking-wider text-primary sm:text-5xl">
+                  ADVENTURE
+                </h2>
+              </div>
+
+              <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:grid-cols-3">
+                {FEATURED_CIRCUITS.filter((c) => c.regionGroup === 'North & Himalayas')
+                  .slice(0, 3)
+                  .map((c) => (
+                    <div
+                      key={c.city}
+                      onClick={() => void handlePlanCircuit(c)}
+                      className="group cursor-pointer rounded-md bg-white p-2 shadow-xl transition-transform hover:-translate-y-1"
+                    >
+                      <div className="relative h-44 overflow-hidden">
+                        <img
+                          src={c.image}
+                          alt={c.title}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                          <span className="text-sm font-bold text-white">{c.title}</span>
+                          <span className="rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-white">
+                            Explore
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Best Selling Experiences (Split white feature card) */}
+          <section className="bg-[#f3fbf6] py-12 dark:bg-slate-900/60">
+            <div className="mx-auto max-w-6xl px-5 lg:px-10">
+              <div className="mb-7 text-center">
+                <span className="text-xs font-semibold italic text-primary">Curated Classic</span>
+                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">
+                  Best Selling Experiences
+                </h2>
+              </div>
+
+              <div className="grid overflow-hidden rounded-2xl bg-white shadow-lg dark:bg-slate-800 md:grid-cols-2">
+                <div className="flex flex-col justify-center p-8 lg:p-12">
+                  <span className="text-xs font-semibold text-primary">4 Days · Rajasthan</span>
+                  <h3 className="mt-2 font-display text-2xl font-bold text-foreground">
+                    Royal Jaipur Heritage
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    Amber Fort at sunrise, Hawa Mahal, traditional Rajasthani thalis, and sunset views over Nahargarh — sequenced into an effortless 4-day route.
+                  </p>
+                  <div className="mt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const jaipur = FEATURED_CIRCUITS.find((c) => c.city === 'Jaipur');
+                        if (jaipur) void handlePlanCircuit(jaipur);
+                      }}
+                      className="rounded-md bg-primary px-6 py-2.5 text-xs font-semibold text-white shadow hover:bg-green-600"
+                    >
+                      Plan This Trip
+                    </button>
+                  </div>
+                </div>
+                <div className="h-72 md:h-auto">
+                  <img
+                    src={CIRCUIT_IMAGES.jaipur}
+                    alt="Jaipur Heritage"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Spiritual & Cultural Journeys (4-column white cards) */}
+          <section className="bg-white py-12 dark:bg-slate-950">
+            <div className="mx-auto max-w-7xl px-5 lg:px-10">
+              <div className="mb-7 text-center">
+                <span className="text-xs font-semibold italic text-primary">Don't Miss Out</span>
+                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">
+                  Spiritual &amp; Heritage Journeys
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                {FEATURED_CIRCUITS.slice(0, 4).map((c) => (
+                  <div
+                    key={c.city}
+                    onClick={() => void handlePlanCircuit(c)}
+                    className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:bg-slate-800"
+                  >
+                    <div className="h-44 overflow-hidden">
+                      <img
+                        src={c.image}
+                        alt={c.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-display text-base font-bold text-foreground">{c.title}</h3>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.subtitle}</p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {c.days} days · ₹{c.budget.toLocaleString('en-IN')}
+                        </span>
+                        <span className="rounded bg-primary px-3 py-1 text-[11px] font-semibold text-white">
+                          Plan
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-5 pt-8 lg:px-10">
 
         {/* Active Itinerary Dashboard (Stitch Itineraries Dashboard + Budget Collaboration) */}
         {trip && !loading && (
