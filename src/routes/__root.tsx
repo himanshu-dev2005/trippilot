@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { SiteHeader } from "../components/SiteHeader";
 import { SiteFooter } from "../components/SiteFooter";
 import { AuthProvider } from "../components/AuthProvider";
+import { TravelChatbot } from "../components/TravelChatbot";
 
 function NotFoundComponent() {
   return (
@@ -133,6 +134,7 @@ function RootComponent() {
           <Outlet />
         </div>
         <SiteFooter />
+        <TravelChatbot />
       </div>
       </AuthProvider>
     </QueryClientProvider>

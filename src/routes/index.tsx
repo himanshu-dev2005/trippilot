@@ -320,6 +320,29 @@ function Index() {
   const [favourites, setFavourites] = useState<string[]>([]);
   const autoTriggeredRef = useRef(false);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!trip) {
+      window.sessionStorage.removeItem('trippilot:active-trip-context');
+    } else {
+      const stopsSummary = trip.itinerary
+        .map((d) => `Day ${d.dayNumber}: ${d.stops.map((s) => s.name).join(', ')}`)
+        .join(' | ');
+      window.sessionStorage.setItem(
+        'trippilot:active-trip-context',
+        JSON.stringify({
+          destination: trip.destination,
+          numberOfDays: trip.numberOfDays,
+          budget: trip.budget,
+          travelers: trip.travelers,
+          transportMode: trip.transportMode,
+          stopsSummary,
+        }),
+      );
+    }
+    window.dispatchEvent(new Event('trippilot:trip-context'));
+  }, [trip]);
+
   const runTripGeneration = useCallback(
     async (overrides?: {
       destination?: string;

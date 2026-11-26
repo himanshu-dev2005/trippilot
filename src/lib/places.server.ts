@@ -1350,3 +1350,169 @@ export async function resolveStartPoint(
 
   return undefined;
 }
+
+export type ChatMessageItem = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+export type ChatTripContext = {
+  destination?: string | undefined;
+  numberOfDays?: number | undefined;
+  budget?: number | undefined;
+  travelers?: number | undefined;
+  transportMode?: string | undefined;
+  stopsSummary?: string | undefined;
+};
+
+function buildOfflineTravelReply(message: string, tripContext?: ChatTripContext): string {
+  const q = message.toLowerCase();
+  const dest = tripContext?.destination || 'your destination in India';
+
+  if (/food|eat|cafe|restaurant|dish|street/.test(q)) {
+    return `For ${dest}, aim for busy local dhabas and legacy sweet/chaat shops around main bazaars rather than empty tourist-facing eateries. Carry ₹300–₹500 in small cash notes for street stalls, and check Google Maps reviews from the last 3 months before ordering.`;
+  }
+  if (/transport|cab|auto|metro|scooter|bus|reach|travel|commute/.test(q)) {
+    return `In ${dest}, compare Uber/Ola fares against prepaid auto stands before boarding. For hill stations (Leh, Manali, Mussoorie), shared Sumo/Tempo stands are much cheaper than private cabs; for Goa, Hampi, or Pondicherry, renting a scooter (~₹400–₹600/day) is usually fastest.`;
+  }
+  if (/pack|cloth|wear|weather|rain|cold|heat/.test(q)) {
+    return `Pack breathable cotton layers, comfortable walking shoes, a light windcheater or umbrella, sunscreen, a reusable water bottle, and a power bank. For temples/monuments in ${dest}, carry modest shoulder/knee coverage and easy-to-slip-off footwear.`;
+  }
+  if (/safe|scam|emergency|helpline|women|solo/.test(q)) {
+    return `Key India travel helplines: National Emergency 112, Tourist Helpline 1363, Women Helpline 1091. Stick to app-booked rides or prepaid booths at stations/airports, confirm monument entry fees on official ASI counters, and keep offline Google Maps downloaded for ${dest}.`;
+  }
+  if (/budget|cost|money|cheap|save|upi|cash/.test(q)) {
+    const budgetHint = tripContext?.budget ? ` (your current plan is ₹${tripContext.budget.toLocaleString('en-IN')})` : '';
+    return `To stretch your budget in ${dest}${budgetHint}, group nearby sights on the same day, visit ASI monuments in the morning, eat lunch at local thali spots, and use Metro/auto combos where available. Keep ₹500–₹1,000 cash for temple lockers and remote viewpoints where UPI drops.`;
+  }
+
+  const contextLine = tripContext?.destination
+    ? `I see you're planning ${tripContext.numberOfDays ?? ''}-day trip to ${tripContext.destination}${tripContext.stopsSummary ? ` (${tripContext.stopsSummary})` : ''}. `
+    : '';
+  return `${contextLine}Ask me anything about ${dest} — best local food, transport & scooter/cab tips, hidden gems, packing advice, monument timings, or budget tweaks!`;
+}
+
+export async function chatWithTripPilotAI(params: {
+  message: string;
+  history?: ChatMessageItem[];
+  tripContext?: ChatTripContext;
+  geminiApiKey?: string;
+}): Promise<{ reply: string; modelName: string }> {
+  const geminiKey =
+    params.geminiApiKey?.trim() || process.env['GEMINI_API_KEY'] || process.env['GOOGLE_API_KEY'];
+  const lovableKey = process.env['LOVABLE_API_KEY'];
+  const openrouterKey = process.env['OPENROUTER_API_KEY'];
+  const groqKey = process.env['GROQ_API_KEY'];
+
+  const ctx = params.tripContext;
+  const systemPrompt = [
+    'You are TripPilot AI, a concise, practical, India-focused travel co-pilot.',
+    'Give specific, actionable advice with realistic INR prices, local transit tips, timings, and safety/etiquette notes.',
+    'Keep answers clear and scannable (under 180 words unless asked for a detailed plan).',
+    ctx?.destination
+      ? `Active Trip Context: Destination=${ctx.destination}, Days=${ctx.numberOfDays ?? 'N/A'}, Budget=₹${ctx.budget ?? 'N/A'}, Travelers=${ctx.travelers ?? 1}, Transport=${ctx.transportMode ?? 'cab'}.${ctx.stopsSummary ? ` Planned stops: ${ctx.stopsSummary}` : ''}`
+      : 'No active itinerary loaded yet; help the user choose destinations, routes, budgets, or local tips across India.',
+  ].join('\n');
+
+  const historyLines = (params.history ?? [])
+    .slice(-8)
+    .map((m) => `${m.role === 'user' ? 'Traveler' : 'TripPilot AI'}: ${m.content}`)
+    .join('\n');
+
+  const fullPrompt = `${systemPrompt}\n\n${historyLines ? `Recent conversation:\n${historyLines}\n\n` : ''}Traveler: ${params.message}\nTripPilot AI:`;
+
+  if (geminiKey) {
+    for (const model of ['gemini-3.8-flash', 'gemini-2.5-flash'] as const) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: fullPrompt }] }],
+              generationConfig: { temperature: 0.45, maxOutputTokens: 450 },
+            }),
+            signal: AbortSignal.timeout(9000),
+          },
+        );
+        if (!res.ok) continue;
+        const json = (await res.json()) as {
+          candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+        };
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text) {
+          return {
+            reply: text,
+            modelName: model === 'gemini-3.8-flash' ? 'Gemini 3.8 Flash' : 'Gemini 2.5 Flash',
+          };
+        }
+      } catch {
+        // try next model
+      }
+    }
+  }
+
+  const openAiProviders = [
+    lovableKey
+      ? {
+          url: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+          key: lovableKey,
+          model: 'google/gemini-3.8-flash',
+          label: 'Gemini 3.8 Flash (Lovable AI)',
+        }
+      : null,
+    openrouterKey
+      ? {
+          url: 'https://openrouter.ai/api/v1/chat/completions',
+          key: openrouterKey,
+          model: 'google/gemini-2.0-flash-exp:free',
+          label: 'Gemini 2.0 Flash (OpenRouter)',
+        }
+      : null,
+    groqKey
+      ? {
+          url: 'https://api.groq.com/openai/v1/chat/completions',
+          key: groqKey,
+          model: 'llama-3.3-70b-versatile',
+          label: 'Llama 3.3 70B',
+        }
+      : null,
+  ].filter((p): p is { url: string; key: string; model: string; label: string } => Boolean(p));
+
+  for (const provider of openAiProviders) {
+    try {
+      const res = await fetch(provider.url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${provider.key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          temperature: 0.45,
+          max_tokens: 450,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...(params.history ?? []).slice(-8).map((m) => ({ role: m.role, content: m.content })),
+            { role: 'user', content: params.message },
+          ],
+        }),
+        signal: AbortSignal.timeout(9000),
+      });
+      if (!res.ok) continue;
+      const json = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      const text = json.choices?.[0]?.message?.content?.trim();
+      if (text) return { reply: text, modelName: provider.label };
+    } catch {
+      // try next provider
+    }
+  }
+
+  return {
+    reply: buildOfflineTravelReply(params.message, params.tripContext),
+    modelName: 'TripPilot Smart Guide',
+  };
+}

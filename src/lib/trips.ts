@@ -1319,3 +1319,37 @@ export const updateTripExpenses = createServerFn({ method: 'POST' })
     );
     return { ok: true };
   });
+
+const ChatAssistantSchema = z.object({
+  message: z.string().trim().min(1).max(1000),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+      }),
+    )
+    .max(12)
+    .optional(),
+  tripContext: z
+    .object({
+      destination: z.string().optional(),
+      numberOfDays: z.number().optional(),
+      budget: z.number().optional(),
+      travelers: z.number().optional(),
+      transportMode: z.string().optional(),
+      stopsSummary: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const askTravelAssistant = createServerFn({ method: 'POST' })
+  .inputValidator((raw: unknown) => ChatAssistantSchema.parse(raw))
+  .handler(async ({ data }): Promise<{ reply: string; modelName: string }> => {
+    const { chatWithTripPilotAI } = await import('@/lib/places.server');
+    return chatWithTripPilotAI({
+      message: data.message,
+      ...(data.history ? { history: data.history } : {}),
+      ...(data.tripContext ? { tripContext: data.tripContext } : {}),
+    });
+  });
