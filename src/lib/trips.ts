@@ -582,6 +582,45 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
       }
     }
 
+    // 1c) Serper.dev Google Images API (when SERPER_API_KEY is set — no Google Cloud Console required)
+    const serperKey = process.env['SERPER_API_KEY'];
+    if (serperKey && searchQuery) {
+      try {
+        const serperRes = await fetch('https://google.serper.dev/images', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': serperKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            q: `${searchQuery} landmark`,
+            num: 4,
+          }),
+          signal: AbortSignal.timeout(4500),
+        });
+        if (serperRes.ok) {
+          const serperJson = (await serperRes.json()) as {
+            images?: Array<{
+              imageUrl?: string;
+              title?: string;
+              imageWidth?: number;
+              imageHeight?: number;
+            }>;
+          };
+          for (const item of serperJson.images ?? []) {
+            if (!item.imageUrl) continue;
+            if (isBadPhotoCandidate(item.imageUrl, item.title ?? '', item.imageWidth, item.imageHeight)) {
+              continue;
+            }
+            setPhotoCache(cacheKey, item.imageUrl);
+            return { dataUrl: item.imageUrl };
+          }
+        }
+      } catch {
+        // Fall through to Wikidata / Wikipedia / Wikimedia Commons
+      }
+    }
+
     if (placeName) {
       const candidateUrls: Array<{ url: string; score: number }> = [];
 
@@ -672,6 +711,49 @@ export const fetchPlacePhotoDataUrl = createServerFn({ method: 'GET' })
           }
         } catch {
           // Ignore and try next query / Wikimedia Commons
+        }
+      }
+
+      // 2b) Zero-key Wikidata P18 image lookup (catches places whose Wikipedia article has a logo or no photo)
+      if (candidateUrls.length === 0) {
+        try {
+          const wdSearchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(destination ? `${placeName} ${destination}` : placeName)}&language=en&limit=2&format=json`;
+          const wdSearchRes = await fetch(wdSearchUrl, {
+            headers: { 'User-Agent': 'TripPilot/1.0 (https://trippilot.app)' },
+            signal: AbortSignal.timeout(3500),
+          });
+          if (wdSearchRes.ok) {
+            const wdSearch = (await wdSearchRes.json()) as {
+              search?: Array<{ id?: string; label?: string; description?: string }>;
+            };
+            const entityId = wdSearch.search?.[0]?.id;
+            if (entityId) {
+              const wdEntityUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(entityId)}&props=claims&format=json`;
+              const wdEntityRes = await fetch(wdEntityUrl, {
+                headers: { 'User-Agent': 'TripPilot/1.0 (https://trippilot.app)' },
+                signal: AbortSignal.timeout(3500),
+              });
+              if (wdEntityRes.ok) {
+                const wdEntity = (await wdEntityRes.json()) as {
+                  entities?: Record<
+                    string,
+                    {
+                      claims?: {
+                        P18?: Array<{ mainsnak?: { datavalue?: { value?: string } } }>;
+                      };
+                    }
+                  >;
+                };
+                const fileName = wdEntity.entities?.[entityId]?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+                if (fileName && !BAD_IMAGE_PATTERN.test(fileName)) {
+                  const fileUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(fileName)}?width=640`;
+                  candidateUrls.push({ url: fileUrl, score: 8 });
+                }
+              }
+            }
+          }
+        } catch {
+          // Fall through to Wikimedia Commons
         }
       }
 
