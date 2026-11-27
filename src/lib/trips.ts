@@ -110,6 +110,12 @@ function formatDayIsoDate(startDate: string | undefined, dayOffset: number): str
 export const generateOptimizedTrip = createServerFn({ method: 'POST' })
   .inputValidator((raw: unknown) => GenerateSchema.parse(raw))
   .handler(async ({ data }) => {
+    const { getSessionUser } = await import('@/lib/auth');
+    const { user } = await getSessionUser();
+    if (!user) {
+      throw new Error('Sign in required to generate an itinerary.');
+    }
+
     const { generateDirectGeminiItinerary, resolveStartPoint } = await import('@/lib/places.server');
     const { getDestinationWeather } = await import('@/lib/weather.server');
 
@@ -1346,6 +1352,12 @@ const ChatAssistantSchema = z.object({
 export const askTravelAssistant = createServerFn({ method: 'POST' })
   .inputValidator((raw: unknown) => ChatAssistantSchema.parse(raw))
   .handler(async ({ data }): Promise<{ reply: string; modelName: string }> => {
+    const { getSessionUser } = await import('@/lib/auth');
+    const { user } = await getSessionUser();
+    if (!user) {
+      throw new Error('Sign in required to use TripPilot AI Chat.');
+    }
+
     const { chatWithTripPilotAI } = await import('@/lib/places.server');
     return chatWithTripPilotAI({
       message: data.message,

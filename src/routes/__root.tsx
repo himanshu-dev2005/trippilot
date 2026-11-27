@@ -3,17 +3,19 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+  useNavigate,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { SiteHeader } from "../components/SiteHeader";
 import { SiteFooter } from "../components/SiteFooter";
-import { AuthProvider } from "../components/AuthProvider";
+import { AuthProvider, useAccount } from "../components/AuthProvider";
 import { TravelChatbot } from "../components/TravelChatbot";
 
 function NotFoundComponent() {
@@ -121,21 +123,94 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+const PUBLIC_AUTH_PATHS = [
+  "/auth",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/google/callback",
+];
+
+function isPublicAuthPath(pathname: string): boolean {
+  return PUBLIC_AUTH_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+}
+
+function AuthGate({ children }: { children: ReactNode }) {
+  const { user, loading } = useAccount();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAuthRoute = isPublicAuthPath(pathname);
+
+  useEffect(() => {
+    if (!loading && !user && !isAuthRoute) {
+      void navigate({ to: "/auth", replace: true });
+    }
+  }, [loading, user, isAuthRoute, navigate]);
+
+  if (isAuthRoute) {
+    return <>{children}</>;
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="text-center">
+          <div className="mx-auto size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="mt-3 text-sm font-medium text-muted-foreground">
+            Checking your TripPilot session…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="max-w-sm rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+          <h2 className="font-display text-lg font-bold text-foreground">
+            Sign in required
+          </h2>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Please sign in to access TripPilot and plan your itinerary.
+          </p>
+          <Link
+            to="/auth"
+            className="neu-btn-primary mt-4 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold"
+          >
+            Go to Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {children}
+      <TravelChatbot />
+    </>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-      <div className="flex min-h-screen flex-col">
-        <SiteHeader />
-        <div className="flex-1">
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
+        <div className="flex min-h-screen flex-col">
+          <SiteHeader />
+          <div className="flex-1">
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <AuthGate>
+              <Outlet />
+            </AuthGate>
+          </div>
+          <SiteFooter />
         </div>
-        <SiteFooter />
-        <TravelChatbot />
-      </div>
       </AuthProvider>
     </QueryClientProvider>
   );
