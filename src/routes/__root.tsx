@@ -123,7 +123,9 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-const PUBLIC_AUTH_PATHS = [
+const PUBLIC_PATHS = [
+  "/explore",
+  "/how-it-works",
   "/auth",
   "/signup",
   "/forgot-password",
@@ -131,8 +133,9 @@ const PUBLIC_AUTH_PATHS = [
   "/auth/google/callback",
 ];
 
-function isPublicAuthPath(pathname: string): boolean {
-  return PUBLIC_AUTH_PATHS.some(
+function isPublicPath(pathname: string): boolean {
+  if (pathname === "/") return true;
+  return PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 }
@@ -141,16 +144,21 @@ function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAccount();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isAuthRoute = isPublicAuthPath(pathname);
+  const isPublic = isPublicPath(pathname);
 
   useEffect(() => {
-    if (!loading && !user && !isAuthRoute) {
+    if (!loading && !user && !isPublic) {
       void navigate({ to: "/auth", replace: true });
     }
-  }, [loading, user, isAuthRoute, navigate]);
+  }, [loading, user, isPublic, navigate]);
 
-  if (isAuthRoute) {
-    return <>{children}</>;
+  if (isPublic) {
+    return (
+      <>
+        {children}
+        {user ? <TravelChatbot /> : null}
+      </>
+    );
   }
 
   if (loading) {

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState, useEffect, useMemo, useCallback, useRef, type FormEvent } from 'react';
 import {
   Sparkles,
@@ -279,6 +279,7 @@ function PlanningProgressView({ destination }: { destination: string }) {
 
 function Index() {
   const { user } = useAccount();
+  const navigate = useNavigate();
 
   const [destination, setDestination] = useState('');
   const [numberOfDays, setNumberOfDays] = useState(3);
@@ -361,6 +362,23 @@ function Index() {
       const targetInterests = overrides?.interests ?? interests;
       const targetTransport = overrides?.transportMode ?? transportMode;
 
+      if (!user) {
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem(
+            'trippilot:pending-trip',
+            JSON.stringify({
+              destination: targetDest,
+              numberOfDays: targetDays,
+              budget: targetBudget,
+              interests: targetInterests,
+              transportMode: targetTransport,
+            }),
+          );
+        }
+        void navigate({ to: '/auth' });
+        return;
+      }
+
       setLoading(true);
       setError('');
       setNotice('');
@@ -424,8 +442,32 @@ function Index() {
         setLoading(false);
       }
     },
-    [destination, numberOfDays, budget, interests, startDate, transportMode, startPointQuery, travelers, customGeminiKey],
+    [user, navigate, destination, numberOfDays, budget, interests, startDate, arrivalTime, transportMode, startPointQuery, travelers, customGeminiKey],
   );
+
+  useEffect(() => {
+    if (!user || typeof window === 'undefined') return;
+    const raw = window.sessionStorage.getItem('trippilot:pending-trip');
+    if (!raw) return;
+    window.sessionStorage.removeItem('trippilot:pending-trip');
+    try {
+      const pending = JSON.parse(raw) as {
+        destination: string;
+        numberOfDays: number;
+        budget: number;
+        interests: string[];
+        transportMode: TransportMode;
+      };
+      setDestination(pending.destination);
+      setNumberOfDays(pending.numberOfDays);
+      setBudget(pending.budget);
+      setInterests(pending.interests);
+      setTransportMode(pending.transportMode);
+      void runTripGeneration(pending);
+    } catch {
+      // Ignore malformed pending trip payload
+    }
+  }, [user, runTripGeneration]);
 
   function handleLoadSavedTrip(saved: TripRecord) {
     const totalCost = saved.itinerary.reduce((s, d) => s + d.totalCost, 0);
