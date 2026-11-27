@@ -171,17 +171,25 @@ function AuthGate({ children }: { children: ReactNode }) {
       <div className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="max-w-sm rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
           <h2 className="font-display text-lg font-bold text-foreground">
-            Sign in required
+            Sign in or Sign up required
           </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Please sign in to access TripPilot and plan your itinerary.
+            Please sign in or create an account to access TripPilot and plan your itinerary.
           </p>
-          <Link
-            to="/auth"
-            className="neu-btn-primary mt-4 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold"
-          >
-            Go to Sign in
-          </Link>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+            <Link
+              to="/auth"
+              className="neu-btn-primary inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold"
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+            >
+              Sign up
+            </Link>
+          </div>
         </div>
       </div>
     );
